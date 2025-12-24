@@ -34,6 +34,35 @@ export interface WalletBalance {
   updatedAt: string
 }
 
+export interface WalletPlan {
+  id: string
+  name: string
+  amount: number
+  price: number
+  bonus?: number
+}
+
+export type WalletPaymentMethod = 'credit_card' | 'apple_pay' | 'paypay'
+
+export interface WalletCardPayload {
+  number: string
+  exp: string
+  cvc: string
+  holder?: string
+}
+
+export interface WalletChargePayload {
+  planId: string
+  paymentMethod: WalletPaymentMethod
+  card?: WalletCardPayload
+}
+
+export interface WalletChargeResponse {
+  transactionId: string
+  newBalance: WalletBalance
+  purchasedPlan: WalletPlan
+}
+
 export interface WalletUsageEntry {
   id: string
   title: string
@@ -116,6 +145,9 @@ interface RawOtomoDetail extends RawOtomoResponseItem {
 }
 
 interface WalletBalanceResponse extends WalletBalance {}
+interface WalletPlansResponse {
+  plans: Array<WalletPlan>
+}
 interface WalletUsageResponse {
   items: Array<WalletUsageEntry>
   total: number
@@ -216,6 +248,11 @@ export async function fetchWalletBalance(): Promise<WalletBalanceResponse> {
   return http<WalletBalanceResponse>('/wallet/balance')
 }
 
+export async function fetchWalletPlans(): Promise<Array<WalletPlan>> {
+  const data = await http<WalletPlansResponse>('/wallet/plans')
+  return data.plans
+}
+
 export async function fetchWalletUsage(
   limit?: number,
 ): Promise<Array<WalletUsageEntry>> {
@@ -227,6 +264,15 @@ export async function fetchWalletUsage(
   const endpoint = `/wallet/usage${query ? `?${query}` : ''}`
   const data = await http<WalletUsageResponse>(endpoint)
   return data.items
+}
+
+export async function chargeWalletPlan(
+  payload: WalletChargePayload,
+): Promise<WalletChargeResponse> {
+  return http<WalletChargeResponse>('/wallet/charge', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
 }
 
 export async function fetchOtomoDetail(otomoId: string): Promise<OtomoDetail> {
