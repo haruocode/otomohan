@@ -13,6 +13,21 @@ export interface OtomoProfile {
   pricePerMinute: number
 }
 
+export interface OtomoReview {
+  user: string
+  rating: number
+  comment: string
+  date: string
+}
+
+export interface OtomoDetail extends OtomoProfile {
+  intro?: string
+  categories?: Array<string>
+  activeHours?: string
+  hobbies?: Array<string>
+  reviews?: Array<OtomoReview>
+}
+
 export interface WalletBalance {
   balance: number
   currency: string
@@ -34,6 +49,22 @@ interface RawOtomoResponseItem {
 interface RawOtomoResponse {
   items: Array<RawOtomoResponseItem>
   total: number
+}
+
+interface RawOtomoReview {
+  user: string
+  rating: number
+  comment: string
+  date: string
+}
+
+interface RawOtomoDetail extends RawOtomoResponseItem {
+  intro?: string
+  categories?: Array<string>
+  activeHours?: string
+  hobbies?: Array<string>
+  reviews?: Array<RawOtomoReview>
+  pricePerMin?: number
 }
 
 interface WalletBalanceResponse extends WalletBalance {}
@@ -73,6 +104,21 @@ function computeApiBaseUrl() {
 
 const API_BASE_URL = computeApiBaseUrl()
 
+const normalizePrice = (item: { pricePerMinute?: number; pricePerMin?: number }) =>
+  item.pricePerMinute ?? item.pricePerMin ?? 0
+
+const mapRawOtomo = (item: RawOtomoResponseItem): OtomoProfile => ({
+  id: item.id,
+  name: item.displayName,
+  avatarUrl: item.avatarUrl,
+  status: RAW_TO_PRESENT_STATUS[item.status],
+  rating: item.rating,
+  reviewCount: item.reviewCount,
+  bio: item.bio,
+  tags: item.tags,
+  pricePerMinute: normalizePrice(item),
+})
+
 async function http<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     cache: 'no-store',
@@ -108,19 +154,30 @@ export async function fetchOtomoProfiles(
   const query = searchParams.toString()
   const data = await http<RawOtomoResponse>(`/otomo${query ? `?${query}` : ''}`)
 
-  return data.items.map((item) => ({
-    id: item.id,
-    name: item.displayName,
-    avatarUrl: item.avatarUrl,
-    status: RAW_TO_PRESENT_STATUS[item.status],
-    rating: item.rating,
-    reviewCount: item.reviewCount,
-    bio: item.bio,
-    tags: item.tags,
-    pricePerMinute: item.pricePerMinute,
-  }))
+  return data.items.map((item) => mapRawOtomo(item))
 }
 
 export async function fetchWalletBalance(): Promise<WalletBalanceResponse> {
   return http<WalletBalanceResponse>('/wallet/balance')
+}
+
+export async function fetchOtomoDetail(
+  otomoId: string,
+): Promise<OtomoDetail> {
+  const data = await http<RawOtomoDetail>(`/otomo/${otomoId}`)
+  const base = mapRawOtomo(data)
+
+  return {
+    ...base,
+    intro: data.intro ?? data.bio,
+    categories: data.categories,
+    activeHours: data.activeHours,
+    hobbies: data.hobbies,
+    reviews: data.reviews?.map((review) => ({
+      user: review.user,
+      rating: review.rating,
+      comment: review.comment,
+      date: review.date,
+    })),
+  }
 }

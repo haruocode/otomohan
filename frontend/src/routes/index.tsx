@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { createFileRoute } from '@tanstack/react-router'
+import { Link, createFileRoute } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import {
   AlarmClock,
@@ -19,6 +19,7 @@ import {
 
 import type { OtomoPresenceStatus, OtomoProfile } from '@/lib/api'
 import { fetchOtomoProfiles, fetchWalletBalance } from '@/lib/api'
+import { OTOMO_STATUS_META, getStatusMeta } from '@/lib/status'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -43,40 +44,7 @@ const STATUS_FILTER_VALUES = [
 ] as const
 type StatusFilter = (typeof STATUS_FILTER_VALUES)[number]
 
-const STATUS_META: Record<
-  OtomoPresenceStatus,
-  {
-    label: string
-    helper: string
-    badgeVariant: 'success' | 'warning' | 'danger' | 'outline'
-    dotColor: string
-  }
-> = {
-  online: {
-    label: 'オンライン',
-    helper: '今すぐ発信可',
-    badgeVariant: 'success',
-    dotColor: 'bg-emerald-400 shadow-emerald-400/40',
-  },
-  busy: {
-    label: '通話中',
-    helper: '終話通知を待つ',
-    badgeVariant: 'danger',
-    dotColor: 'bg-rose-500 shadow-rose-500/40',
-  },
-  away: {
-    label: '離席中',
-    helper: '戻り次第通知',
-    badgeVariant: 'warning',
-    dotColor: 'bg-amber-400 shadow-amber-400/40',
-  },
-  offline: {
-    label: 'オフライン',
-    helper: '今日はおやすみ',
-    badgeVariant: 'outline',
-    dotColor: 'bg-slate-500 shadow-slate-500/40',
-  },
-}
+const STATUS_META = OTOMO_STATUS_META
 
 const STATUS_OPTIONS: Array<{ id: StatusFilter; label: string }> = [
   { id: 'all', label: 'すべて' },
@@ -198,7 +166,7 @@ function HomeScreen() {
                   <span>{option.label}</span>
                   {isPresenceStatus(option.id) && (
                     <span className="text-[10px] font-normal text-white/70">
-                      {STATUS_META[option.id].helper}
+                      {getStatusMeta(option.id).helper}
                     </span>
                   )}
                 </TabsTrigger>
@@ -363,7 +331,7 @@ function HeaderSection({
 }
 
 function OtomoCard({ profile }: { profile: OtomoProfile }) {
-  const status = STATUS_META[profile.status]
+  const status = getStatusMeta(profile.status)
   const canRequestCall = profile.status === 'online'
 
   return (
@@ -423,9 +391,12 @@ function OtomoCard({ profile }: { profile: OtomoProfile }) {
           variant="outline"
           size="sm"
           className="rounded-2xl"
+          asChild
         >
-          <Compass className="h-4 w-4" />
-          詳細を見る
+          <Link to="/otomo/$otomoId" params={{ otomoId: profile.id }}>
+            <Compass className="h-4 w-4" />
+            詳細を見る
+          </Link>
         </Button>
         <Button
           type="button"
