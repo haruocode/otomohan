@@ -9,7 +9,9 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as WalletRouteImport } from './routes/wallet'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as WalletChargeRouteImport } from './routes/wallet.charge'
 import { Route as OtomoOtomoIdRouteImport } from './routes/otomo.$otomoId'
 import { Route as DemoTanstackQueryRouteImport } from './routes/demo/tanstack-query'
 import { Route as CallCallIdRouteImport } from './routes/call.$callId'
@@ -23,10 +25,20 @@ import { Route as DemoStartSsrSpaModeRouteImport } from './routes/demo/start.ssr
 import { Route as DemoStartSsrFullSsrRouteImport } from './routes/demo/start.ssr.full-ssr'
 import { Route as DemoStartSsrDataOnlyRouteImport } from './routes/demo/start.ssr.data-only'
 
+const WalletRoute = WalletRouteImport.update({
+  id: '/wallet',
+  path: '/wallet',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const WalletChargeRoute = WalletChargeRouteImport.update({
+  id: '/charge',
+  path: '/charge',
+  getParentRoute: () => WalletRoute,
 } as any)
 const OtomoOtomoIdRoute = OtomoOtomoIdRouteImport.update({
   id: '/otomo/$otomoId',
@@ -91,9 +103,11 @@ const DemoStartSsrDataOnlyRoute = DemoStartSsrDataOnlyRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/wallet': typeof WalletRouteWithChildren
   '/call/$callId': typeof CallCallIdRouteWithChildren
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
   '/otomo/$otomoId': typeof OtomoOtomoIdRoute
+  '/wallet/charge': typeof WalletChargeRoute
   '/call/$callId/summary': typeof CallCallIdSummaryRoute
   '/demo/api/names': typeof DemoApiNamesRoute
   '/demo/api/tq-todos': typeof DemoApiTqTodosRoute
@@ -106,9 +120,11 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/wallet': typeof WalletRouteWithChildren
   '/call/$callId': typeof CallCallIdRouteWithChildren
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
   '/otomo/$otomoId': typeof OtomoOtomoIdRoute
+  '/wallet/charge': typeof WalletChargeRoute
   '/call/$callId/summary': typeof CallCallIdSummaryRoute
   '/demo/api/names': typeof DemoApiNamesRoute
   '/demo/api/tq-todos': typeof DemoApiTqTodosRoute
@@ -122,9 +138,11 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/wallet': typeof WalletRouteWithChildren
   '/call/$callId': typeof CallCallIdRouteWithChildren
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
   '/otomo/$otomoId': typeof OtomoOtomoIdRoute
+  '/wallet/charge': typeof WalletChargeRoute
   '/call/$callId/summary': typeof CallCallIdSummaryRoute
   '/demo/api/names': typeof DemoApiNamesRoute
   '/demo/api/tq-todos': typeof DemoApiTqTodosRoute
@@ -139,9 +157,11 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/wallet'
     | '/call/$callId'
     | '/demo/tanstack-query'
     | '/otomo/$otomoId'
+    | '/wallet/charge'
     | '/call/$callId/summary'
     | '/demo/api/names'
     | '/demo/api/tq-todos'
@@ -154,9 +174,11 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/wallet'
     | '/call/$callId'
     | '/demo/tanstack-query'
     | '/otomo/$otomoId'
+    | '/wallet/charge'
     | '/call/$callId/summary'
     | '/demo/api/names'
     | '/demo/api/tq-todos'
@@ -169,9 +191,11 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/wallet'
     | '/call/$callId'
     | '/demo/tanstack-query'
     | '/otomo/$otomoId'
+    | '/wallet/charge'
     | '/call/$callId/summary'
     | '/demo/api/names'
     | '/demo/api/tq-todos'
@@ -185,6 +209,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  WalletRoute: typeof WalletRouteWithChildren
   CallCallIdRoute: typeof CallCallIdRouteWithChildren
   DemoTanstackQueryRoute: typeof DemoTanstackQueryRoute
   OtomoOtomoIdRoute: typeof OtomoOtomoIdRoute
@@ -200,12 +225,26 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/wallet': {
+      id: '/wallet'
+      path: '/wallet'
+      fullPath: '/wallet'
+      preLoaderRoute: typeof WalletRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/wallet/charge': {
+      id: '/wallet/charge'
+      path: '/charge'
+      fullPath: '/wallet/charge'
+      preLoaderRoute: typeof WalletChargeRouteImport
+      parentRoute: typeof WalletRoute
     }
     '/otomo/$otomoId': {
       id: '/otomo/$otomoId'
@@ -294,6 +333,17 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface WalletRouteChildren {
+  WalletChargeRoute: typeof WalletChargeRoute
+}
+
+const WalletRouteChildren: WalletRouteChildren = {
+  WalletChargeRoute: WalletChargeRoute,
+}
+
+const WalletRouteWithChildren =
+  WalletRoute._addFileChildren(WalletRouteChildren)
+
 interface CallCallIdRouteChildren {
   CallCallIdSummaryRoute: typeof CallCallIdSummaryRoute
 }
@@ -308,6 +358,7 @@ const CallCallIdRouteWithChildren = CallCallIdRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  WalletRoute: WalletRouteWithChildren,
   CallCallIdRoute: CallCallIdRouteWithChildren,
   DemoTanstackQueryRoute: DemoTanstackQueryRoute,
   OtomoOtomoIdRoute: OtomoOtomoIdRoute,

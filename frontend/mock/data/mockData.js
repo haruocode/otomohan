@@ -11,6 +11,53 @@ export const walletPlans = [
   { id: 'plus-60', name: 'スタンダード60', amount: 60, price: 700, bonus: 5 },
   { id: 'max-120', name: 'プレミアム120', amount: 120, price: 1300, bonus: 15 },
 ]
+export const walletUsage = [
+  {
+    id: 'usage-001',
+    type: 'call_debit',
+    title: '通話でポイントを使用',
+    description: 'Hana さんとの通話',
+    direction: 'debit',
+    amount: 300,
+    occurredAt: minutesFromNow(-5),
+  },
+  {
+    id: 'usage-002',
+    type: 'call_debit',
+    title: '通話でポイントを使用',
+    description: 'Kento さんとの通話',
+    direction: 'debit',
+    amount: 120,
+    occurredAt: minutesFromNow(-35),
+  },
+  {
+    id: 'usage-003',
+    type: 'charge_credit',
+    title: 'ポイントをチャージ',
+    description: 'ライト30 プラン',
+    direction: 'credit',
+    amount: 35,
+    occurredAt: minutesFromNow(-240),
+  },
+  {
+    id: 'usage-004',
+    type: 'call_debit',
+    title: '通話でポイントを使用',
+    description: 'Mika さんとの通話',
+    direction: 'debit',
+    amount: 180,
+    occurredAt: minutesFromNow(-1440),
+  },
+  {
+    id: 'usage-005',
+    type: 'bonus_credit',
+    title: '期間限定ボーナス',
+    description: 'ウィークリーミッション達成',
+    direction: 'credit',
+    amount: 20,
+    occurredAt: minutesFromNow(-2880),
+  },
+]
 
 export const otomoList = [
   {

@@ -34,6 +34,16 @@ export interface WalletBalance {
   updatedAt: string
 }
 
+export interface WalletUsageEntry {
+  id: string
+  title: string
+  description?: string
+  direction: 'credit' | 'debit'
+  amount: number
+  occurredAt: string
+  type?: string
+}
+
 export type CallStatus = 'connecting' | 'in_call' | 'finishing' | 'ended'
 export type CallEndReason =
   | 'user_end'
@@ -106,6 +116,10 @@ interface RawOtomoDetail extends RawOtomoResponseItem {
 }
 
 interface WalletBalanceResponse extends WalletBalance {}
+interface WalletUsageResponse {
+  items: Array<WalletUsageEntry>
+  total: number
+}
 interface RawCallSession extends CallSession {}
 
 const RAW_TO_PRESENT_STATUS: Record<RawOtomoStatus, OtomoPresenceStatus> = {
@@ -200,6 +214,19 @@ export async function fetchOtomoProfiles(
 
 export async function fetchWalletBalance(): Promise<WalletBalanceResponse> {
   return http<WalletBalanceResponse>('/wallet/balance')
+}
+
+export async function fetchWalletUsage(
+  limit?: number,
+): Promise<Array<WalletUsageEntry>> {
+  const searchParams = new URLSearchParams()
+  if (limit && Number.isFinite(limit)) {
+    searchParams.append('limit', `${limit}`)
+  }
+  const query = searchParams.toString()
+  const endpoint = `/wallet/usage${query ? `?${query}` : ''}`
+  const data = await http<WalletUsageResponse>(endpoint)
+  return data.items
 }
 
 export async function fetchOtomoDetail(otomoId: string): Promise<OtomoDetail> {

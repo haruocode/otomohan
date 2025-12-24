@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Link, createFileRoute } from '@tanstack/react-router'
+import { Link, createFileRoute, useRouterState } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import {
   AlarmClock,
@@ -16,6 +16,7 @@ import {
   Tag,
   Wallet,
 } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 
 import type { OtomoPresenceStatus, OtomoProfile } from '@/lib/api'
 import { fetchOtomoProfiles, fetchWalletBalance } from '@/lib/api'
@@ -54,11 +55,19 @@ const STATUS_OPTIONS: Array<{ id: StatusFilter; label: string }> = [
   { id: 'offline', label: 'オフライン' },
 ]
 
-const NAV_ITEMS = [
-  { id: 'home', label: 'ホーム', icon: HomeIcon, active: true },
-  { id: 'history', label: '履歴', icon: History },
-  { id: 'wallet', label: 'ウォレット', icon: Wallet },
-  { id: 'settings', label: '設定', icon: Settings },
+type NavItem = {
+  id: string
+  label: string
+  icon: LucideIcon
+  to?: string
+  disabled?: boolean
+}
+
+const NAV_ITEMS: Array<NavItem> = [
+  { id: 'home', label: 'ホーム', icon: HomeIcon, to: '/' },
+  { id: 'history', label: '履歴', icon: History, disabled: true },
+  { id: 'wallet', label: 'ウォレット', icon: Wallet, to: '/wallet' },
+  { id: 'settings', label: '設定', icon: Settings, disabled: true },
 ]
 
 const numberFormatter = new Intl.NumberFormat('ja-JP')
@@ -288,9 +297,11 @@ function HeaderSection({
                 </>
               )}
             </Button>
-            <Button size="sm" className="rounded-2xl">
-              <Wallet className="h-4 w-4" />
-              チャージ
+            <Button size="sm" className="rounded-2xl" asChild>
+              <Link to="/wallet">
+                <Wallet className="h-4 w-4" />
+                ウォレット
+              </Link>
             </Button>
           </CardFooter>
         </Card>
@@ -482,23 +493,44 @@ function EmptyState() {
 }
 
 function BottomNav() {
+  const pathname = useRouterState({
+    select: (state) => state.location.pathname,
+  })
+
   return (
     <nav className="fixed bottom-6 left-1/2 z-20 flex w-[90%] max-w-md -translate-x-1/2 items-center justify-between rounded-3xl border border-white/10 bg-white/10 p-3 text-sm text-white shadow-2xl shadow-black/40 backdrop-blur-2xl">
-      {NAV_ITEMS.map((item) => (
-        <button
-          key={item.id}
-          type="button"
-          className={cn(
-            'flex flex-1 flex-col items-center gap-1 rounded-2xl px-3 py-2 text-xs transition-colors',
-            item.active
-              ? 'bg-white/20 text-white'
-              : 'text-white/70 hover:text-white',
-          )}
-        >
-          <item.icon className="h-4 w-4" />
-          {item.label}
-        </button>
-      ))}
+      {NAV_ITEMS.map((item) => {
+        const hasDestination = typeof item.to === 'string'
+        const isActive = hasDestination ? pathname.startsWith(item.to) : false
+        const classes = cn(
+          'flex flex-1 flex-col items-center gap-1 rounded-2xl px-3 py-2 text-xs transition-colors',
+          isActive
+            ? 'bg-white/20 text-white'
+            : 'text-white/70 hover:text-white',
+        )
+
+        if (hasDestination && !item.disabled) {
+          return (
+            <Link key={item.id} to={item.to} className={classes}>
+              <item.icon className="h-4 w-4" />
+              {item.label}
+            </Link>
+          )
+        }
+
+        return (
+          <button
+            key={item.id}
+            type="button"
+            className={cn(classes, 'cursor-not-allowed opacity-60')}
+            disabled
+            aria-disabled
+          >
+            <item.icon className="h-4 w-4" />
+            {item.label}
+          </button>
+        )
+      })}
     </nav>
   )
 }

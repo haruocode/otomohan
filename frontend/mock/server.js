@@ -7,6 +7,7 @@ import {
   now,
   walletBalance,
   walletPlans,
+  walletUsage,
   otomoList,
   calls,
 } from './data/mockData.js'
@@ -54,6 +55,16 @@ app.post('/wallet/charge', (req, res) => {
     newBalance: walletBalance,
     purchasedPlan: plan,
   })
+})
+
+app.get('/wallet/usage', (req, res) => {
+  const limit = Number(req.query.limit)
+  const normalizedLimit =
+    Number.isFinite(limit) && limit > 0 ? limit : undefined
+  const items = normalizedLimit
+    ? walletUsage.slice(0, normalizedLimit)
+    : walletUsage
+  res.json({ items, total: walletUsage.length })
 })
 
 app.get('/otomo', (req, res) => {

@@ -260,10 +260,12 @@ function DetailHeader({
         <Button
           variant="ghost"
           className="rounded-2xl border border-white/10 bg-white/5"
-          disabled={!balance}
+          asChild
         >
-          <Wallet className="h-4 w-4" />
-          {balance ? `${numberFormatter.format(balance)} pt` : '残高取得中'}
+          <Link to="/wallet">
+            <Wallet className="h-4 w-4" />
+            {balance ? `${numberFormatter.format(balance)} pt` : '残高取得中'}
+          </Link>
         </Button>
         {updatedAt && (
           <span className="text-xs text-white/50">

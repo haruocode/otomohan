@@ -1,6 +1,6 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
-import { ArrowLeft, BookOpenCheck, Home, List } from 'lucide-react'
+import { ArrowLeft, BookOpenCheck, Home, List, Wallet } from 'lucide-react'
 
 import type { CallEndReason, CallSession } from '@/lib/api'
 import { fetchCallSession } from '@/lib/api'
@@ -227,6 +227,15 @@ function ActionButtons() {
       <Button
         asChild
         className="rounded-2xl bg-white text-slate-900 hover:bg-white/90"
+      >
+        <Link to="/wallet">
+          <Wallet className="mr-2 h-4 w-4" />
+          ウォレットを確認
+        </Link>
+      </Button>
+      <Button
+        asChild
+        className="rounded-2xl bg-white/90 text-slate-900 hover:bg-white"
       >
         <Link to="/">
           <Home className="mr-2 h-4 w-4" />
