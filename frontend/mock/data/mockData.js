@@ -125,11 +125,25 @@ export const otomoList = [
 const minutesFromNow = (minutes) =>
   new Date(Date.now() + minutes * 60_000).toISOString()
 
-const createActiveCall = (otomo, index) => {
-  const startedMinutesAgo = 2 + index
+const END_REASONS = ['user_end', 'otomo_end', 'no_point', 'network_lost']
+
+const createBillingUnits = (price, count) =>
+  Array.from({ length: count }, (_value, unitIndex) => ({
+    unitIndex: unitIndex + 1,
+    charged: price,
+    timestamp: minutesFromNow(-(count - unitIndex)),
+  }))
+
+const createCallRecord = (otomo, index) => {
+  const unitCount = 3 + (index % 2)
+  const totalSeconds = unitCount * 60 + index * 12
+  const startedMinutesAgo = unitCount + index
+  const status = index % 2 === 0 ? 'in_call' : 'ended'
+  const reason = END_REASONS[index % END_REASONS.length]
+
   return {
     id: `call-${otomo.id}`,
-    status: 'in_call',
+    status,
     partner: {
       id: otomo.id,
       name: otomo.displayName,
@@ -138,14 +152,20 @@ const createActiveCall = (otomo, index) => {
     pricePerMinute: otomo.pricePerMinute,
     startedAt: minutesFromNow(-startedMinutesAgo),
     lastBilledAt: minutesFromNow(-1),
-    nextBillingAt: minutesFromNow(1 - index * 0.2),
+    nextBillingAt:
+      status === 'in_call' ? minutesFromNow(1 - index * 0.2) : undefined,
     balance: Math.max(
       otomo.pricePerMinute,
       walletBalance.balance - index * 180,
     ),
+    totalSeconds,
+    totalCharged: otomo.pricePerMinute * unitCount,
+    unitCount,
+    reason,
+    billingUnits: createBillingUnits(otomo.pricePerMinute, unitCount),
   }
 }
 
 export const calls = otomoList.map((otomo, index) =>
-  createActiveCall(otomo, index),
+  createCallRecord(otomo, index),
 )

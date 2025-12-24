@@ -35,6 +35,19 @@ export interface WalletBalance {
 }
 
 export type CallStatus = 'connecting' | 'in_call' | 'finishing' | 'ended'
+export type CallEndReason =
+  | 'user_end'
+  | 'otomo_end'
+  | 'no_point'
+  | 'network_lost'
+  | 'timeout'
+  | 'system_error'
+
+export interface CallBillingUnit {
+  unitIndex: number
+  charged: number
+  timestamp?: string
+}
 
 export interface CallPartner {
   id: string
@@ -51,6 +64,12 @@ export interface CallSession {
   lastBilledAt?: string
   nextBillingAt?: string
   balance: number
+  endedAt?: string
+  totalSeconds?: number
+  totalCharged?: number
+  unitCount?: number
+  reason?: CallEndReason
+  billingUnits?: Array<CallBillingUnit>
 }
 
 interface RawOtomoResponseItem {

@@ -10,8 +10,9 @@ import {
   VolumeX,
 } from 'lucide-react'
 
-import type { CallSession } from '@/lib/api'
+import type { CallEndReason, CallSession } from '@/lib/api'
 import { fetchCallSession, fetchWalletBalance } from '@/lib/api'
+import { getCallEndReasonMeta } from '@/lib/call-status'
 import { cn } from '@/lib/utils'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
@@ -49,7 +50,7 @@ function InCallScreen() {
   const [isMuted, setIsMuted] = useState(false)
   const [isSpeaker, setIsSpeaker] = useState(true)
   const [banner, setBanner] = useState<BannerState | null>(null)
-  const [endReason, setEndReason] = useState<'user' | 'no_point' | null>(null)
+  const [endReason, setEndReason] = useState<CallEndReason | null>(null)
 
   useEffect(() => {
     if (callQuery.data) {
@@ -73,6 +74,7 @@ function InCallScreen() {
           balance: 0,
           status: 'finishing',
           nextBillingAt: undefined,
+          reason: 'no_point',
         }
       }
       return {
@@ -92,30 +94,35 @@ function InCallScreen() {
 
   useEffect(() => {
     if (session?.status === 'finishing') {
-      const message =
-        endReason === 'no_point'
-          ? 'ポイントが不足したため通話を終了します。'
-          : '通話を終了しました。お疲れさまでした。'
+      const derivedReason = endReason ?? session.reason ?? 'user_end'
+      const reasonMeta = getCallEndReasonMeta(derivedReason)
+      const bannerTone: BannerTone =
+        reasonMeta.tone === 'danger' ? 'warning' : reasonMeta.tone
       setBanner({
-        message,
-        tone: endReason === 'no_point' ? 'warning' : 'info',
+        message: reasonMeta.title,
+        tone: bannerTone,
       })
       const timeout = window.setTimeout(() => {
-        navigate({ to: '/' })
-      }, 2400)
+        navigate({
+          to: '/call/$callId/summary',
+          params: { callId },
+          search: (prev) => ({ ...prev, reason: derivedReason }),
+        })
+      }, 1200)
       return () => window.clearTimeout(timeout)
     }
     return undefined
-  }, [session?.status, endReason, navigate])
+  }, [session?.status, session?.reason, endReason, navigate, callId])
 
   const handleEndCall = useCallback(() => {
-    setEndReason('user')
+    setEndReason('user_end')
     setSession((prev) =>
       prev
         ? {
             ...prev,
             status: 'finishing',
             nextBillingAt: undefined,
+            reason: 'user_end',
           }
         : prev,
     )
@@ -394,7 +401,7 @@ function CallError({
   )
 }
 
-type BannerTone = 'info' | 'warning'
+type BannerTone = 'info' | 'warning' | 'danger'
 interface BannerState {
   message: string
   tone: BannerTone
@@ -412,6 +419,7 @@ function InlineBanner({
   const toneClasses: Record<BannerTone, string> = {
     info: 'border-blue-400/40 bg-blue-400/10 text-blue-50',
     warning: 'border-amber-400/40 bg-amber-400/10 text-amber-50',
+    danger: 'border-rose-500/40 bg-rose-500/10 text-rose-50',
   }
   return (
     <div
