@@ -11,7 +11,7 @@
 | backend/  | API ・ WebSocket ・ WebRTC 制御のサーバーサイド実装（将来追加予定）。  |
 | frontend/ | SPA / Web UI 実装。`frontend/mock` に Express 製モックサーバーを同梱。 |
 | infra/    | IaC、コンテナ、監視などのインフラ定義領域。                            |
-| docs/     | 基本設計 / 詳細設計をまとめたドキュメント群（社外秘想定）。            |
+| docs/     | 基本設計 / 詳細設計をまとめたドキュメント群。            |
 
 ## Documentation Map (docs/specification)
 
