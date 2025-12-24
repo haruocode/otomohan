@@ -1,18 +1,18 @@
-const now = () => new Date().toISOString()
+export const now = () => new Date().toISOString()
 
-const walletBalance = {
+export const walletBalance = {
   balance: 2400,
   currency: 'points',
   updatedAt: now(),
 }
 
-const walletPlans = [
+export const walletPlans = [
   { id: 'basic-30', name: 'ライト30', amount: 30, price: 400, bonus: 0 },
   { id: 'plus-60', name: 'スタンダード60', amount: 60, price: 700, bonus: 5 },
   { id: 'max-120', name: 'プレミアム120', amount: 120, price: 1300, bonus: 15 },
 ]
 
-const otomoList = [
+export const otomoList = [
   {
     id: 'otomo-001',
     displayName: 'Hana',
@@ -122,7 +122,7 @@ const otomoList = [
   },
 ]
 
-const calls = [
+export const calls = [
   {
     id: 'call-20241201-001',
     otomoId: 'otomo-001',
@@ -144,11 +144,3 @@ const calls = [
     summary: '作業通話で集中サポート。',
   },
 ]
-
-module.exports = {
-  now,
-  walletBalance,
-  walletPlans,
-  otomoList,
-  calls,
-}
