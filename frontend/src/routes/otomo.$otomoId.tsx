@@ -1,10 +1,13 @@
+import { useEffect, useState } from 'react'
 import { Link, createFileRoute } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import {
   AlarmClock,
+  AlertTriangle,
   ArrowLeft,
   BookmarkCheck,
   Clock,
+  Loader2,
   MessageCircle,
   PhoneCall,
   Quote,
@@ -16,6 +19,7 @@ import {
 
 import type { OtomoDetail } from '@/lib/api'
 import { fetchOtomoDetail, fetchWalletBalance } from '@/lib/api'
+import { sendMockCallRequest } from '@/lib/call-request'
 import { getStatusMeta } from '@/lib/status'
 import { cn } from '@/lib/utils'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -29,6 +33,14 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Skeleton } from '@/components/ui/skeleton'
 
 const numberFormatter = new Intl.NumberFormat('ja-JP')
@@ -60,12 +72,23 @@ const CTA_STATE: Record<
   },
 }
 
+type BannerTone = 'info' | 'success' | 'warning' | 'error'
+
+interface StatusBannerState {
+  message: string
+  tone: BannerTone
+}
+
 export const Route = createFileRoute('/otomo/$otomoId')({
   component: OtomoDetailScreen,
 })
 
 function OtomoDetailScreen() {
   const { otomoId } = Route.useParams()
+  const [isRequestModalOpen, setRequestModalOpen] = useState(false)
+  const [requestError, setRequestError] = useState<string | null>(null)
+  const [isSendingRequest, setIsSendingRequest] = useState(false)
+  const [banner, setBanner] = useState<StatusBannerState | null>(null)
 
   const walletQuery = useQuery({
     queryKey: ['wallet-balance'],
@@ -82,6 +105,73 @@ function OtomoDetailScreen() {
 
   const balance = walletQuery.data ? walletQuery.data.balance : undefined
   const updatedAt = walletQuery.data ? walletQuery.data.updatedAt : undefined
+  const currentStatus = detailQuery.data?.status
+
+  useEffect(() => {
+    if (!currentStatus || !isRequestModalOpen) {
+      return
+    }
+
+    if (currentStatus !== 'online') {
+      setRequestModalOpen(false)
+      setBanner({
+        message:
+          'このおともはんは現在通話中のため、リクエストを送信できません。',
+        tone: 'warning',
+      })
+    }
+  }, [currentStatus, isRequestModalOpen])
+
+  const handleModalOpenChange = (open: boolean) => {
+    setRequestModalOpen(open)
+    if (!open) {
+      setRequestError(null)
+      setIsSendingRequest(false)
+    }
+  }
+
+  const handleOpenModal = () => {
+    if (!detailQuery.data) {
+      return
+    }
+    if (detailQuery.data.status !== 'online') {
+      setBanner({
+        message:
+          'このおともはんは現在通話中のため、リクエストを送信できません。',
+        tone: 'warning',
+      })
+      return
+    }
+    setRequestError(null)
+    setRequestModalOpen(true)
+  }
+
+  const handleCallRequest = async () => {
+    if (!detailQuery.data) {
+      return
+    }
+    setIsSendingRequest(true)
+    setRequestError(null)
+    try {
+      await sendMockCallRequest({
+        toUserId: detailQuery.data.id,
+        pricePerMinute: detailQuery.data.pricePerMinute,
+      })
+      setBanner({
+        message: '通話リクエストを送信しました。応答を待っています。',
+        tone: 'info',
+      })
+      setRequestModalOpen(false)
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : '通話リクエストを送信できませんでした。'
+      setRequestError(message)
+    } finally {
+      setIsSendingRequest(false)
+    }
+  }
 
   return (
     <div className="relative isolate min-h-screen overflow-hidden bg-slate-950 text-white">
@@ -92,6 +182,14 @@ function OtomoDetailScreen() {
 
       <main className="relative z-10 mx-auto flex w-full max-w-4xl flex-col gap-8 px-4 pb-36 pt-8 sm:px-6">
         <DetailHeader balance={balance} updatedAt={updatedAt} />
+
+        {banner && (
+          <StatusBanner
+            message={banner.message}
+            tone={banner.tone}
+            onDismiss={() => setBanner(null)}
+          />
+        )}
 
         {detailQuery.isLoading && <DetailSkeleton />}
 
@@ -112,7 +210,21 @@ function OtomoDetailScreen() {
       </main>
 
       {!detailQuery.isLoading && !detailQuery.isError && detailQuery.data && (
-        <CallToAction profile={detailQuery.data} />
+        <>
+          <CallToAction
+            profile={detailQuery.data}
+            onRequestCall={handleOpenModal}
+          />
+          <CallRequestModal
+            open={isRequestModalOpen}
+            onOpenChange={handleModalOpenChange}
+            profile={detailQuery.data}
+            walletBalance={balance}
+            isSubmitting={isSendingRequest}
+            errorMessage={requestError}
+            onConfirm={handleCallRequest}
+          />
+        </>
       )}
     </div>
   )
@@ -342,7 +454,13 @@ function ReviewSection({ reviews }: { reviews?: OtomoDetail['reviews'] }) {
   )
 }
 
-function CallToAction({ profile }: { profile: OtomoDetail }) {
+function CallToAction({
+  profile,
+  onRequestCall,
+}: {
+  profile: OtomoDetail
+  onRequestCall: () => void
+}) {
   const cta = CTA_STATE[profile.status]
 
   return (
@@ -364,12 +482,171 @@ function CallToAction({ profile }: { profile: OtomoDetail }) {
               ? 'bg-white/10 text-white hover:bg-white/10'
               : undefined,
           )}
+          onClick={() => {
+            if (!cta.disabled) {
+              onRequestCall()
+            }
+          }}
         >
           <PhoneCall className="mr-2 h-4 w-4" />
           {cta.label}
         </Button>
       </div>
       <p className="text-xs text-white/60">{cta.subLabel}</p>
+    </div>
+  )
+}
+
+function CallRequestModal({
+  open,
+  onOpenChange,
+  profile,
+  walletBalance,
+  isSubmitting,
+  errorMessage,
+  onConfirm,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  profile: OtomoDetail
+  walletBalance?: number
+  isSubmitting: boolean
+  errorMessage: string | null
+  onConfirm: () => void
+}) {
+  const statusMeta = getStatusMeta(profile.status)
+  const balance = walletBalance ?? 0
+  const requiredPoint = profile.pricePerMinute
+  const isInsufficient = balance < requiredPoint
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>通話リクエストを送信しますか？</DialogTitle>
+          <DialogDescription>
+            ポイント消費と現在のステータスを確認のうえ、通話を開始してください。
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          <div className="flex items-center gap-4 rounded-2xl border border-white/10 bg-white/5 p-4">
+            <Avatar className="h-16 w-16 rounded-2xl">
+              <AvatarImage src={profile.avatarUrl} alt={profile.name} />
+              <AvatarFallback>
+                {profile.name.slice(0, 2).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            <div className="space-y-1">
+              <p className="text-lg font-semibold">{profile.name}</p>
+              <div className="flex items-center gap-2 text-sm text-white/70">
+                <span
+                  className={cn(
+                    'h-2.5 w-2.5 rounded-full shadow-[0_0_12px] shadow-current',
+                    statusMeta.dotColor,
+                  )}
+                />
+                ステータス：{statusMeta.label}
+              </div>
+              <p className="text-sm text-white/80">
+                料金：{numberFormatter.format(profile.pricePerMinute)} pt / 分
+              </p>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm">
+            <div className="flex items-center justify-between text-white">
+              <span className="text-white/70">現在のポイント</span>
+              <span className="text-xl font-semibold">
+                {numberFormatter.format(balance)} pt
+              </span>
+            </div>
+            <p className="mt-1 text-xs text-white/60">
+              1分ごとに {numberFormatter.format(requiredPoint)} pt
+              が消費されます
+            </p>
+          </div>
+
+          {isInsufficient && (
+            <div className="space-y-3 rounded-2xl border border-rose-500/40 bg-rose-500/10 p-4 text-sm text-rose-100">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="mt-0.5 h-4 w-4" />
+                <p>
+                  ポイントが不足しています（
+                  {numberFormatter.format(requiredPoint)} pt 以上必要）
+                </p>
+              </div>
+              <Button
+                variant="secondary"
+                className="w-full rounded-2xl"
+                asChild
+              >
+                <Link to="/">チャージする</Link>
+              </Button>
+            </div>
+          )}
+
+          {errorMessage && (
+            <div className="rounded-2xl border border-rose-500/40 bg-rose-500/10 p-3 text-sm text-rose-100">
+              {errorMessage}
+            </div>
+          )}
+        </div>
+
+        <DialogFooter className="pt-2">
+          <Button
+            variant="ghost"
+            onClick={() => onOpenChange(false)}
+            className="rounded-2xl"
+            disabled={isSubmitting}
+          >
+            キャンセル
+          </Button>
+          <Button
+            onClick={onConfirm}
+            disabled={isSubmitting || isInsufficient}
+            className="rounded-2xl px-6"
+          >
+            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            通話を開始する
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function StatusBanner({
+  message,
+  tone,
+  onDismiss,
+}: {
+  message: string
+  tone: BannerTone
+  onDismiss: () => void
+}) {
+  const toneStyles: Record<BannerTone, string> = {
+    info: 'border-sky-500/30 bg-sky-500/10 text-sky-50',
+    success: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-50',
+    warning: 'border-amber-500/30 bg-amber-500/10 text-amber-50',
+    error: 'border-rose-500/30 bg-rose-500/10 text-rose-50',
+  }
+
+  return (
+    <div
+      className={cn(
+        'flex items-start justify-between gap-4 rounded-2xl border px-4 py-3 text-sm',
+        toneStyles[tone],
+      )}
+    >
+      <p className="leading-relaxed">{message}</p>
+      <button
+        type="button"
+        className="text-xs text-white/70 underline-offset-2 hover:underline"
+        onClick={onDismiss}
+      >
+        閉じる
+      </button>
     </div>
   )
 }
