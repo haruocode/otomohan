@@ -5,12 +5,10 @@
 つまり：
 
 > RTC-02：Transport 作成
-> 
-> 
+>
 > → **RTC-03：DTLS 接続**
-> 
+>
 > → **RTC-04：Producer 作成（音声送信開始）**
-> 
 
 という流れ。
 
@@ -62,12 +60,12 @@ Authorization: Bearer <token>
 
 ### 各フィールド説明
 
-| フィールド | 型 | 説明 |
-| --- | --- | --- |
-| `callId` | string | 通話のID |
-| `transportId` | string | 自分の sendTransport の ID |
-| `kind` | `"audio"`（将来 `"video"` も可） | 今回は音声のみ |
-| `rtpParameters` | object | クライアント側が `sendTransport.produce()` の前に生成する |
+| フィールド      | 型                               | 説明                                                      |
+| --------------- | -------------------------------- | --------------------------------------------------------- |
+| `callId`        | string                           | 通話の ID                                                 |
+| `transportId`   | string                           | 自分の sendTransport の ID                                |
+| `kind`          | `"audio"`（将来 `"video"` も可） | 今回は音声のみ                                            |
+| `rtpParameters` | object                           | クライアント側が `sendTransport.produce()` の前に生成する |
 
 ---
 
@@ -94,7 +92,7 @@ fastify.post("/rtc/producers", async (request, reply) => {
   if (!room) {
     return reply.status(404).send({
       error: "ROOM_NOT_FOUND",
-      message: "Roomが見つかりません。"
+      message: "Roomが見つかりません。",
     });
   }
 
@@ -102,21 +100,21 @@ fastify.post("/rtc/producers", async (request, reply) => {
   if (!transport) {
     return reply.status(404).send({
       error: "TRANSPORT_NOT_FOUND",
-      message: "送信用Transportが存在しません。"
+      message: "送信用Transportが存在しません。",
     });
   }
 
   // Producer 作成
   const producer = await transport.produce({
     kind,
-    rtpParameters
+    rtpParameters,
   });
 
   // Room に記録
   room.addProducer(userId, producer);
 
   return reply.status(201).send({
-    producerId: producer.id
+    producerId: producer.id,
   });
 });
 ```
@@ -133,8 +131,8 @@ const producer = await sendTransport.produce({
   track,
   codecOptions: {
     opusStereo: 0,
-    opusDtx: 1
-  }
+    opusDtx: 1,
+  },
 });
 
 // ここで rtpParameters を取り出す必要がある
@@ -144,14 +142,14 @@ await fetch("/rtc/producers", {
   method: "POST",
   headers: {
     Authorization: `Bearer ${token}`,
-    "Content-Type": "application/json"
+    "Content-Type": "application/json",
   },
   body: JSON.stringify({
     callId,
     transportId: sendTransport.id,
     kind: "audio",
-    rtpParameters
-  })
+    rtpParameters,
+  }),
 });
 ```
 
@@ -169,24 +167,21 @@ await fetch("/rtc/producers", {
 
 - 自分の producer を相手が受信できるようになる。
 
-また、SFU側では、
+また、SFU 側では、
 
 - RTP が到達した瞬間に「接続確立」と判定可能
-    
-    → `WS-S04 call_connected` の発火ポイントになる
-    
-    → 課金タイマースタートもここで可能
-    
+  → `WS-S04 call_connected` の発火ポイントになる
+  → 課金タイマースタートもここで可能
 
 ---
 
-# ■ この API の役割（P2Pとの差分）
+# ■ この API の役割（P2P との差分）
 
-| 項目 | P2P | SFU |
-| --- | --- | --- |
-| 音声送信開始 | PeerConnection に track を追加するだけ | **サーバーに Producer を作成する必要がある** |
-| 相手が受信する仕組み | PeerConnection の negotiation | **SFU が Producer/Consumer を仲介** |
-| 運営者監視 | 不可能 | **SFUが RTP を受信するため完全に把握できる** |
+| 項目                 | P2P                                    | SFU                                           |
+| -------------------- | -------------------------------------- | --------------------------------------------- |
+| 音声送信開始         | PeerConnection に track を追加するだけ | **サーバーに Producer を作成する必要がある**  |
+| 相手が受信する仕組み | PeerConnection の negotiation          | **SFU が Producer/Consumer を仲介**           |
+| 運営者監視           | 不可能                                 | **SFU が RTP を受信するため完全に把握できる** |
 
 ---
 

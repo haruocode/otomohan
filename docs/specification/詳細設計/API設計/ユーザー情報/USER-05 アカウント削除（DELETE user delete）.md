@@ -8,14 +8,14 @@
 
 # 1. API 概要
 
-| 項目 | 内容 |
-| --- | --- |
-| API ID | **USER-05** |
-| メソッド | DELETE |
-| エンドポイント | `/user/delete` |
-| 認証 | 必須（JWT） |
-| 目的 | ユーザー自身のアカウントを削除（論理削除） |
-| 影響範囲 | プロフィール・通話履歴・ポイント情報などに影響 |
+| 項目           | 内容                                           |
+| -------------- | ---------------------------------------------- |
+| API ID         | **USER-05**                                    |
+| メソッド       | DELETE                                         |
+| エンドポイント | `/user/delete`                                 |
+| 認証           | 必須（JWT）                                    |
+| 目的           | ユーザー自身のアカウントを削除（論理削除）     |
+| 影響範囲       | プロフィール・通話履歴・ポイント情報などに影響 |
 
 ---
 
@@ -37,8 +37,8 @@
 
 users テーブルに `is_deleted` フラグを設ける：
 
-| カラム | 型 | 説明 |
-| --- | --- | --- |
+| カラム     | 型      | 説明             |
+| ---------- | ------- | ---------------- |
 | is_deleted | boolean | デフォルト false |
 
 削除時は true に切り替える。
@@ -160,13 +160,13 @@ DELETE FROM refresh_tokens WHERE user_id = $userId;
 # 8. Fastify + TypeScript 擬似実装
 
 ```tsx
-app.delete('/user/delete', async (req, reply) => {
+app.delete("/user/delete", async (req, reply) => {
   const { userId, role } = req.user;
 
   if (role !== "user") {
     return reply.code(403).send({
       status: "error",
-      error: "FORBIDDEN"
+      error: "FORBIDDEN",
     });
   }
 
@@ -179,20 +179,14 @@ app.delete('/user/delete', async (req, reply) => {
          bio = NULL,
          updated_at = NOW()
      WHERE id = $1`,
-    [userId]
+    [userId],
   );
 
   // 設定削除
-  await db.query(
-    `DELETE FROM user_settings WHERE user_id = $1`,
-    [userId]
-  );
+  await db.query(`DELETE FROM user_settings WHERE user_id = $1`, [userId]);
 
   // refresh tokens 削除
-  await db.query(
-    `DELETE FROM refresh_tokens WHERE user_id = $1`,
-    [userId]
-  );
+  await db.query(`DELETE FROM refresh_tokens WHERE user_id = $1`, [userId]);
 
   return reply.send({ status: "success" });
 });

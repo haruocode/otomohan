@@ -23,15 +23,15 @@ call_end_request はあくまで「終了要求」であり、
 
 # 2. 送信者 / 受信者
 
-| 種別 | 内容 |
-| --- | --- |
-| **送信者** | User または Otomo（通話の参加者どちらでも） |
-| **受信者（直接）** | サーバ |
+| 種別               | 内容                                            |
+| ------------------ | ----------------------------------------------- |
+| **送信者**         | User または Otomo（通話の参加者どちらでも）     |
+| **受信者（直接）** | サーバ                                          |
 | **受信者（間接）** | もう一方の参加者（call_end イベントとして通知） |
 
 ---
 
-# 3. イベント形式（Payload仕様）
+# 3. イベント形式（Payload 仕様）
 
 ### ■ クライアント → サーバ（終了要求）
 
@@ -81,13 +81,13 @@ call_end_request の応答は **call_end_request_ack（任意）**
 
 サーバ側の状態が以下の場合のみ有効：
 
-| call.status | call_end_request の扱い |
-| --- | --- |
-| `in_call` | 受理し ending 処理へ |
-| `connecting` | 受理（接続前でも終了指示可能） |
-| `ringing` | 基本は call_reject 領域だが、強制終了扱いで ending 遷移も許可が可能 |
-| `ending` | 重複終了要求として無視 |
-| `ended` | 無視 |
+| call.status  | call_end_request の扱い                                             |
+| ------------ | ------------------------------------------------------------------- |
+| `in_call`    | 受理し ending 処理へ                                                |
+| `connecting` | 受理（接続前でも終了指示可能）                                      |
+| `ringing`    | 基本は call_reject 領域だが、強制終了扱いで ending 遷移も許可が可能 |
+| `ending`     | 重複終了要求として無視                                              |
+| `ended`      | 無視                                                                |
 
 ### 状態遷移図（簡易）
 
@@ -106,12 +106,12 @@ stateDiagram-v2
 call_end_request を受信した際の処理は以下：
 
 1. callId と参加者の認証チェック
-    - 参加者でなければ `FORBIDDEN`
+   - 参加者でなければ `FORBIDDEN`
 2. call の状態を確認（in_call or connecting）
 3. 呼び出し元を記録
-    - reason = `"user_end"` または `"otomo_end"`
-    - 誰が終了を要求したかで理由が決まる
-4. 課金を締める（最後の1分が跨がる場合の扱い）
+   - reason = `"user_end"` または `"otomo_end"`
+   - 誰が終了を要求したかで理由が決まる
+4. 課金を締める（最後の 1 分が跨がる場合の扱い）
 5. call.status = ending
 6. メディア停止（任意：signaling 経由で close）
 7. call_end イベントを両者へ送信
@@ -130,9 +130,7 @@ call_end_request を受信した際の処理は以下：
 ### ■ call_end_request_ack を受信した場合
 
 - ローディング継続
-    
-    （ACK はあくまで「受付完了」にすぎない）
-    
+  （ACK はあくまで「受付完了」にすぎない）
 
 ### ■ call_end を受信したら
 
@@ -146,7 +144,7 @@ call_end_request を受信した際の処理は以下：
 
 call_end_request が失敗する場合：
 
-### ■ パターン1：callId が存在しない
+### ■ パターン 1：callId が存在しない
 
 Server → Client:
 
@@ -166,7 +164,7 @@ UI：
 
 ---
 
-### ■ パターン2：権限エラー（参加者でない）
+### ■ パターン 2：権限エラー（参加者でない）
 
 ```json
 {
@@ -178,7 +176,7 @@ UI：
 
 ---
 
-### ■ パターン3：状態不正（すでに ended 等）
+### ■ パターン 3：状態不正（すでに ended 等）
 
 ```json
 {
@@ -196,14 +194,14 @@ call_end_request は理由を含まないため、
 
 後続の call_end では以下の reason をサーバが自動付与する：
 
-| 発生状況 | reason |
-| --- | --- |
-| User が end_request 送信 | `"user_end"` |
-| Otomo が end_request 送信 | `"otomo_end"` |
-| 残ポイント不足 | `"no_point"` |
-| ネットワーク切断 | `"network_lost"` |
-| システム内部エラー | `"system_error"` |
-| タイムアウト（双方無反応等） | `"timeout"` |
+| 発生状況                     | reason           |
+| ---------------------------- | ---------------- |
+| User が end_request 送信     | `"user_end"`     |
+| Otomo が end_request 送信    | `"otomo_end"`    |
+| 残ポイント不足               | `"no_point"`     |
+| ネットワーク切断             | `"network_lost"` |
+| システム内部エラー           | `"system_error"` |
+| タイムアウト（双方無反応等） | `"timeout"`      |
 
 ---
 

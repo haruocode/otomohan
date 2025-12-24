@@ -1,29 +1,29 @@
-# WS-S07：call_end（RTP停止ベースの通話終了通知）
+# WS-S07：call_end（RTP 停止ベースの通話終了通知）
 
-P2P版のように「クライアントが勝手に `call_end` を送る」のではなく、**SFU が RTP トラフィック停止を検知した時点を“公式の通話終了”とする** 方式。
+P2P 版のように「クライアントが勝手に `call_end` を送る」のではなく、**SFU が RTP トラフィック停止を検知した時点を“公式の通話終了”とする** 方式。
 
 ---
 
-# なぜ SFU版 call_end が必要なのか？
+# なぜ SFU 版 call_end が必要なのか？
 
-理由は3つ：
+理由は 3 つ：
 
 1. **ユーザー側で「勝手に切断」されてもサーバーが確実に検知できる**
 2. **異常切断（アプリ落ち・ネット断・電池切れ）でも課金が正確に止まる**
-3. **サーバーが必ず通話終了処理（DB保存・課金締め・cleanup）を実行できる**
+3. **サーバーが必ず通話終了処理（DB 保存・課金締め・cleanup）を実行できる**
 
-P2Pではどれも不可能だった。
+P2P ではどれも不可能だった。
 
 ---
 
-# 🧠 **SFUによる RTP 停止検知とは？**
+# 🧠 **SFU による RTP 停止検知とは？**
 
-mediasoup の Producer（音声送信者）は、数秒間（例：5〜8秒）RTPが流れなくなると「実質切断」とみなせます。
+mediasoup の Producer（音声送信者）は、数秒間（例：5〜8 秒）RTP が流れなくなると「実質切断」とみなせます。
 
 検知方法：
 
 - producer.on('score') の変化
-- producer.on('trace') のRTPイベント消失
+- producer.on('trace') の RTP イベント消失
 - consumer.on('layerschange')
 - transport.on('icestatechange', 'connectionstatechange')
 
@@ -33,11 +33,11 @@ mediasoup の Producer（音声送信者）は、数秒間（例：5〜8秒）RT
 
 ---
 
-# 🧩 **SFU版 call_end のトリガー条件（厳密版）**
+# 🧩 **SFU 版 call_end のトリガー条件（厳密版）**
 
 次のいずれかを満たすと通話終了とする：
 
-1. **誰かの Producer が一定時間（例：10秒）RTPを送らない**
+1. **誰かの Producer が一定時間（例：10 秒）RTP を送らない**
 2. **Transport が disconnected → failed**
 3. **User または Otomo の WS が切断された（サーバー側）**
 4. **課金処理で残高不足 → billingService が“end”フラグを返した**
@@ -46,7 +46,7 @@ mediasoup の Producer（音声送信者）は、数秒間（例：5〜8秒）RT
 
 ---
 
-# **WS-S07 call_end（SFU版）メッセージ仕様**
+# **WS-S07 call_end（SFU 版）メッセージ仕様**
 
 ```json
 {
@@ -67,13 +67,13 @@ mediasoup の Producer（音声送信者）は、数秒間（例：5〜8秒）RT
 
 # フィールド説明
 
-| フィールド | 説明 |
-| --- | --- |
-| `callId` | 通話ID |
-| `endedAt` | SFU（サーバー）が通話終了と確定した時刻 |
-| `reason` | `"rtp_stopped" / "disconnect" / "low_balance" / "manual"` |
-| `durationSeconds` | SFUが記録した通話継続時間 |
-| `totalChargedPoints` | call_tick の累計課金ポイント |
+| フィールド           | 説明                                                      |
+| -------------------- | --------------------------------------------------------- |
+| `callId`             | 通話 ID                                                   |
+| `endedAt`            | SFU（サーバー）が通話終了と確定した時刻                   |
+| `reason`             | `"rtp_stopped" / "disconnect" / "low_balance" / "manual"` |
+| `durationSeconds`    | SFU が記録した通話継続時間                                |
+| `totalChargedPoints` | call_tick の累計課金ポイント                              |
 
 ---
 
@@ -136,14 +136,14 @@ async function endCall(reason) {
 
 # 🎯 **どの理由でも call_end は一元化**
 
-| 状況 | reason |
-| --- | --- |
-| RTPが止まった | `"rtp_stopped"` |
-| クライアントのWebSocket切断 | `"disconnect"` |
-| 残高ゼロで強制終了 | `"low_balance"` |
-| ユーザーが明示的に終了 | `"manual"` |
+| 状況                          | reason          |
+| ----------------------------- | --------------- |
+| RTP が止まった                | `"rtp_stopped"` |
+| クライアントの WebSocket 切断 | `"disconnect"`  |
+| 残高ゼロで強制終了            | `"low_balance"` |
+| ユーザーが明示的に終了        | `"manual"`      |
 
-フロント側は reason に応じて表示を切り替えるだけでOK。
+フロント側は reason に応じて表示を切り替えるだけで OK。
 
 ---
 
@@ -165,23 +165,21 @@ ws.onmessage = (event) => {
 
 # 💡 通話終了を SFU とサーバーで管理するメリット
 
-| 課題 | P2P版 | SFU版 |
-| --- | --- | --- |
-| アプリ落ちで終了通知が来ない | 起こる → 課金が続く | **SFUが検知 → 終了** |
-| ネット断でユーザー消失 | 起こる | **SFUがRTP停止で検知** |
-| 課金漏れ | 起こる | RTPベースなので極小 |
-| 不正（通話中だけど終了偽装） | 可能 | **SFUで防げる** |
-| 切断の正確なログ | 取れない | **正確な endedAt を記録可能** |
+| 課題                         | P2P 版              | SFU 版                        |
+| ---------------------------- | ------------------- | ----------------------------- |
+| アプリ落ちで終了通知が来ない | 起こる → 課金が続く | **SFU が検知 → 終了**         |
+| ネット断でユーザー消失       | 起こる              | **SFU が RTP 停止で検知**     |
+| 課金漏れ                     | 起こる              | RTP ベースなので極小          |
+| 不正（通話中だけど終了偽装） | 可能                | **SFU で防げる**              |
+| 切断の正確なログ             | 取れない            | **正確な endedAt を記録可能** |
 
 ---
 
-# まとめ（SFU版 call_end）
+# まとめ（SFU 版 call_end）
 
 - **通話終了の主導権は完全にサーバー側（SFU）にある**
 - クライアント側から終了イベントを送らせない
-    
-    → 不正防止 & 安全な課金
-    
-- RTP停止や異常切断も検知できる
-- `call_tick` と完全同期し、課金の整合性が100%取れる
+  → 不正防止 & 安全な課金
+- RTP 停止や異常切断も検知できる
+- `call_tick` と完全同期し、課金の整合性が 100%取れる
 - すべてのケースで一本化された call_end イベントを通知

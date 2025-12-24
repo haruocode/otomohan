@@ -1,6 +1,6 @@
 # WAL-03：POST /wallet/charge（ポイント購入／チャージ）
 
-※決済手段（Stripe / App Store / Google Play / クレカ / PayPay など）は未確定として、本APIは「決済後にポイント付与するサーバー側処理」として設計します。
+※決済手段（Stripe / App Store / Google Play / クレカ / PayPay など）は未確定として、本 API は「決済後にポイント付与するサーバー側処理」として設計します。
 
 ---
 
@@ -8,14 +8,14 @@
 
 ユーザーがチャージプランを購入した際に**決済済みであることを確認したうえで、ポイントを付与する**。
 
-### 想定フロー（Stripe例）
+### 想定フロー（Stripe 例）
 
 1. フロント → Stripe Checkout を開始
 2. Stripe → 決済完了
 3. Stripe Webhook → サーバー（検証）
-4. サーバー → `/wallet/charge` を実行（内部からでもOK）
+4. サーバー → `/wallet/charge` を実行（内部からでも OK）
 
-外部決済と連携する場合、**この API はサーバー内部呼び出し専用でもOK**。
+外部決済と連携する場合、**この API はサーバー内部呼び出し専用でも OK**。
 
 今回はユーザー発行としても使えるよう汎用設計にします。
 
@@ -54,11 +54,11 @@ Authorization: Bearer <token>
 
 # リクエストフィールド説明
 
-| フィールド | 型 | 必須 | 説明 |
-| --- | --- | --- | --- |
-| `planId` | string | ◯ | 購入したチャージプランID |
-| `paymentId` | string | ◯ | 決済サービス側の決済ID（Stripe等） |
-| `amount` | number | ◯ | 実際に決済された金額（円） |
+| フィールド  | 型     | 必須 | 説明                                 |
+| ----------- | ------ | ---- | ------------------------------------ |
+| `planId`    | string | ◯    | 購入したチャージプラン ID            |
+| `paymentId` | string | ◯    | 決済サービス側の決済 ID（Stripe 等） |
+| `amount`    | number | ◯    | 実際に決済された金額（円）           |
 
 ---
 
@@ -134,13 +134,13 @@ fastify.post("/wallet/charge", async (request, reply) => {
 
   // プラン確認
   const plan = await fastify.db.chargePlan.findUnique({
-    where: { planId }
+    where: { planId },
   });
 
   if (!plan) {
     return reply.status(404).send({
       error: "PLAN_NOT_FOUND",
-      message: "指定されたチャージプランが存在しません。"
+      message: "指定されたチャージプランが存在しません。",
     });
   }
 
@@ -148,19 +148,19 @@ fastify.post("/wallet/charge", async (request, reply) => {
   if (amount !== plan.price) {
     return reply.status(400).send({
       error: "INVALID_AMOUNT",
-      message: "決済金額がプラン料金と一致しません。"
+      message: "決済金額がプラン料金と一致しません。",
     });
   }
 
   // 二重決済チェック
   const already = await fastify.db.walletHistory.findUnique({
-    where: { paymentId }
+    where: { paymentId },
   });
 
   if (already) {
     return reply.status(409).send({
       error: "PAYMENT_ALREADY_PROCESSED",
-      message: "この決済IDはすでに処理済みです。"
+      message: "この決済IDはすでに処理済みです。",
     });
   }
 
@@ -168,7 +168,7 @@ fastify.post("/wallet/charge", async (request, reply) => {
   const result = await fastify.db.$transaction(async (tx) => {
     const wallet = await tx.wallet.update({
       where: { userId },
-      data: { balance: { increment: plan.points + plan.bonusPoints } }
+      data: { balance: { increment: plan.points + plan.bonusPoints } },
     });
 
     await tx.walletHistory.create({
@@ -178,8 +178,8 @@ fastify.post("/wallet/charge", async (request, reply) => {
         paymentId,
         amount,
         points: plan.points,
-        bonusPoints: plan.bonusPoints
-      }
+        bonusPoints: plan.bonusPoints,
+      },
     });
 
     return wallet;
@@ -190,7 +190,7 @@ fastify.post("/wallet/charge", async (request, reply) => {
     chargedPoints: plan.points + plan.bonusPoints,
     balance: result.balance,
     planId,
-    paymentId
+    paymentId,
   });
 });
 ```
@@ -199,13 +199,13 @@ fastify.post("/wallet/charge", async (request, reply) => {
 
 # WalletHistory テーブル例
 
-| カラム | 型 | 説明 |
-| --- | --- | --- |
-| historyId | string | PK |
-| userId | string | ユーザーID |
-| planId | string | チャージプランID |
-| paymentId | string | 決済ID（ユニーク） |
-| amount | number | 支払金額 |
-| points | number | 通常ポイント |
-| bonusPoints | number | ボーナス |
-| createdAt | datetime | 付与日時 |
+| カラム      | 型       | 説明                |
+| ----------- | -------- | ------------------- |
+| historyId   | string   | PK                  |
+| userId      | string   | ユーザー ID         |
+| planId      | string   | チャージプラン ID   |
+| paymentId   | string   | 決済 ID（ユニーク） |
+| amount      | number   | 支払金額            |
+| points      | number   | 通常ポイント        |
+| bonusPoints | number   | ボーナス            |
+| createdAt   | datetime | 付与日時            |

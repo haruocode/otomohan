@@ -1,4 +1,4 @@
-# RTC-03：POST /rtc/transports/{id}/connect（DTLSパラメータ接続）
+# RTC-03：POST /rtc/transports/{id}/connect（DTLS パラメータ接続）
 
 これは mediasoup の WebRtcTransport を “本当に使える状態” にするための**DTLS ハンドシェイク確立 API** です。Transport を作っただけでは音声は流れません。この API を呼び、クライアントの DTLS パラメータを SFU に渡すことで、初めて Audio Producer / Consumer を作れるようになります。
 
@@ -56,8 +56,8 @@ Authorization: Bearer <token>
 }
 ```
 
-| フィールド | 型 | 説明 |
-| --- | --- | --- |
+| フィールド       | 型     | 説明                                  |
+| ---------------- | ------ | ------------------------------------- |
 | `dtlsParameters` | object | mediasoup-client が生成する DTLS 情報 |
 
 ---
@@ -76,7 +76,7 @@ Authorization: Bearer <token>
 
 # ■ エラーレスポンス
 
-### 404 – Transportが存在しない
+### 404 – Transport が存在しない
 
 ```json
 {
@@ -85,7 +85,7 @@ Authorization: Bearer <token>
 }
 ```
 
-### 409 – Transportが既に接続済み
+### 409 – Transport が既に接続済み
 
 ```json
 {
@@ -108,7 +108,7 @@ fastify.post("/rtc/transports/:transportId/connect", async (request, reply) => {
   if (!room) {
     return reply.status(404).send({
       error: "ROOM_NOT_FOUND",
-      message: "通話ルームが見つかりません。"
+      message: "通話ルームが見つかりません。",
     });
   }
 
@@ -116,7 +116,7 @@ fastify.post("/rtc/transports/:transportId/connect", async (request, reply) => {
   if (!transport) {
     return reply.status(404).send({
       error: "TRANSPORT_NOT_FOUND",
-      message: "指定されたTransportは存在しません。"
+      message: "指定されたTransportは存在しません。",
     });
   }
 
@@ -138,9 +138,9 @@ sendTransport.on("connect", async ({ dtlsParameters }, callback, errback) => {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
       },
-      body: JSON.stringify({ dtlsParameters })
+      body: JSON.stringify({ dtlsParameters }),
     });
 
     callback(); // 成功
@@ -152,7 +152,7 @@ sendTransport.on("connect", async ({ dtlsParameters }, callback, errback) => {
 
 ここで重要なのは：
 
-- クライアントが *transport.connect()* を呼ぶ →
+- クライアントが _transport.connect()_ を呼ぶ →
 - mediasoup が内部で DTLS パラメータを生成 →
 - この API に POST →
 - SFU 側の Transport が完全接続状態になる
@@ -163,11 +163,11 @@ sendTransport.on("connect", async ({ dtlsParameters }, callback, errback) => {
 
 # ■ この API の後にできること
 
-sendTransport接続後：
+sendTransport 接続後：
 
 - RTC-04：produce（音声 Producer を作る）
 
-recvTransport接続後：
+recvTransport 接続後：
 
 - RTC-05：consume（相手の音声を受信）
 
@@ -175,10 +175,10 @@ recvTransport接続後：
 
 # ■ まとめ（差分観点）
 
-| P2P | SFU（mediasoup） |
-| --- | --- |
-| DTLS handshake は peer 間で自動 | **DTLS handshake を API 経由で SFU に伝える必要がある** |
-| signal イベントで SDP交換 | **/rtc/transports/{id}/connect で DTLSパラメータを送信** |
-| サーバー側は状態を知らない | **SFU は接続状態を完全に把握可能** |
+| P2P                             | SFU（mediasoup）                                          |
+| ------------------------------- | --------------------------------------------------------- |
+| DTLS handshake は peer 間で自動 | **DTLS handshake を API 経由で SFU に伝える必要がある**   |
+| signal イベントで SDP 交換      | **/rtc/transports/{id}/connect で DTLS パラメータを送信** |
+| サーバー側は状態を知らない      | **SFU は接続状態を完全に把握可能**                        |
 
 これにより、課金や接続監視に必要な「確実な状態管理」が可能になります。

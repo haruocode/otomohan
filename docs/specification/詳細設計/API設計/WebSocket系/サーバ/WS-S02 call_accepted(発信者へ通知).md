@@ -6,14 +6,14 @@
 
 # 1. イベント概要
 
-| 項目 | 内容 |
-| --- | --- |
-| ID | WS-S02 |
-| type | `call_accepted` |
-| direction | Server → 発信者（User） |
-| 発火タイミング | おともはんが WS-C02 を送信したとき |
-| 目的 | 発信者側を **通話接続準備状態（connecting）** に遷移させ、
-WebRTC シグナリングを開始させる |
+| 項目                            | 内容                                                       |
+| ------------------------------- | ---------------------------------------------------------- |
+| ID                              | WS-S02                                                     |
+| type                            | `call_accepted`                                            |
+| direction                       | Server → 発信者（User）                                    |
+| 発火タイミング                  | おともはんが WS-C02 を送信したとき                         |
+| 目的                            | 発信者側を **通話接続準備状態（connecting）** に遷移させ、 |
+| WebRTC シグナリングを開始させる |
 
 ---
 
@@ -29,11 +29,11 @@ WebRTC シグナリングを開始させる |
 
 ### フィールド仕様
 
-| フィールド | 型 | 必須 | 説明 |
-| --- | --- | --- | --- |
-| type | string | ○ | `"call_accepted"` 固定 |
-| callId | string | ○ | 通話ID |
-| timestamp | number | ○ | 応答が成立した時間（UNIX秒） |
+| フィールド | 型     | 必須 | 説明                          |
+| ---------- | ------ | ---- | ----------------------------- |
+| type       | string | ○    | `"call_accepted"` 固定        |
+| callId     | string | ○    | 通話 ID                       |
+| timestamp  | number | ○    | 応答が成立した時間（UNIX 秒） |
 
 ---
 
@@ -54,7 +54,7 @@ requesting → connecting（もしくは preparing）
 
 ### 3. U-03 → U-04 の遷移
 
-発信者画面は「待機画面」から「通話準備（P2P接続フェーズ）」へ移行。
+発信者画面は「待機画面」から「通話準備（P2P 接続フェーズ）」へ移行。
 
 ---
 
@@ -76,11 +76,13 @@ requesting → connecting（もしくは preparing）
 const userSocket = wsManager.getSocket(call.user_id);
 
 if (userSocket) {
-  userSocket.send(JSON.stringify({
-    type: "call_accepted",
-    callId,
-    timestamp: Date.now() / 1000
-  }));
+  userSocket.send(
+    JSON.stringify({
+      type: "call_accepted",
+      callId,
+      timestamp: Date.now() / 1000,
+    }),
+  );
 }
 ```
 
@@ -110,11 +112,11 @@ WS-S02 は「成功通知」のため、
 
 ただし受信後に SDP の交換に失敗すると以下のケースが起きます：
 
-| 状況 | 影響 |
-| --- | --- |
-| WebRTC negotiation 失敗 | call_end(reason="network_lost") |
-| 相手のICE candidate受信不可 | 通話開始不能 |
-| タイムアウト | call_end(reason="timeout") |
+| 状況                          | 影響                            |
+| ----------------------------- | ------------------------------- |
+| WebRTC negotiation 失敗       | call_end(reason="network_lost") |
+| 相手の ICE candidate 受信不可 | 通話開始不能                    |
+| タイムアウト                  | call_end(reason="timeout")      |
 
 これらは WS-S02 の責務外。
 

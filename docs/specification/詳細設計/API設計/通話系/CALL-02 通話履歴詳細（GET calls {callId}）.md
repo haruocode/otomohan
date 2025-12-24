@@ -1,19 +1,19 @@
 # CALL-02 通話履歴詳細（GET /calls/{callId}）
 
-この API は **U-09（通話詳細画面）** で使用され、「通話時間・課金情報・1分ごとの billing ユニット」などユーザーにとって非常に重要な情報を提供します。
+この API は **U-09（通話詳細画面）** で使用され、「通話時間・課金情報・1 分ごとの billing ユニット」などユーザーにとって非常に重要な情報を提供します。
 
 ---
 
 # 1. API 概要
 
-| 項目 | 内容 |
-| --- | --- |
-| API ID | **CALL-02** |
-| メソッド | GET |
-| エンドポイント | `/calls/{callId}` |
-| 認証 | 必須（JWT） |
-| 対象ロール | User / Otomo |
-| 目的 | 通話の詳細情報（時間・課金・billing units）を取得 |
+| 項目           | 内容                                              |
+| -------------- | ------------------------------------------------- |
+| API ID         | **CALL-02**                                       |
+| メソッド       | GET                                               |
+| エンドポイント | `/calls/{callId}`                                 |
+| 認証           | 必須（JWT）                                       |
+| 対象ロール     | User / Otomo                                      |
+| 目的           | 通話の詳細情報（時間・課金・billing units）を取得 |
 
 ---
 
@@ -54,28 +54,28 @@
 
 # 3. 含まれる情報
 
-| 項目 | 説明 |
-| --- | --- |
-| callId | 通話ID |
-| withUser | 相手側（User ←→ Otomo）の情報 |
-| startedAt | 開始時刻 |
-| endedAt | 終了時刻 |
-| durationSeconds | 通話秒数 |
-| billedUnits | 課金ユニット（分単位） |
-| billedPoints | トータル課金ポイント |
-| billingUnits | 1分ごと課金ログ（WS-S05 の保存結果） |
+| 項目            | 説明                                  |
+| --------------- | ------------------------------------- |
+| callId          | 通話 ID                               |
+| withUser        | 相手側（User ←→ Otomo）の情報         |
+| startedAt       | 開始時刻                              |
+| endedAt         | 終了時刻                              |
+| durationSeconds | 通話秒数                              |
+| billedUnits     | 課金ユニット（分単位）                |
+| billedPoints    | トータル課金ポイント                  |
+| billingUnits    | 1 分ごと課金ログ（WS-S05 の保存結果） |
 
 ---
 
-# 4. billingUnits の構造（1分ごとの tick ログ）
+# 4. billingUnits の構造（1 分ごとの tick ログ）
 
 billingUnits は WS-S05 で記録される課金ログ。
 
-| フィールド | 説明 |
-| --- | --- |
-| minute | 0開始の minute index |
-| chargedPoints | 1分ごとに請求したポイント（通常100） |
-| timestamp | 課金処理された実タイムスタンプ |
+| フィールド    | 説明                                   |
+| ------------- | -------------------------------------- |
+| minute        | 0 開始の minute index                  |
+| chargedPoints | 1 分ごとに請求したポイント（通常 100） |
+| timestamp     | 課金処理された実タイムスタンプ         |
 
 ※ これを見れば「いつ何ポイント消費したか」が一目でわかる。
 
@@ -141,7 +141,7 @@ WHERE id=$callId AND (user_id=$currentUser OR otomo_id=$currentUser);
 
 # 7. エラーレスポンス
 
-### 通話IDが無効
+### 通話 ID が無効
 
 ```json
 {
@@ -165,7 +165,7 @@ WHERE id=$callId AND (user_id=$currentUser OR otomo_id=$currentUser);
 # 8. Fastify + TypeScript 擬似実装
 
 ```tsx
-app.get('/calls/:callId', async (req, reply) => {
+app.get("/calls/:callId", async (req, reply) => {
   const { callId } = req.params;
   const { userId, role } = req.user;
 
@@ -174,13 +174,13 @@ app.get('/calls/:callId', async (req, reply) => {
     `SELECT id, user_id, otomo_id, started_at, ended_at,
             duration_seconds, total_units, total_points
      FROM calls WHERE id = $1`,
-    [callId]
+    [callId],
   );
 
   if (callRow.rowCount === 0) {
     return reply.code(404).send({
       status: "error",
-      error: "CALL_NOT_FOUND"
+      error: "CALL_NOT_FOUND",
     });
   }
 
@@ -190,7 +190,7 @@ app.get('/calls/:callId', async (req, reply) => {
   if (call.user_id !== userId && call.otomo_id !== userId) {
     return reply.code(403).send({
       status: "error",
-      error: "FORBIDDEN"
+      error: "FORBIDDEN",
     });
   }
 
@@ -201,7 +201,7 @@ app.get('/calls/:callId', async (req, reply) => {
     call.user_id === userId
       ? `SELECT id, name, avatar_url FROM otomo WHERE id=$1`
       : `SELECT id, name, avatar_url FROM users WHERE id=$1`,
-    [otherId]
+    [otherId],
   );
 
   // ④ billingUnit 取得
@@ -210,13 +210,13 @@ app.get('/calls/:callId', async (req, reply) => {
      FROM call_billing_units
      WHERE call_id = $1
      ORDER BY minute_index ASC`,
-    [callId]
+    [callId],
   );
 
-  const billingUnits = billingRows.rows.map(r => ({
+  const billingUnits = billingRows.rows.map((r) => ({
     minute: r.minute_index,
     chargedPoints: r.charged_points,
-    timestamp: r.created_at
+    timestamp: r.created_at,
   }));
 
   return reply.send({
@@ -226,15 +226,15 @@ app.get('/calls/:callId', async (req, reply) => {
       withUser: {
         id: other.rows[0].id,
         name: other.rows[0].name,
-        avatar: other.rows[0].avatar_url
+        avatar: other.rows[0].avatar_url,
       },
       startedAt: call.started_at,
       endedAt: call.ended_at,
       durationSeconds: call.duration_seconds,
       billedUnits: call.total_units,
       billedPoints: call.total_points,
-      billingUnits
-    }
+      billingUnits,
+    },
   });
 });
 ```
@@ -246,7 +246,7 @@ app.get('/calls/:callId', async (req, reply) => {
 - 相手の名前 / アイコン
 - 通話時間
 - 総課金ポイント
-- 課金の内訳（1分ごとの tick）
+- 課金の内訳（1 分ごとの tick）
 - 通話開始 / 終了のタイムスタンプ
 
 課金透明性を高めるため、billingUnits の一覧はとても重要。

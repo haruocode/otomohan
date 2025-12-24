@@ -8,14 +8,14 @@
 
 # 1. API 概要
 
-| 項目 | 内容 |
-| --- | --- |
-| API ID | **USER-04** |
-| メソッド | PUT |
-| エンドポイント | `/user/password` |
-| 認証 | 必須（JWT） |
-| 目的 | 現在のパスワードを確認し、新しいパスワードへ更新する |
-| 備考 | SNSログイン（Google等）の場合は非対応でよい |
+| 項目           | 内容                                                 |
+| -------------- | ---------------------------------------------------- |
+| API ID         | **USER-04**                                          |
+| メソッド       | PUT                                                  |
+| エンドポイント | `/user/password`                                     |
+| 認証           | 必須（JWT）                                          |
+| 目的           | 現在のパスワードを確認し、新しいパスワードへ更新する |
+| 備考           | SNS ログイン（Google 等）の場合は非対応でよい        |
 
 ---
 
@@ -32,20 +32,20 @@
 
 # 3. フィールド仕様
 
-| フィールド | 型 | 必須 | 説明 |
-| --- | --- | --- | --- |
-| currentPassword | string | ○ | 現在のパスワード |
-| newPassword | string | ○ | 新しく設定するパスワード |
+| フィールド      | 型     | 必須 | 説明                     |
+| --------------- | ------ | ---- | ------------------------ |
+| currentPassword | string | ○    | 現在のパスワード         |
+| newPassword     | string | ○    | 新しく設定するパスワード |
 
 ---
 
 # 4. パスワード要件（推奨）
 
-| 要件 | 説明 |
-| --- | --- |
-| 8〜72文字 | bcrypt の安全上限を考慮 |
-| 英大文字・小文字・数字・記号の混在推奨 | 強度を上げる |
-| 全角禁止 | 入力事故防止 |
+| 要件                                   | 説明                    |
+| -------------------------------------- | ----------------------- |
+| 8〜72 文字                             | bcrypt の安全上限を考慮 |
+| 英大文字・小文字・数字・記号の混在推奨 | 強度を上げる            |
+| 全角禁止                               | 入力事故防止            |
 
 例：
 
@@ -148,13 +148,13 @@ bcrypt（もしくは argon2）でハッシュ化する。
 ```tsx
 import bcrypt from "bcrypt";
 
-app.put('/user/password', async (req, reply) => {
+app.put("/user/password", async (req, reply) => {
   const { userId, role } = req.user;
 
   if (role !== "user") {
     return reply.code(403).send({
       status: "error",
-      error: "FORBIDDEN"
+      error: "FORBIDDEN",
     });
   }
 
@@ -164,20 +164,22 @@ app.put('/user/password', async (req, reply) => {
   if (!newPassword || newPassword.length < 8) {
     return reply.code(400).send({
       status: "error",
-      error: "INVALID_PASSWORD_FORMAT"
+      error: "INVALID_PASSWORD_FORMAT",
     });
   }
 
-  const row = await db.query(
-    `SELECT password_hash FROM users WHERE id = $1`,
-    [userId]
-  );
+  const row = await db.query(`SELECT password_hash FROM users WHERE id = $1`, [
+    userId,
+  ]);
 
-  const valid = await bcrypt.compare(currentPassword, row.rows[0].password_hash);
+  const valid = await bcrypt.compare(
+    currentPassword,
+    row.rows[0].password_hash,
+  );
   if (!valid) {
     return reply.code(400).send({
       status: "error",
-      error: "INVALID_CURRENT_PASSWORD"
+      error: "INVALID_CURRENT_PASSWORD",
     });
   }
 
@@ -185,7 +187,7 @@ app.put('/user/password', async (req, reply) => {
 
   await db.query(
     `UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2`,
-    [hashed, userId]
+    [hashed, userId],
   );
 
   return reply.send({ status: "success" });

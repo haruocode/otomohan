@@ -6,13 +6,13 @@
 
 # 1. API 概要
 
-| 項目 | 内容 |
-| --- | --- |
-| API ID | **USER-02** |
-| メソッド | PUT |
-| エンドポイント | `/user/profile` |
-| 認証 | 必須（JWT） |
-| 役割 | ユーザーの基本プロフィール（表示名・自己紹介）の更新 |
+| 項目           | 内容                                                 |
+| -------------- | ---------------------------------------------------- |
+| API ID         | **USER-02**                                          |
+| メソッド       | PUT                                                  |
+| エンドポイント | `/user/profile`                                      |
+| 認証           | 必須（JWT）                                          |
+| 役割           | ユーザーの基本プロフィール（表示名・自己紹介）の更新 |
 
 ---
 
@@ -29,10 +29,10 @@
 
 ### フィールド仕様
 
-| フィールド | 型 | 必須 | 説明 | バリデーション |
-| --- | --- | --- | --- | --- |
-| name | string | 任意 | 表示名 | 1〜50文字 |
-| bio | string | 任意 | 自己紹介 | 0〜200文字 |
+| フィールド | 型     | 必須 | 説明     | バリデーション |
+| ---------- | ------ | ---- | -------- | -------------- |
+| name       | string | 任意 | 表示名   | 1〜50 文字     |
+| bio        | string | 任意 | 自己紹介 | 0〜200 文字    |
 
 ※ **部分更新（PATCH 的挙動）** とする：
 
@@ -45,14 +45,14 @@
 ### name
 
 - 空文字不可
-- 1〜50文字
+- 1〜50 文字
 - 絵文字や特殊文字は許容（サービス設計次第）
 
 ### bio
 
-- 最大 200文字
+- 最大 200 文字
 - 改行 OK
-- script タグ等はサニタイズ（XSS防止）
+- script タグ等はサニタイズ（XSS 防止）
 
 ---
 
@@ -122,14 +122,14 @@ RETURNING id, name, bio;
 # 7. Fastify + TypeScript 擬似実装
 
 ```tsx
-app.put('/user/profile', async (req, reply) => {
+app.put("/user/profile", async (req, reply) => {
   const { userId, role } = req.user;
 
   if (role !== "user") {
     return reply.code(403).send({
       status: "error",
       error: "FORBIDDEN",
-      message: "This endpoint is for user role only."
+      message: "This endpoint is for user role only.",
     });
   }
 
@@ -139,14 +139,14 @@ app.put('/user/profile', async (req, reply) => {
   if (name !== undefined && (name.length < 1 || name.length > 50)) {
     return reply.code(400).send({
       status: "error",
-      error: "INVALID_NAME"
+      error: "INVALID_NAME",
     });
   }
 
   if (bio !== undefined && bio.length > 200) {
     return reply.code(400).send({
       status: "error",
-      error: "INVALID_BIO"
+      error: "INVALID_BIO",
     });
   }
 
@@ -157,12 +157,12 @@ app.put('/user/profile', async (req, reply) => {
          updated_at = NOW()
      WHERE id = $1
      RETURNING id, name, bio`,
-    [userId, name ?? null, bio ?? null]
+    [userId, name ?? null, bio ?? null],
   );
 
   return reply.send({
     status: "success",
-    user: row.rows[0]
+    user: row.rows[0],
   });
 });
 ```
@@ -171,11 +171,11 @@ app.put('/user/profile', async (req, reply) => {
 
 # 8. この API が利用される画面
 
-| 画面 ID | 用途 |
-| --- | --- |
-| **U-11** | プロフィール編集 |
-| U-01（一部） | 自分の名前表示更新 |
-| 通話履歴 | 表示名更新が即時反映 |
+| 画面 ID      | 用途                 |
+| ------------ | -------------------- |
+| **U-11**     | プロフィール編集     |
+| U-01（一部） | 自分の名前表示更新   |
+| 通話履歴     | 表示名更新が即時反映 |
 
 更新後はフロント側で **me 情報を再フェッチ** するのが自然です。
 

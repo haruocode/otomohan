@@ -12,14 +12,14 @@
 
 # 1. API 概要
 
-| 項目 | 内容 |
-| --- | --- |
-| API ID | **AUTH-04** |
-| メソッド | POST |
-| エンドポイント | `/auth/refresh` |
-| 認証 | Refresh Token 必須 |
-| 目的 | 有効な Refresh Token をもとに新しい Access Token（JWT）を発行する |
-| 重要度 | 任意だが、安定運用には推奨 |
+| 項目           | 内容                                                              |
+| -------------- | ----------------------------------------------------------------- |
+| API ID         | **AUTH-04**                                                       |
+| メソッド       | POST                                                              |
+| エンドポイント | `/auth/refresh`                                                   |
+| 認証           | Refresh Token 必須                                                |
+| 目的           | 有効な Refresh Token をもとに新しい Access Token（JWT）を発行する |
+| 重要度         | 任意だが、安定運用には推奨                                        |
 
 ---
 
@@ -27,13 +27,13 @@
 
 アクセストークン（JWT）
 
-- 有効期限：**15〜30分**
+- 有効期限：**15〜30 分**
 - WebSocket・REST の認証に使用
 - クライアントに保存（localStorage / secure storage）
 
 リフレッシュトークン
 
-- 有効期限：**7〜30日**
+- 有効期限：**7〜30 日**
 - 使い捨て（ローテーション方式）推奨
 - HttpOnly Cookie に保存（推奨）
 
@@ -92,12 +92,12 @@ flowchart TD
 
 # 6. DB テーブル例（refresh_tokens）
 
-| カラム | 型 | 説明 |
-| --- | --- | --- |
-| user_id | uuid | FK |
-| token | text | リフレッシュトークン |
-| expires_at | timestamp | 有効期限 |
-| created_at | timestamp | 発行日時 |
+| カラム     | 型        | 説明                 |
+| ---------- | --------- | -------------------- |
+| user_id    | uuid      | FK                   |
+| token      | text      | リフレッシュトークン |
+| expires_at | timestamp | 有効期限             |
+| created_at | timestamp | 発行日時             |
 
 ---
 
@@ -123,41 +123,39 @@ WHERE user_id = $userId;
 # 7. Fastify + TypeScript 擬似実装
 
 ```tsx
-app.post('/auth/refresh', async (req, reply) => {
+app.post("/auth/refresh", async (req, reply) => {
   const refreshToken = req.cookies.refreshToken || req.body.refreshToken;
 
   if (!refreshToken) {
     return reply.code(401).send({
       status: "error",
-      error: "INVALID_REFRESH_TOKEN"
+      error: "INVALID_REFRESH_TOKEN",
     });
   }
 
   const row = await db.query(
-    'SELECT user_id, expires_at FROM refresh_tokens WHERE token=$1',
-    [refreshToken]
+    "SELECT user_id, expires_at FROM refresh_tokens WHERE token=$1",
+    [refreshToken],
   );
 
   if (row.rowCount === 0 || row.rows[0].expires_at < new Date()) {
     return reply.code(401).send({
       status: "error",
-      error: "INVALID_REFRESH_TOKEN"
+      error: "INVALID_REFRESH_TOKEN",
     });
   }
 
   const userId = row.rows[0].user_id;
 
-  const newAccessToken = jwt.sign(
-    { userId },
-    process.env.JWT_SECRET,
-    { expiresIn: "30m" }
-  );
+  const newAccessToken = jwt.sign({ userId }, process.env.JWT_SECRET, {
+    expiresIn: "30m",
+  });
 
   // ローテーション（任意）
   const newRefreshToken = uuidv4();
   await db.query(
-    'UPDATE refresh_tokens SET token=$1, expires_at=NOW() + INTERVAL \'30 days\' WHERE user_id=$2',
-    [newRefreshToken, userId]
+    "UPDATE refresh_tokens SET token=$1, expires_at=NOW() + INTERVAL '30 days' WHERE user_id=$2",
+    [newRefreshToken, userId],
   );
 
   reply
@@ -169,7 +167,7 @@ app.post('/auth/refresh', async (req, reply) => {
     .send({
       status: "success",
       accessToken: newAccessToken,
-      expiresIn: 1800
+      expiresIn: 1800,
     });
 });
 ```
@@ -188,11 +186,11 @@ app.post('/auth/refresh', async (req, reply) => {
 
 # 9. エラーレスポンス
 
-| 状況 | ステータス | error |
-| --- | --- | --- |
-| refreshToken 無効 | 401 | INVALID_REFRESH_TOKEN |
-| refreshToken 期限切れ | 401 | INVALID_REFRESH_TOKEN |
-| DB エラー | 500 | DB_ERROR |
+| 状況                  | ステータス | error                 |
+| --------------------- | ---------- | --------------------- |
+| refreshToken 無効     | 401        | INVALID_REFRESH_TOKEN |
+| refreshToken 期限切れ | 401        | INVALID_REFRESH_TOKEN |
+| DB エラー             | 500        | DB_ERROR              |
 
 ---
 

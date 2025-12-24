@@ -2,7 +2,7 @@
 
 ## 目的
 
-ログイン中のユーザーが、**現在の所持ポイント(残高)を取得する** ためのAPI。通話開始前のチェック、ポイント購入画面、マイページなどで利用。
+ログイン中のユーザーが、**現在の所持ポイント(残高)を取得する** ための API。通話開始前のチェック、ポイント購入画面、マイページなどで利用。
 
 ---
 
@@ -49,10 +49,10 @@ Authorization: Bearer <token>
 
 # フィールド説明
 
-| フィールド | 型 | 内容 |
-| --- | --- | --- |
-| `userId` | string | ユーザーID |
-| `balance` | number | 現在の残ポイント |
+| フィールド  | 型     | 内容                                           |
+| ----------- | ------ | ---------------------------------------------- |
+| `userId`    | string | ユーザー ID                                    |
+| `balance`   | number | 現在の残ポイント                               |
 | `updatedAt` | string | 最終更新日時（内部のトランザクション反映時間） |
 
 ---
@@ -90,20 +90,20 @@ fastify.get("/wallet/balance", async (request, reply) => {
   const { userId } = request.user;
 
   const wallet = await fastify.db.wallet.findUnique({
-    where: { userId }
+    where: { userId },
   });
 
   if (!wallet) {
     return reply.status(404).send({
       error: "WALLET_NOT_FOUND",
-      message: "ウォレット情報が見つかりません。"
+      message: "ウォレット情報が見つかりません。",
     });
   }
 
   return reply.send({
     userId,
     balance: wallet.balance,
-    updatedAt: wallet.updatedAt
+    updatedAt: wallet.updatedAt,
   });
 });
 ```
@@ -114,10 +114,10 @@ fastify.get("/wallet/balance", async (request, reply) => {
 
 ウォレットテーブル（例）
 
-| カラム | 型 | 説明 |
-| --- | --- | --- |
-| userId | string | Supabase Auth のユーザーID |
-| balance | number | 現在のポイント残高 |
-| updatedAt | datetime | 最終更新時間 |
+| カラム    | 型       | 説明                        |
+| --------- | -------- | --------------------------- |
+| userId    | string   | Supabase Auth のユーザー ID |
+| balance   | number   | 現在のポイント残高          |
+| updatedAt | datetime | 最終更新時間                |
 
 ポイント履歴は別テーブル（wallet_history）で管理すると安全。

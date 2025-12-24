@@ -12,13 +12,13 @@
 
 # 1. イベント概要
 
-| 項目 | 内容 |
-| --- | --- |
-| ID | WS-C02 |
-| type | `call_accept` |
-| direction | Client（Otomo） → Server |
-| 目的 | "応答" 操作をサーバに伝え、発信者へ call_accepted を通知する |
-| トリガー | O-02（着信画面）で「応答する」を押したとき |
+| 項目      | 内容                                                         |
+| --------- | ------------------------------------------------------------ |
+| ID        | WS-C02                                                       |
+| type      | `call_accept`                                                |
+| direction | Client（Otomo） → Server                                     |
+| 目的      | "応答" 操作をサーバに伝え、発信者へ call_accepted を通知する |
+| トリガー  | O-02（着信画面）で「応答する」を押したとき                   |
 
 ---
 
@@ -33,10 +33,10 @@
 
 ### フィールド仕様
 
-| フィールド | 型 | 必須 | 説明 |
-| --- | --- | --- | --- |
-| type | string | ○ | `"call_accept"` 固定 |
-| callId | string | ○ | 対象の通話 ID |
+| フィールド | 型     | 必須 | 説明                 |
+| ---------- | ------ | ---- | -------------------- |
+| type       | string | ○    | `"call_accept"` 固定 |
+| callId     | string | ○    | 対象の通話 ID        |
 
 ---
 
@@ -156,10 +156,12 @@ ws.on("message", async (raw) => {
     const call = await db.getCall(callId);
 
     if (!call || call.otomo_id !== otomoId || call.status !== "requesting") {
-      return ws.send(JSON.stringify({
-        type: "error",
-        error: "INVALID_CALL_ACCEPT"
-      }));
+      return ws.send(
+        JSON.stringify({
+          type: "error",
+          error: "INVALID_CALL_ACCEPT",
+        }),
+      );
     }
 
     await db.updateCallStatus(callId, "accepted");
@@ -170,17 +172,21 @@ ws.on("message", async (raw) => {
     // 発信者に通知
     const userSocket = wsManager.getSocket(call.user_id);
     if (userSocket) {
-      userSocket.send(JSON.stringify({
-        type: "call_accepted",
-        callId
-      }));
+      userSocket.send(
+        JSON.stringify({
+          type: "call_accepted",
+          callId,
+        }),
+      );
     }
 
     // 必要なら otomo にACK返す
-    ws.send(JSON.stringify({
-      type: "call_accept_ack",
-      callId
-    }));
+    ws.send(
+      JSON.stringify({
+        type: "call_accept_ack",
+        callId,
+      }),
+    );
   }
 });
 ```
@@ -189,13 +195,13 @@ ws.on("message", async (raw) => {
 
 # 9. エラーパターンまとめ
 
-| error | 状況 |
-| --- | --- |
-| INVALID_CALL_ACCEPT | callId 不正 / call 状態不正 |
-| CALL_NOT_FOUND | DB に call 無し |
-| PERMISSION_DENIED | 応答者が call.otomo_id と不一致 |
-| CALL_ALREADY_ACCEPTED | race condition 回避 |
-| UNAUTHORIZED | JWT 不正 |
+| error                 | 状況                            |
+| --------------------- | ------------------------------- |
+| INVALID_CALL_ACCEPT   | callId 不正 / call 状態不正     |
+| CALL_NOT_FOUND        | DB に call 無し                 |
+| PERMISSION_DENIED     | 応答者が call.otomo_id と不一致 |
+| CALL_ALREADY_ACCEPTED | race condition 回避             |
+| UNAUTHORIZED          | JWT 不正                        |
 
 ---
 

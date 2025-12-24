@@ -12,13 +12,14 @@
 
 # 1. イベント概要
 
-| 項目 | 内容 |
-| --- | --- |
-| ID | **WS-S06** |
-| type | `wallet_update` |
-| direction | **Server → User（本人のみ）** |
-| 用途 | 残高が変更された瞬間にユーザーに通知し、UIと状態を即時同期させる |
-| 主なトリガー | ・call_tick 成功時
+| 項目         | 内容                                                              |
+| ------------ | ----------------------------------------------------------------- |
+| ID           | **WS-S06**                                                        |
+| type         | `wallet_update`                                                   |
+| direction    | **Server → User（本人のみ）**                                     |
+| 用途         | 残高が変更された瞬間にユーザーに通知し、UI と状態を即時同期させる |
+| 主なトリガー | ・call_tick 成功時                                                |
+
 ・wallet/charge チャージ成功時
 ・運営側付与/調整（任意） |
 
@@ -39,21 +40,21 @@
 
 # 3. フィールド仕様
 
-| フィールド | 型 | 必須 | 内容 |
-| --- | --- | --- | --- |
-| type | string | ○ | `"wallet_update"` 固定 |
-| balance | number | ○ | 更新後のポイント残高 |
-| reason | string | ○ | 残高が変わった理由（下記に定義） |
-| timestamp | number | ○ | UNIX秒 |
+| フィールド | 型     | 必須 | 内容                             |
+| ---------- | ------ | ---- | -------------------------------- |
+| type       | string | ○    | `"wallet_update"` 固定           |
+| balance    | number | ○    | 更新後のポイント残高             |
+| reason     | string | ○    | 残高が変わった理由（下記に定義） |
+| timestamp  | number | ○    | UNIX 秒                          |
 
 ---
 
 ## reason の種類（標準化）
 
-| reason | 説明 |
-| --- | --- |
-| `call_tick` | 1分課金で残高が減った |
-| `charge` | チャージで残高が増えた |
+| reason       | 説明                   |
+| ------------ | ---------------------- |
+| `call_tick`  | 1 分課金で残高が減った |
+| `charge`     | チャージで残高が増えた |
 | `adjustment` | 運営による調整（任意） |
 
 ---
@@ -96,19 +97,18 @@ wallet_update(balance=新残高, reason=call_tick)
 
 - U-06（ウォレット残高）
 - U-04（通話中画面の残りポイント）
-- ヘッダーなど共通UIのポイント表示
+- ヘッダーなど共通 UI のポイント表示
 
 ### UI ルール
 
 1. `balance` をただちにグローバルステートへ更新
 2. `reason=="call_tick"` の場合
-    
-    → カウントダウンや残り時間の警告 UI を更新
-    
+
+   → カウントダウンや残り時間の警告 UI を更新
+
 3. `reason=="charge"` の場合
-    
-    → 「チャージが反映されました」など toast 表示も可能
-    
+
+   → 「チャージが反映されました」など toast 表示も可能
 
 ---
 
@@ -119,12 +119,14 @@ function sendWalletUpdate(userId: string, newBalance: number, reason: string) {
   const ws = wsManager.getSocket(userId);
   if (!ws) return;
 
-  ws.send(JSON.stringify({
-    type: "wallet_update",
-    balance: newBalance,
-    reason,
-    timestamp: Math.floor(Date.now() / 1000)
-  }));
+  ws.send(
+    JSON.stringify({
+      type: "wallet_update",
+      balance: newBalance,
+      reason,
+      timestamp: Math.floor(Date.now() / 1000),
+    }),
+  );
 }
 ```
 

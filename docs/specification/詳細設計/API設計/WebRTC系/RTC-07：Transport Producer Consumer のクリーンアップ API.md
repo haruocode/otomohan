@@ -53,7 +53,7 @@ Authorization: Bearer <token>
 
 URL Path:
 
-- `callId`: 通話ID
+- `callId`: 通話 ID
 
 Body の指定は不要。
 
@@ -100,7 +100,7 @@ fastify.delete("/rtc/rooms/:callId/cleanup", async (request, reply) => {
   if (!room) {
     return reply.status(404).send({
       error: "ROOM_NOT_FOUND",
-      message: "Room が見つかりません。"
+      message: "Room が見つかりません。",
     });
   }
 
@@ -108,7 +108,7 @@ fastify.delete("/rtc/rooms/:callId/cleanup", async (request, reply) => {
   if (!room.isParticipant(userId)) {
     return reply.status(403).send({
       error: "FORBIDDEN",
-      message: "この Room のクリーンアップ権限がありません。"
+      message: "この Room のクリーンアップ権限がありません。",
     });
   }
 
@@ -116,7 +116,7 @@ fastify.delete("/rtc/rooms/:callId/cleanup", async (request, reply) => {
 
   return reply.send({
     cleaned: true,
-    released
+    released,
   });
 });
 ```
@@ -131,7 +131,7 @@ class Room {
     let released = {
       transports: 0,
       producers: 0,
-      consumers: 0
+      consumers: 0,
     };
 
     // Producer -> Consumer の順で閉じる
@@ -172,9 +172,7 @@ class Room {
 
 - WS-S07 call_end
 - or API CALL-02 /calls/{callId} の終了処理完了後
-    
-    → この Cleanup API を呼ぶ
-    
+  → この Cleanup API を呼ぶ
 
 ### ✔ 2. WebSocket が切れたとき（異常切断）
 
@@ -190,11 +188,11 @@ class Room {
 
 # ■ P2P と SFU の大きな差分ポイント
 
-| 項目 | P2P | SFU |
-| --- | --- | --- |
-| リソース管理 | クライアント任せ | **サーバー側で Transport / Producer / Consumer の責任管理が必要** |
-| Cleanup | 不要（PeerConnection を閉じるだけ） | **必須（管理しないとリークして死ぬ）** |
-| 破棄責任 | クライアント | **運営側（SFU）** |
+| 項目         | P2P                                 | SFU                                                               |
+| ------------ | ----------------------------------- | ----------------------------------------------------------------- |
+| リソース管理 | クライアント任せ                    | **サーバー側で Transport / Producer / Consumer の責任管理が必要** |
+| Cleanup      | 不要（PeerConnection を閉じるだけ） | **必須（管理しないとリークして死ぬ）**                            |
+| 破棄責任     | クライアント                        | **運営側（SFU）**                                                 |
 
 ---
 

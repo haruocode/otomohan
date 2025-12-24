@@ -6,10 +6,10 @@
 
 # AUTH-05 と USER-01 の違い
 
-| API | 目的 |
-| --- | --- |
+| API                  | 目的                                                                                 |
+| -------------------- | ------------------------------------------------------------------------------------ |
 | **AUTH-05 /auth/me** | 認証済みユーザーの最小限の情報（id, role, balance など）を返す「セッション確認 API」 |
-| **USER-01 /user/me** | プロフィール編集やマイページで使用する “拡張ユーザー情報” を返す API |
+| **USER-01 /user/me** | プロフィール編集やマイページで使用する “拡張ユーザー情報” を返す API                 |
 
 つまり USER-01 は**プロフィール関連情報をまとめて返す**という位置付け。
 
@@ -17,13 +17,13 @@
 
 # 1. API 概要
 
-| 項目 | 内容 |
-| --- | --- |
-| API ID | **USER-01** |
-| メソッド | GET |
-| エンドポイント | `/user/me`  |
-| 認証 | 必須（JWT） |
-| 説明 | プロフィール情報・課金情報・通知設定など、ユーザーの全体像を取得する |
+| 項目           | 内容                                                                 |
+| -------------- | -------------------------------------------------------------------- |
+| API ID         | **USER-01**                                                          |
+| メソッド       | GET                                                                  |
+| エンドポイント | `/user/me`                                                           |
+| 認証           | 必須（JWT）                                                          |
+| 説明           | プロフィール情報・課金情報・通知設定など、ユーザーの全体像を取得する |
 
 ---
 
@@ -55,17 +55,17 @@
 
 # 3. User のレスポンス項目仕様
 
-| 項目 | 型 | 説明 |
-| --- | --- | --- |
-| id | string | ユーザーID |
-| role | string | `"user"` 固定 |
-| name | string | 表示名 |
-| avatar | string | プロフィール画像URL |
-| bio | string | 自己紹介（任意） |
-| gender | string/null | 性別設定（任意） |
-| birthday | date/null | 誕生日（任意） |
-| balance | number | ポイント残高 |
-| notifications | object | 通知設定（SET-02 と同じ） |
+| 項目          | 型          | 説明                      |
+| ------------- | ----------- | ------------------------- |
+| id            | string      | ユーザー ID               |
+| role          | string      | `"user"` 固定             |
+| name          | string      | 表示名                    |
+| avatar        | string      | プロフィール画像 URL      |
+| bio           | string      | 自己紹介（任意）          |
+| gender        | string/null | 性別設定（任意）          |
+| birthday      | date/null   | 誕生日（任意）            |
+| balance       | number      | ポイント残高              |
+| notifications | object      | 通知設定（SET-02 と同じ） |
 
 ---
 
@@ -91,15 +91,15 @@
 
 ### users テーブル
 
-| カラム | 説明 |
-| --- | --- |
-| id | user ID |
-| name | 表示名 |
-| avatar_url | 画像URL |
-| bio | 自己紹介 |
-| gender | 性別 |
-| birthday | 誕生日 |
-| balance | ポイント残高 |
+| カラム     | 説明         |
+| ---------- | ------------ |
+| id         | user ID      |
+| name       | 表示名       |
+| avatar_url | 画像 URL     |
+| bio        | 自己紹介     |
+| gender     | 性別         |
+| birthday   | 誕生日       |
+| balance    | ポイント残高 |
 
 ---
 
@@ -126,7 +126,7 @@ WHERE id = $1;
 # 6. Fastify + TypeScript 実装例
 
 ```tsx
-app.get('/user/me', async (req, reply) => {
+app.get("/user/me", async (req, reply) => {
   const { userId, role } = req.user;
 
   // User専用
@@ -134,7 +134,7 @@ app.get('/user/me', async (req, reply) => {
     return reply.code(403).send({
       status: "error",
       error: "FORBIDDEN",
-      message: "This endpoint is for user role only."
+      message: "This endpoint is for user role only.",
     });
   }
 
@@ -142,13 +142,13 @@ app.get('/user/me', async (req, reply) => {
   const userRow = await db.query(
     `SELECT id, name, avatar_url, bio, gender, birthday, balance
      FROM users WHERE id = $1`,
-    [userId]
+    [userId],
   );
 
   if (userRow.rowCount === 0) {
     return reply.code(404).send({
       status: "error",
-      error: "USER_NOT_FOUND"
+      error: "USER_NOT_FOUND",
     });
   }
 
@@ -156,7 +156,7 @@ app.get('/user/me', async (req, reply) => {
   const settingsRow = await db.query(
     `SELECT notifications
      FROM user_settings WHERE user_id = $1`,
-    [userId]
+    [userId],
   );
 
   const user = userRow.rows[0];
@@ -172,8 +172,8 @@ app.get('/user/me', async (req, reply) => {
       gender: user.gender,
       birthday: user.birthday,
       balance: user.balance,
-      notifications: settingsRow.rows[0]?.notifications || {}
-    }
+      notifications: settingsRow.rows[0]?.notifications || {},
+    },
   });
 });
 ```
@@ -182,22 +182,22 @@ app.get('/user/me', async (req, reply) => {
 
 # 7. この API を使う画面
 
-| 画面ID | 画面名 |
-| --- | --- |
-| U-11 | プロフィール編集画面 |
-| U-06 | ウォレット |
-| C-04 | 設定（通知設定の初期値） |
-| U-01 | 一部で自分の表示名に使用 |
+| 画面 ID | 画面名                   |
+| ------- | ------------------------ |
+| U-11    | プロフィール編集画面     |
+| U-06    | ウォレット               |
+| C-04    | 設定（通知設定の初期値） |
+| U-01    | 一部で自分の表示名に使用 |
 
 ---
 
 # 8. エラーレスポンス
 
-| 状況 | ステータス | error |
-| --- | --- | --- |
-| JWT 無効 | 401 | UNAUTHORIZED |
-| ユーザー見つからない | 404 | USER_NOT_FOUND |
-| Otomo がアクセス | 403 | FORBIDDEN |
+| 状況                 | ステータス | error          |
+| -------------------- | ---------- | -------------- |
+| JWT 無効             | 401        | UNAUTHORIZED   |
+| ユーザー見つからない | 404        | USER_NOT_FOUND |
+| Otomo がアクセス     | 403        | FORBIDDEN      |
 
 ---
 

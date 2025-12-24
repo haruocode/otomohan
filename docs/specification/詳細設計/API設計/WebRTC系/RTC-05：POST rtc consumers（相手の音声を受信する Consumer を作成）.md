@@ -6,7 +6,7 @@
 
 # ■ 目的
 
-通話では、双方が次の2つを行う必要があります：
+通話では、双方が次の 2 つを行う必要があります：
 
 1. 自分の音声 → SFU へ送る（Producer）
 2. 相手の音声 ← SFU から受け取る（Consumer）
@@ -50,11 +50,11 @@ Authorization: Bearer <token>
 }
 ```
 
-| フィールド | 説明 |
-| --- | --- |
-| `callId` | この通話のID |
+| フィールド    | 説明                         |
+| ------------- | ---------------------------- |
+| `callId`      | この通話の ID                |
 | `transportId` | 受信用の recvTransport の ID |
-| `producerId` | 相手側の Producer の ID |
+| `producerId`  | 相手側の Producer の ID      |
 
 ---
 
@@ -77,11 +77,11 @@ Authorization: Bearer <token>
 
 ### 各フィールド説明
 
-| フィールド | 説明 |
-| --- | --- |
-| `consumerId` | サーバーで生成された Consumer ID |
-| `kind` | "audio"（今回は音声のみ） |
-| `rtpParameters` | **クライアントが consume() するために必要なパラメータ** |
+| フィールド       | 説明                                                          |
+| ---------------- | ------------------------------------------------------------- |
+| `consumerId`     | サーバーで生成された Consumer ID                              |
+| `kind`           | "audio"（今回は音声のみ）                                     |
+| `rtpParameters`  | **クライアントが consume() するために必要なパラメータ**       |
 | `producerPaused` | Producer が一時停止しているか（今回の音声通話では常に false） |
 
 ---
@@ -97,7 +97,7 @@ fastify.post("/rtc/consumers", async (request, reply) => {
   if (!room) {
     return reply.status(404).send({
       error: "ROOM_NOT_FOUND",
-      message: "Roomが存在しません。"
+      message: "Roomが存在しません。",
     });
   }
 
@@ -105,7 +105,7 @@ fastify.post("/rtc/consumers", async (request, reply) => {
   if (!transport) {
     return reply.status(404).send({
       error: "TRANSPORT_NOT_FOUND",
-      message: "recvTransport が存在しません。"
+      message: "recvTransport が存在しません。",
     });
   }
 
@@ -113,14 +113,14 @@ fastify.post("/rtc/consumers", async (request, reply) => {
   if (!producer) {
     return reply.status(404).send({
       error: "PRODUCER_NOT_FOUND",
-      message: "相手の Producer が存在しません。"
+      message: "相手の Producer が存在しません。",
     });
   }
 
   // mediasoupのConsumer作成
   const consumer = await transport.consume({
     producerId: producer.id,
-    rtpCapabilities: room.router.rtpCapabilities
+    rtpCapabilities: room.router.rtpCapabilities,
   });
 
   // Room に保持
@@ -130,7 +130,7 @@ fastify.post("/rtc/consumers", async (request, reply) => {
     consumerId: consumer.id,
     kind: consumer.kind,
     rtpParameters: consumer.rtpParameters,
-    producerPaused: consumer.producerPaused
+    producerPaused: consumer.producerPaused,
   });
 });
 ```
@@ -146,13 +146,13 @@ const res = await fetch("/rtc/consumers", {
   method: "POST",
   headers: {
     Authorization: `Bearer ${token}`,
-    "Content-Type": "application/json"
+    "Content-Type": "application/json",
   },
   body: JSON.stringify({
     callId,
     transportId: recvTransport.id,
-    producerId: remoteProducerId
-  })
+    producerId: remoteProducerId,
+  }),
 });
 
 const data = await res.json();
@@ -160,7 +160,7 @@ const data = await res.json();
 const consumer = await recvTransport.consume({
   id: data.consumerId,
   kind: data.kind,
-  rtpParameters: data.rtpParameters
+  rtpParameters: data.rtpParameters,
 });
 
 // メディア再生
@@ -180,18 +180,18 @@ audio.play();
 4. サーバー側で Consumer オブジェクト生成
 5. rtpParameters をクライアントへ返す
 6. クライアント側で
-    
-    `recvTransport.consume({ consumerId, rtpParameters })`
-    
+
+   `recvTransport.consume({ consumerId, rtpParameters })`
+
 7. 再生可能になる（audio.play）
 
 ---
 
 # ■ P2P との違い（差分）
 
-| 項目 | P2P | SFU（mediasoup） |
-| --- | --- | --- |
-| 相手音声の受信 | PeerConnectionが勝手に negotiation | **Consumer を明示的に作成する必要がある** |
-| 音声ルーティング | peer → peer | peer → SFU → peer |
-| 通話状態の監視 | サーバーは知らない | **SFUが全ストリームを把握できる** |
-| 録音・監査 | 不可能 | **Server-Side録音が可能** |
+| 項目             | P2P                                 | SFU（mediasoup）                          |
+| ---------------- | ----------------------------------- | ----------------------------------------- |
+| 相手音声の受信   | PeerConnection が勝手に negotiation | **Consumer を明示的に作成する必要がある** |
+| 音声ルーティング | peer → peer                         | peer → SFU → peer                         |
+| 通話状態の監視   | サーバーは知らない                  | **SFU が全ストリームを把握できる**        |
+| 録音・監査       | 不可能                              | **Server-Side 録音が可能**                |

@@ -6,14 +6,14 @@
 
 # 1. API 概要
 
-| 項目 | 内容 |
-| --- | --- |
-| API ID | **CALL-01** |
-| メソッド | GET |
-| エンドポイント | `/calls` |
-| 認証 | 必須（JWT） |
-| 対象ロール | User / Otomo どちらでも |
-| 目的 | 自分が関わった通話の履歴を一覧取得する |
+| 項目           | 内容                                   |
+| -------------- | -------------------------------------- |
+| API ID         | **CALL-01**                            |
+| メソッド       | GET                                    |
+| エンドポイント | `/calls`                               |
+| 認証           | 必須（JWT）                            |
+| 対象ロール     | User / Otomo どちらでも                |
+| 目的           | 自分が関わった通話の履歴を一覧取得する |
 
 ---
 
@@ -23,10 +23,10 @@
 GET /calls?page=1&limit=20
 ```
 
-| パラメータ | 説明 | デフォルト |
-| --- | --- | --- |
-| page | 取得ページ番号 | 1 |
-| limit | 1ページあたり件数 | 20 |
+| パラメータ | 説明               | デフォルト |
+| ---------- | ------------------ | ---------- |
+| page       | 取得ページ番号     | 1          |
+| limit      | 1 ページあたり件数 | 20         |
 
 ※ 無限スクロール対応のため limit 指定可能にする。
 
@@ -65,23 +65,23 @@ GET /calls?page=1&limit=20
 
 ## 基本情報
 
-| 項目 | 説明 |
-| --- | --- |
-| callId | 通話ID |
-| withUser | 相手の情報（User → Otomo / Otomo → User） |
-| startedAt | 通話開始時刻 |
-| endedAt | 通話終了時刻 |
-| durationSeconds | 通話秒数 |
-| billedUnits | 課金対象の 1分ユニット数 |
-| billedPoints | 消費ポイント数（User のみ） |
+| 項目            | 説明                                      |
+| --------------- | ----------------------------------------- |
+| callId          | 通話 ID                                   |
+| withUser        | 相手の情報（User → Otomo / Otomo → User） |
+| startedAt       | 通話開始時刻                              |
+| endedAt         | 通話終了時刻                              |
+| durationSeconds | 通話秒数                                  |
+| billedUnits     | 課金対象の 1 分ユニット数                 |
+| billedPoints    | 消費ポイント数（User のみ）               |
 
 ---
 
 ### billedUnits とは？
 
-- 1分ごとに 1ユニット
+- 1 分ごとに 1 ユニット
 - WS-S05 (call_tick) でカウントされる
-- 例：8分 → 8ユニット
+- 例：8 分 → 8 ユニット
 
 ---
 
@@ -96,29 +96,29 @@ GET /calls?page=1&limit=20
 
 ### calls テーブル
 
-| カラム | 説明 |
-| --- | --- |
-| id | callId |
-| user_id | ユーザー側 |
-| otomo_id | おともはん側 |
-| started_at | 開始時刻 |
-| ended_at | 終了時刻 |
-| duration_seconds | 秒数 |
-| total_units | 課金ユニット数 |
-| total_points | 総課金ポイント（User のみ） |
+| カラム           | 説明                        |
+| ---------------- | --------------------------- |
+| id               | callId                      |
+| user_id          | ユーザー側                  |
+| otomo_id         | おともはん側                |
+| started_at       | 開始時刻                    |
+| ended_at         | 終了時刻                    |
+| duration_seconds | 秒数                        |
+| total_units      | 課金ユニット数              |
+| total_points     | 総課金ポイント（User のみ） |
 
 ---
 
 ### call_billing_units
 
-（1分ごとの tick ログ）
+（1 分ごとの tick ログ）
 
-| カラム | 説明 |
-| --- | --- |
-| id | PK |
-| call_id | FK calls.id |
-| minute_index | 0開始の分番号 |
-| charged_points | 100など |
+| カラム         | 説明           |
+| -------------- | -------------- |
+| id             | PK             |
+| call_id        | FK calls.id    |
+| minute_index   | 0 開始の分番号 |
+| charged_points | 100 など       |
 
 ---
 
@@ -177,16 +177,14 @@ WHERE id = calls.user_id;
 # 8. Fastify + TypeScript 擬似実装
 
 ```tsx
-app.get('/calls', async (req, reply) => {
+app.get("/calls", async (req, reply) => {
   const { userId, role } = req.user;
   const page = Number(req.query.page || 1);
   const limit = Number(req.query.limit || 20);
 
   const offset = (page - 1) * limit;
 
-  const where = role === "user"
-    ? "user_id = $1"
-    : "otomo_id = $1";
+  const where = role === "user" ? "user_id = $1" : "otomo_id = $1";
 
   const rows = await db.query(
     `SELECT id, user_id, otomo_id, started_at, ended_at,
@@ -195,7 +193,7 @@ app.get('/calls', async (req, reply) => {
      WHERE ${where}
      ORDER BY started_at DESC
      LIMIT $2 OFFSET $3`,
-    [userId, limit, offset]
+    [userId, limit, offset],
   );
 
   const calls = [];
@@ -207,7 +205,7 @@ app.get('/calls', async (req, reply) => {
       role === "user"
         ? `SELECT id, name, avatar_url FROM otomo WHERE id=$1`
         : `SELECT id, name, avatar_url FROM users WHERE id=$1`,
-      [otherId]
+      [otherId],
     );
 
     calls.push({
@@ -215,13 +213,13 @@ app.get('/calls', async (req, reply) => {
       withUser: {
         id: other.rows[0].id,
         name: other.rows[0].name,
-        avatar: other.rows[0].avatar_url
+        avatar: other.rows[0].avatar_url,
       },
       startedAt: r.started_at,
       endedAt: r.ended_at,
       durationSeconds: r.duration_seconds,
       billedUnits: r.total_units,
-      billedPoints: r.total_points
+      billedPoints: r.total_points,
     });
   }
 
@@ -229,10 +227,9 @@ app.get('/calls', async (req, reply) => {
     status: "success",
     page,
     limit,
-    calls
+    calls,
   });
 });
-
 ```
 
 ---

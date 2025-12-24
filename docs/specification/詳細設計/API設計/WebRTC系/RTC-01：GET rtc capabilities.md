@@ -12,7 +12,7 @@
 - RTP パラメータ
 - 拡張ヘッダー設定
 
-などをクライアントに知らせ、クライアントの mediasoup-clientの`device.load(routerRtpCapabilities)` を成功させるための API。
+などをクライアントに知らせ、クライアントの mediasoup-client の`device.load(routerRtpCapabilities)` を成功させるための API。
 
 ---
 
@@ -61,9 +61,7 @@ Authorization: Bearer <token>
         "parameters": {
           "useinbandfec": 1
         },
-        "rtcpFeedback": [
-          { "type": "transport-cc" }
-        ]
+        "rtcpFeedback": [{ "type": "transport-cc" }]
       }
     ],
     "headerExtensions": [
@@ -90,11 +88,11 @@ Authorization: Bearer <token>
 
 # ■ レスポンス項目説明
 
-| フィールド | 説明 |
-| --- | --- |
-| `codecs` | SFUが扱えるコーデック一覧（音声ならほぼ opus） |
-| `headerExtensions` | RTPヘッダー拡張設定 |
-| `fec` / `rtcpFeedback` | 再送制御、帯域推定系の設定 |
+| フィールド             | 説明                                            |
+| ---------------------- | ----------------------------------------------- |
+| `codecs`               | SFU が扱えるコーデック一覧（音声ならほぼ opus） |
+| `headerExtensions`     | RTP ヘッダー拡張設定                            |
+| `fec` / `rtcpFeedback` | 再送制御、帯域推定系の設定                      |
 
 → **クライアントはこのデータを mediasoup-client にそのまま渡すだけ** です。
 
@@ -142,12 +140,12 @@ fastify.get("/rtc/capabilities", async (request, reply) => {
   if (!router) {
     return reply.status(500).send({
       error: "INTERNAL_ERROR",
-      message: "Router is not initialized."
+      message: "Router is not initialized.",
     });
   }
 
   return reply.send({
-    rtpCapabilities: router.rtpCapabilities
+    rtpCapabilities: router.rtpCapabilities,
   });
 });
 ```
@@ -162,7 +160,7 @@ import { Device } from "mediasoup-client";
 const device = new Device();
 
 const res = await fetch("/rtc/capabilities", {
-  headers: { Authorization: `Bearer ${token}` }
+  headers: { Authorization: `Bearer ${token}` },
 });
 
 const { rtpCapabilities } = await res.json();
@@ -177,32 +175,27 @@ await device.load({ routerRtpCapabilities: rtpCapabilities });
 
 # ■ この API が必要な理由（P2P との差分）
 
-P2Pでは：
+P2P では：
 
 - クライアント間で SDP を投げ合うことで、
-    
-    お互いの RTP 受付能力を自動で交換していた。
-    
+  お互いの RTP 受付能力を自動で交換していた。
 
-SFUでは：
+SFU では：
 
 - クライアントは **Router（サーバー）と通信する**
 - そのため、Router の能力（rtpCapabilities）を事前に取得して
-    
-    `device.load()` の中で **SDPを内部生成**する必要がある。
-    
+  `device.load()` の中で **SDP を内部生成**する必要がある。
 
 つまり：
 
-> P2Pの WS-C05（signal）で交換していた処理の一部を、このAPIが担当する。
-> 
+> P2P の WS-C05（signal）で交換していた処理の一部を、この API が担当する。
 
 ---
 
 # ■ まとめ
 
-| 項目 | P2P | SFU（mediasoup） |
-| --- | --- | --- |
-| RTP能力交換 | クライアント同士のSDP交換 | **/rtc/capabilities でサーバー（Router）から取得** |
-| 必要か？ | 不要 | **必須** |
-| 使用箇所 | なし | **device.load() 前に必ず呼ぶ** |
+| 項目         | P2P                         | SFU（mediasoup）                                   |
+| ------------ | --------------------------- | -------------------------------------------------- |
+| RTP 能力交換 | クライアント同士の SDP 交換 | **/rtc/capabilities でサーバー（Router）から取得** |
+| 必要か？     | 不要                        | **必須**                                           |
+| 使用箇所     | なし                        | **device.load() 前に必ず呼ぶ**                     |

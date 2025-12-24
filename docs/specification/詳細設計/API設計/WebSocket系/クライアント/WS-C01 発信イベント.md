@@ -6,13 +6,13 @@
 
 # 1. イベント概要
 
-| 項目 | 内容 |
-| --- | --- |
-| ID | WS-C01 |
-| type | `call_request` |
-| direction | Client → Server（User → API Gateway） |
-| 対象 | User（発信側） |
-| 目的 | おともはんへ「着信イベント WS-S01」を発生させるための発信要求 |
+| 項目      | 内容                                                          |
+| --------- | ------------------------------------------------------------- |
+| ID        | WS-C01                                                        |
+| type      | `call_request`                                                |
+| direction | Client → Server（User → API Gateway）                         |
+| 対象      | User（発信側）                                                |
+| 目的      | おともはんへ「着信イベント WS-S01」を発生させるための発信要求 |
 
 ---
 
@@ -28,11 +28,11 @@
 
 ### フィールド仕様
 
-| フィールド | 型 | 必須 | 説明 |
-| --- | --- | --- | --- |
-| type | string | ○ | "call_request" 固定 |
-| toUserId | string | ○ | 呼び出すおともはんのユーザーID |
-| callId | string | ○ | クライアント生成 or サーバ生成の UUID |
+| フィールド | 型     | 必須 | 説明                                  |
+| ---------- | ------ | ---- | ------------------------------------- |
+| type       | string | ○    | "call_request" 固定                   |
+| toUserId   | string | ○    | 呼び出すおともはんのユーザー ID       |
+| callId     | string | ○    | クライアント生成 or サーバ生成の UUID |
 
 ※ callId は **クライアント側生成でよい**（WebRTC はオーナー側が ID を作るのが自然）。
 
@@ -46,7 +46,7 @@ WS 接続時に token が無い場合 → 接続拒否。
 
 ### 2. toUserId が存在するか確認
 
-DBクエリ：
+DB クエリ：
 
 ```
 SELECT * FROM users WHERE id = $1 AND role = 'otomo';
@@ -67,11 +67,11 @@ SELECT * FROM users WHERE id = $1 AND role = 'otomo';
 SELECT status FROM otomo_status WHERE user_id = $1;
 ```
 
-| status | 挙動 |
-| --- | --- |
-| online | 発信可能 |
-| busy | 呼び出し不可 → call_rejected をユーザーに返す |
-| offline | 呼び出し不可 |
+| status  | 挙動                                          |
+| ------- | --------------------------------------------- |
+| online  | 発信可能                                      |
+| busy    | 呼び出し不可 → call_rejected をユーザーに返す |
+| offline | 呼び出し不可                                  |
 
 ### 4. call の重複チェック
 
@@ -81,7 +81,7 @@ User が別の call に参加中なら reject。
 
 # 4. サーバ内部処理フロー（重要）
 
-WS-C01 の本質は「着信制御 + callレコード作成 + おともはんへ通知」です。
+WS-C01 の本質は「着信制御 + call レコード作成 + おともはんへ通知」です。
 
 ---
 
@@ -195,10 +195,12 @@ ws.on("message", async (raw) => {
     // otomo が online かチェック
     const otomo = await db.getOtomoStatus(toUserId);
     if (!otomo || otomo.status !== "online") {
-      return ws.send(JSON.stringify({
-        type: "call_rejected",
-        reason: "busy"
-      }));
+      return ws.send(
+        JSON.stringify({
+          type: "call_rejected",
+          reason: "busy",
+        }),
+      );
     }
 
     // callレコード作成
@@ -206,26 +208,30 @@ ws.on("message", async (raw) => {
       id: callId,
       userId: fromUserId,
       otomoId: toUserId,
-      status: "requesting"
+      status: "requesting",
     });
 
     // 発信側にACK
-    ws.send(JSON.stringify({
-      type: "call_request_ack",
-      callId,
-      status: "requesting"
-    }));
+    ws.send(
+      JSON.stringify({
+        type: "call_request_ack",
+        callId,
+        status: "requesting",
+      }),
+    );
 
     // おともはんへ着信通知
     const otomoSocket = wsManager.getSocket(toUserId);
     if (otomoSocket) {
-      otomoSocket.send(JSON.stringify({
-        type: "incoming_call",
-        callId,
-        fromUserId,
-        fromUserName: ws.user.name,
-        fromUserAvatar: ws.user.avatarUrl
-      }));
+      otomoSocket.send(
+        JSON.stringify({
+          type: "incoming_call",
+          callId,
+          fromUserId,
+          fromUserName: ws.user.name,
+          fromUserAvatar: ws.user.avatarUrl,
+        }),
+      );
     }
   }
 });
@@ -251,14 +257,14 @@ ws.on("message", async (raw) => {
 
 # 9. エラー一覧（WS-C01）
 
-| error | 原因 |
-| --- | --- |
-| OTOMO_NOT_FOUND | toUserId が存在しない |
-| OTOMO_OFFLINE | offline / break 中 |
-| OTOMO_BUSY | 別の通話中 |
-| INVALID_CALL_REQUEST | パラメータ不正 |
-| UNAUTHORIZED | JWT 無効 |
-| SERVER_ERROR | 内部エラー |
+| error                | 原因                  |
+| -------------------- | --------------------- |
+| OTOMO_NOT_FOUND      | toUserId が存在しない |
+| OTOMO_OFFLINE        | offline / break 中    |
+| OTOMO_BUSY           | 別の通話中            |
+| INVALID_CALL_REQUEST | パラメータ不正        |
+| UNAUTHORIZED         | JWT 無効              |
+| SERVER_ERROR         | 内部エラー            |
 
 ---
 

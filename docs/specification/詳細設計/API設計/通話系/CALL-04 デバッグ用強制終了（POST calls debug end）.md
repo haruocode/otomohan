@@ -6,15 +6,15 @@
 
 # 1. API 概要
 
-| 項目 | 内容 |
-| --- | --- |
-| API ID | **CALL-04** |
-| メソッド | POST |
-| パス | `/calls/debug/end` |
-| 認証 | 必須（JWT） |
-| 想定利用者 | ローカル開発・テスター・管理者 |
-| 本番環境 | **必ず無効化または管理者限定** |
-| 目的 | 通話状態を強制的に「終了」へ遷移させる |
+| 項目       | 内容                                   |
+| ---------- | -------------------------------------- |
+| API ID     | **CALL-04**                            |
+| メソッド   | POST                                   |
+| パス       | `/calls/debug/end`                     |
+| 認証       | 必須（JWT）                            |
+| 想定利用者 | ローカル開発・テスター・管理者         |
+| 本番環境   | **必ず無効化または管理者限定**         |
+| 目的       | 通話状態を強制的に「終了」へ遷移させる |
 
 ---
 
@@ -24,9 +24,9 @@
 - TURN / WebRTC のバグで **通話が宙ぶらりん**
 - フロント未完成で **終了ボタンが作れていない**
 - バックエンドの動作検証
-    - billing_units が正しく集計されるか
-    - WS-S07(call_end) が正しく飛ぶか
-    - Otomo status が online に戻るか
+  - billing_units が正しく集計されるか
+  - WS-S07(call_end) が正しく飛ぶか
+  - Otomo status が online に戻るか
 
 開発中は非常に役立つ、重要なユーティリティ機能。
 
@@ -133,7 +133,7 @@ WHERE user_id = (SELECT otomo_id FROM calls WHERE id = $callId);
 }
 ```
 
-### 当事者ではない（開発環境ならチェックしなくてもOKだが推奨）
+### 当事者ではない（開発環境ならチェックしなくても OK だが推奨）
 
 ```json
 {
@@ -147,12 +147,12 @@ WHERE user_id = (SELECT otomo_id FROM calls WHERE id = $callId);
 # 7. Fastify + TypeScript 擬似実装
 
 ```tsx
-app.post('/calls/debug/end', async (req, reply) => {
+app.post("/calls/debug/end", async (req, reply) => {
   if (process.env.NODE_ENV === "production") {
     return reply.code(403).send({
       status: "error",
       error: "NOT_ALLOWED",
-      message: "This endpoint is disabled in production."
+      message: "This endpoint is disabled in production.",
     });
   }
 
@@ -163,13 +163,13 @@ app.post('/calls/debug/end', async (req, reply) => {
   const callRow = await db.query(
     `SELECT id, user_id, otomo_id, started_at
      FROM calls WHERE id = $1`,
-    [callId]
+    [callId],
   );
 
   if (callRow.rowCount === 0) {
     return reply.code(404).send({
       status: "error",
-      error: "CALL_NOT_FOUND"
+      error: "CALL_NOT_FOUND",
     });
   }
 
@@ -179,7 +179,7 @@ app.post('/calls/debug/end', async (req, reply) => {
   if (call.user_id !== userId && call.otomo_id !== userId) {
     return reply.code(403).send({
       status: "error",
-      error: "FORBIDDEN"
+      error: "FORBIDDEN",
     });
   }
 
@@ -195,7 +195,7 @@ app.post('/calls/debug/end', async (req, reply) => {
          ),
          updated_at = NOW()
      WHERE id = $1`,
-    [callId]
+    [callId],
   );
 
   // ★ otomo_status の復帰
@@ -203,25 +203,31 @@ app.post('/calls/debug/end', async (req, reply) => {
     `UPDATE otomo_status
      SET status='online'
      WHERE user_id=$1`,
-    [call.otomo_id]
+    [call.otomo_id],
   );
 
   // ★ WS 通知
-  wsManager.sendTo(call.user_id, JSON.stringify({
-    type: "call_end",
-    callId,
-    reason: "forced_debug_end"
-  }));
-  wsManager.sendTo(call.otomo_id, JSON.stringify({
-    type: "call_end",
-    callId,
-    reason: "forced_debug_end"
-  }));
+  wsManager.sendTo(
+    call.user_id,
+    JSON.stringify({
+      type: "call_end",
+      callId,
+      reason: "forced_debug_end",
+    }),
+  );
+  wsManager.sendTo(
+    call.otomo_id,
+    JSON.stringify({
+      type: "call_end",
+      callId,
+      reason: "forced_debug_end",
+    }),
+  );
 
   return reply.send({
     status: "success",
     callId,
-    ended: true
+    ended: true,
   });
 });
 ```

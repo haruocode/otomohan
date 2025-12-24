@@ -15,9 +15,9 @@
 1. ユーザー → おともはんへ通話リクエスト （WS-C02）
 2. おともはんが通知を受ける（WS-S02）
 3. おともはんアプリが「拒否」を選択
-    
-    → サーバーへ `WS-C03 call_reject` を送信
-    
+
+   → サーバーへ `WS-C03 call_reject` を送信
+
 4. サーバーがユーザーへ `WS-S03 call_rejected` を送信
 5. フロント UI は通話リクエストモーダルを閉じ「拒否されました」表示
 
@@ -55,24 +55,24 @@ Server → User
 
 # フィールド説明
 
-| フィールド | 型 | 説明 |
-| --- | --- | --- |
-| `type` | string | 固定 `"call_rejected"` |
-| `payload.callId` | string | 通話リクエストID |
-| `payload.otomoId` | string | 拒否したおともはんのID |
-| `payload.reason` | string | 拒否理由（任意） |
-| `payload.timestamp` | string | サーバー側の処理時刻 |
+| フィールド          | 型     | 説明                    |
+| ------------------- | ------ | ----------------------- |
+| `type`              | string | 固定 `"call_rejected"`  |
+| `payload.callId`    | string | 通話リクエスト ID       |
+| `payload.otomoId`   | string | 拒否したおともはんの ID |
+| `payload.reason`    | string | 拒否理由（任意）        |
+| `payload.timestamp` | string | サーバー側の処理時刻    |
 
 ---
 
 # reason の例（任意）
 
-| reason | 説明 |
-| --- | --- |
-| `"busy"` | 他の通話中 |
-| `"manual_reject"` | おともはんが手動で拒否 |
-| `"no_response"` | 一定時間応答なし |
-| `"offline"` | おともはんがオフライン化 |
+| reason            | 説明                     |
+| ----------------- | ------------------------ |
+| `"busy"`          | 他の通話中               |
+| `"manual_reject"` | おともはんが手動で拒否   |
+| `"no_response"`   | 一定時間応答なし         |
+| `"offline"`       | おともはんがオフライン化 |
 
 ※フロント表示用に使用。
 
@@ -100,14 +100,14 @@ ws.on("call_reject", async (data, otomoClient) => {
       callId,
       otomoId: call.otomoId,
       reason: data.reason || "manual_reject",
-      timestamp: new Date().toISOString()
-    }
+      timestamp: new Date().toISOString(),
+    },
   });
 
   // コール状態を更新
   await db.call.update({
     where: { callId },
-    data: { status: "rejected" }
+    data: { status: "rejected" },
   });
 });
 ```

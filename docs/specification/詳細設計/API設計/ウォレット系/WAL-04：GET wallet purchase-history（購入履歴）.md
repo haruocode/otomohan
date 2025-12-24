@@ -39,11 +39,11 @@ Authorization: Bearer <token>
 
 # クエリパラメータ（任意）
 
-| パラメータ | 型 | 初期値 | 説明 |
-| --- | --- | --- | --- |
-| `limit` | number | 20 | 取得件数 |
-| `offset` | number | 0 | ページング用 |
-| `sort` | `"newest" | "oldest"` | `"newest"` |
+| パラメータ | 型        | 初期値    | 説明         |
+| ---------- | --------- | --------- | ------------ |
+| `limit`    | number    | 20        | 取得件数     |
+| `offset`   | number    | 0         | ページング用 |
+| `sort`     | `"newest" | "oldest"` | `"newest"`   |
 
 ---
 
@@ -73,16 +73,16 @@ Authorization: Bearer <token>
 
 # 各フィールド説明
 
-| フィールド | 説明 |
-| --- | --- |
-| `historyId` | 購入履歴ID（wallet_history の PK） |
-| `planId` | 購入したプランのID |
-| `planTitle` | プラン名（chargePlan テーブルから取得） |
-| `amount` | 支払金額 |
-| `points` | 通常ポイント |
-| `bonusPoints` | ボーナス付与ポイント |
-| `paymentId` | 決済サービス側の決済ID |
-| `createdAt` | 購入日（付与日） |
+| フィールド    | 説明                                    |
+| ------------- | --------------------------------------- |
+| `historyId`   | 購入履歴 ID（wallet_history の PK）     |
+| `planId`      | 購入したプランの ID                     |
+| `planTitle`   | プラン名（chargePlan テーブルから取得） |
+| `amount`      | 支払金額                                |
+| `points`      | 通常ポイント                            |
+| `bonusPoints` | ボーナス付与ポイント                    |
+| `paymentId`   | 決済サービス側の決済 ID                 |
+| `createdAt`   | 購入日（付与日）                        |
 
 ---
 
@@ -110,7 +110,7 @@ fastify.get("/wallet/purchase-history", async (request, reply) => {
   const {
     limit = 20,
     offset = 0,
-    sort = "newest"
+    sort = "newest",
   } = request.query as {
     limit?: number;
     offset?: number;
@@ -118,9 +118,7 @@ fastify.get("/wallet/purchase-history", async (request, reply) => {
   };
 
   const sortOption =
-    sort === "oldest"
-      ? { createdAt: "asc" }
-      : { createdAt: "desc" };
+    sort === "oldest" ? { createdAt: "asc" } : { createdAt: "desc" };
 
   const items = await fastify.db.walletHistory.findMany({
     where: { userId },
@@ -128,16 +126,16 @@ fastify.get("/wallet/purchase-history", async (request, reply) => {
     skip: offset,
     orderBy: sortOption,
     include: {
-      plan: true // plan.title を取得するため
-    }
+      plan: true, // plan.title を取得するため
+    },
   });
 
   const total = await fastify.db.walletHistory.count({
-    where: { userId }
+    where: { userId },
   });
 
   return reply.send({
-    items: items.map(h => ({
+    items: items.map((h) => ({
       historyId: h.historyId,
       planId: h.planId,
       planTitle: h.plan.title,
@@ -145,9 +143,9 @@ fastify.get("/wallet/purchase-history", async (request, reply) => {
       points: h.points,
       bonusPoints: h.bonusPoints,
       paymentId: h.paymentId,
-      createdAt: h.createdAt
+      createdAt: h.createdAt,
     })),
-    total
+    total,
   });
 });
 ```
@@ -156,24 +154,24 @@ fastify.get("/wallet/purchase-history", async (request, reply) => {
 
 # WalletHistory テーブル（再掲）
 
-| カラム | 説明 |
-| --- | --- |
-| historyId | PK |
-| userId | ユーザーID |
-| planId | プランID |
-| paymentId | 決済ID（ユニーク） |
-| amount | 金額 |
-| points | 通常ポイント |
-| bonusPoints | ボーナス |
-| createdAt | 購入日時 |
+| カラム      | 説明                |
+| ----------- | ------------------- |
+| historyId   | PK                  |
+| userId      | ユーザー ID         |
+| planId      | プラン ID           |
+| paymentId   | 決済 ID（ユニーク） |
+| amount      | 金額                |
+| points      | 通常ポイント        |
+| bonusPoints | ボーナス            |
+| createdAt   | 購入日時            |
 
 ---
 
 # WAL 系 API 一覧（ここまでの進捗）
 
-| コード | API | 内容 |
-| --- | --- | --- |
-| WAL-01 | GET /wallet/balance | 残ポイント取得 |
-| WAL-02 | GET /wallet/plans | チャージプラン一覧 |
-| WAL-03 | POST /wallet/charge | 購入処理 |
-| WAL-04 | GET /wallet/purchase-history | チャージ履歴取得 |
+| コード | API                          | 内容               |
+| ------ | ---------------------------- | ------------------ |
+| WAL-01 | GET /wallet/balance          | 残ポイント取得     |
+| WAL-02 | GET /wallet/plans            | チャージプラン一覧 |
+| WAL-03 | POST /wallet/charge          | 購入処理           |
+| WAL-04 | GET /wallet/purchase-history | チャージ履歴取得   |

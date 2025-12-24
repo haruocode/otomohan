@@ -1,20 +1,20 @@
-# WS-S04：call_connected（RTP到達ベースの通話開始通知）
+# WS-S04：call_connected（RTP 到達ベースの通話開始通知）
 
-これは **P2P版の「自己申告による接続完了」** を捨てて、**SFU（mediasoup）が RTP パケットの到達を検知した瞬間を “正しい通話開始” とする**という、商用通話サービスに必須の安全な方式です。
+これは **P2P 版の「自己申告による接続完了」** を捨てて、**SFU（mediasoup）が RTP パケットの到達を検知した瞬間を “正しい通話開始” とする**という、商用通話サービスに必須の安全な方式です。
 
 ---
 
-# 🎯 目的（SFU版 call_connected の本質）
+# 🎯 目的（SFU 版 call_connected の本質）
 
 - 通話が「本当に」開始された瞬間だけを通知する
-- **P2Pの“自己申告”ではなく、運営サーバーが確実に把握する**
+- **P2P の“自己申告”ではなく、運営サーバーが確実に把握する**
 - ここから **毎分課金のタイマーをスタート** できる
 - 不正対策（ユーザー側の偽装）を完全に防げる
 - 録音・ログ管理・通話解析の基点としても利用できる
 
 ---
 
-# SFU版 WS-S04 call_connected のイベント仕様
+# SFU 版 WS-S04 call_connected のイベント仕様
 
 ---
 
@@ -48,19 +48,19 @@ Server → Otomo
 
 # ■ フィールド説明
 
-| フィールド | 説明 |
-| --- | --- |
-| `callId` | 通話ID |
-| `userId` | 一方のID |
-| `otomoId` | もう一方のID |
-| `connectedAt` | SFU が「音声RTPが届いた」と判定した時刻 |
-| `method` | `"sfu_rtp_detected"` 固定（SFU版であることが明確になる） |
+| フィールド    | 説明                                                      |
+| ------------- | --------------------------------------------------------- |
+| `callId`      | 通話 ID                                                   |
+| `userId`      | 一方の ID                                                 |
+| `otomoId`     | もう一方の ID                                             |
+| `connectedAt` | SFU が「音声 RTP が届いた」と判定した時刻                 |
+| `method`      | `"sfu_rtp_detected"` 固定（SFU 版であることが明確になる） |
 
 ---
 
-# ■ 発火条件（SFUによる確定ロジック）
+# ■ 発火条件（SFU による確定ロジック）
 
-SFUで Producer が active になり、**最初の RTP パケットを受信した瞬間** に発火。
+SFU で Producer が active になり、**最初の RTP パケットを受信した瞬間** に発火。
 
 流れは以下の通り：
 
@@ -74,15 +74,13 @@ SFUで Producer が active になり、**最初の RTP パケットを受信し�
 - “producer.on('trace')” または
 - “producer.on('score')” または
 - “transport.on('rtcp')”
-    
-    で RTP の到達を検知できる
-    
+  で RTP の到達を検知できる
 
 ### 3. SFU が内部的に以下を行う
 
 - その callId の状態を “connected” に更新
 - connectedAt を記録
-- RTPが死ぬまでは「通話中」として扱える
+- RTP が死ぬまでは「通話中」として扱える
 
 ### 4. WebSocket で call_connected を両者に送信
 
@@ -93,7 +91,7 @@ SFUで Producer が active になり、**最初の RTP パケットを受信し�
 # ■ サーバー実装例（mediasoup + WebSocket）
 
 ```tsx
-producer.on("trace", trace => {
+producer.on("trace", (trace) => {
   if (trace.type === "rtp") {
     const now = new Date().toISOString();
 
@@ -108,8 +106,8 @@ producer.on("trace", trace => {
         userId: room.userId,
         otomoId: room.otomoId,
         connectedAt: now,
-        method: "sfu_rtp_detected"
-      }
+        method: "sfu_rtp_detected",
+      },
     });
 
     wsServer.sendTo(room.userId, msg);
@@ -122,7 +120,7 @@ producer.on("trace", trace => {
 
 # 🚀 **ここが最大の重要ポイント**
 
-## P2P時の欠点
+## P2P 時の欠点
 
 - クライアントが「接続しました」と言うだけ
 - 実際に音声が流れているかは不明
@@ -131,10 +129,10 @@ producer.on("trace", trace => {
 - 運営側が状態を把握できない
 - 録音やログとの整合が取れない
 
-## SFU時のメリット
+## SFU 時のメリット
 
 - **音声の “実際の流れ” を SFU が直接検知できる**
-- 通話開始の通知が100%正確
+- 通話開始の通知が 100%正確
 - 課金の開始が完全に安全
 - 不正対策に極めて強い
 - 監査ログ・録音などと完全同期
@@ -159,23 +157,23 @@ ws.onmessage = (event) => {
 };
 ```
 
-※ P2P版と違い、クライアントは何も送信しない
+※ P2P 版と違い、クライアントは何も送信しない
 
 （“webrtc_connected” の自己申告は廃止）
 
 ---
 
-# ■ SFU版 call_connected のフロー（全体）
+# ■ SFU 版 call_connected のフロー（全体）
 
-以下は SFU版の正しい流れ：
+以下は SFU 版の正しい流れ：
 
 1. call_request（WS）
 2. incoming_call（WS）
 3. call_accept（WS）
 4. call_accepted（WS）
-5. **RTC-01～06（Producer/Consumer作成）**
-6. SFUが最初のRTPを受信
-7. **WS-S04 call_connected を SFU が自動送信 ← ここがP2Pと違う**
+5. **RTC-01 ～ 06（Producer/Consumer 作成）**
+6. SFU が最初の RTP を受信
+7. **WS-S04 call_connected を SFU が自動送信 ← ここが P2P と違う**
 8. 課金タイマー開始（サーバー）
 9. WS-S05 tick（毎分通知）
 
@@ -193,9 +191,9 @@ Whereby
 
 音声通話アプリ全般
 
-ライブ配信SFU系サービス
+ライブ配信 SFU 系サービス
 
-すべて **“RTP到達” を通話開始の確定ポイントとしている。**
+すべて **“RTP 到達” を通話開始の確定ポイントとしている。**
 
 理由は：
 
@@ -209,9 +207,9 @@ Whereby
 
 # ■ まとめ
 
-| 項目 | P2P版 | SFU版 |
-| --- | --- | --- |
-| 接続確立方法 | クライアント自己申告 | **SFUがRTPパケット到達を検知** |
-| 信頼性 | 低い | **最高に高い（100%確実）** |
-| 課金開始 | 危険（誤課金の可能性） | **安全（100%正しい開始点）** |
-| 監視性 | 不可能 | **通話状態を運営側が完全把握可能** |
+| 項目         | P2P 版                 | SFU 版                             |
+| ------------ | ---------------------- | ---------------------------------- |
+| 接続確立方法 | クライアント自己申告   | **SFU が RTP パケット到達を検知**  |
+| 信頼性       | 低い                   | **最高に高い（100%確実）**         |
+| 課金開始     | 危険（誤課金の可能性） | **安全（100%正しい開始点）**       |
+| 監視性       | 不可能                 | **通話状態を運営側が完全把握可能** |

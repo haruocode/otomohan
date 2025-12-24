@@ -39,14 +39,14 @@ Authorization: Bearer <token>
 
 ### **クエリパラメータ（任意）**
 
-| パラメータ | 型 | 例 | 説明 |
-| --- | --- | --- | --- |
-| `isOnline` | boolean | `true` | オンライン中のおともはんのみ取得 |
-| `genre` | string | `healing` | 得意ジャンル（例：雑談、愚痴聞き、癒し系） |
-| `minAge` | number | `20` | 年齢下限 |
-| `maxAge` | number | `40` | 年齢上限 |
-| `limit` | number | `20` | 取得件数 |
-| `offset` | number | `0` | ページング |
+| パラメータ | 型      | 例        | 説明                                       |
+| ---------- | ------- | --------- | ------------------------------------------ |
+| `isOnline` | boolean | `true`    | オンライン中のおともはんのみ取得           |
+| `genre`    | string  | `healing` | 得意ジャンル（例：雑談、愚痴聞き、癒し系） |
+| `minAge`   | number  | `20`      | 年齢下限                                   |
+| `maxAge`   | number  | `40`      | 年齢上限                                   |
+| `limit`    | number  | `20`      | 取得件数                                   |
+| `offset`   | number  | `0`       | ページング                                 |
 
 （※将来的に検索 UI を追加しやすいように設置だけしておく）
 
@@ -79,20 +79,20 @@ Authorization: Bearer <token>
 
 ### 各フィールドの意味
 
-| 項目 | 型 | 説明 |
-| --- | --- | --- |
-| `otomoId` | string | おともはんID |
-| `displayName` | string | 表示名 |
-| `profileImageUrl` | string | アイコン画像URL |
-| `age` | number | 年齢 |
-| `gender` | `"male" | "female" |
-| `genres` | string[] | 得意ジャンル |
-| `isOnline` | boolean | オンライン状態 |
-| `isAvailable` | boolean | 通話可能か（=他のユーザーと通話中でない） |
-| `pricePerMinute` | number | 1分あたり料金 |
-| `rating` | number | 平均評価 |
-| `reviewCount` | number | レビュー件数 |
-| `total` | number | 一覧全体の件数（ページング用） |
+| 項目              | 型       | 説明                                      |
+| ----------------- | -------- | ----------------------------------------- |
+| `otomoId`         | string   | おともはん ID                             |
+| `displayName`     | string   | 表示名                                    |
+| `profileImageUrl` | string   | アイコン画像 URL                          |
+| `age`             | number   | 年齢                                      |
+| `gender`          | `"male"  | "female"                                  |
+| `genres`          | string[] | 得意ジャンル                              |
+| `isOnline`        | boolean  | オンライン状態                            |
+| `isAvailable`     | boolean  | 通話可能か（=他のユーザーと通話中でない） |
+| `pricePerMinute`  | number   | 1 分あたり料金                            |
+| `rating`          | number   | 平均評価                                  |
+| `reviewCount`     | number   | レビュー件数                              |
+| `total`           | number   | 一覧全体の件数（ページング用）            |
 
 ---
 
@@ -149,7 +149,7 @@ export async function registerOtomoRoutes(fastify: FastifyInstance) {
       minAge,
       maxAge,
       limit = 20,
-      offset = 0
+      offset = 0,
     } = request.query as {
       isOnline?: boolean;
       genre?: string;
@@ -165,11 +165,11 @@ export async function registerOtomoRoutes(fastify: FastifyInstance) {
         genres: genre ? { has: genre } : undefined,
         age: {
           gte: minAge ?? undefined,
-          lte: maxAge ?? undefined
-        }
+          lte: maxAge ?? undefined,
+        },
       },
       take: limit,
-      skip: offset
+      skip: offset,
     });
 
     const total = await fastify.db.otomo.count();

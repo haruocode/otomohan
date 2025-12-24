@@ -1,18 +1,19 @@
 # AUTH-03 ログアウト（POST /auth/logout）
 
-Web アプリやネイティブアプリでは「ログアウト」は比較的シンプルに見えますが、リアルタイムサービス（WebSocket 通話サービス）では**セッション終了＋WebSocket 切断＋ステータス更新（otomo の場合）**など複数処理が絡むため、しっかり定義しておく必要があります。
+Web アプリやネイティブアプリでは「ログアウト」は比較的シンプルに見えますが、リアルタイムサービス（WebSocket 通話サービス）では**セッション終了＋ WebSocket 切断＋ステータス更新（otomo の場合）**など複数処理が絡むため、しっかり定義しておく必要があります。
 
 ---
 
 # 1. API 概要
 
-| 項目 | 内容 |
-| --- | --- |
-| API ID | **AUTH-03** |
-| メソッド | POST |
-| エンドポイント | `/auth/logout` |
-| 認証 | 必須（JWT） |
-| 目的 | ・JWT セッションの無効化（サーバ側管理の場合）
+| 項目           | 内容                                           |
+| -------------- | ---------------------------------------------- |
+| API ID         | **AUTH-03**                                    |
+| メソッド       | POST                                           |
+| エンドポイント | `/auth/logout`                                 |
+| 認証           | 必須（JWT）                                    |
+| 目的           | ・JWT セッションの無効化（サーバ側管理の場合） |
+
 ・クライアント側のアクセストークン削除
 ・WebSocket 切断の誘導
 ・Otomo の場合はステータスを `offline` に更新 |
@@ -69,7 +70,7 @@ JWT は stateless に扱い、ログアウト時に**クライアント側の to
 
 ---
 
-## ■ Otomo（おともはん）の場合 ← *重要*
+## ■ Otomo（おともはん）の場合 ← _重要_
 
 ログアウトは「待機終了」扱いとなるため：
 
@@ -100,10 +101,10 @@ WHERE user_id = $userId;
 
 # 6. エラーレスポンス
 
-| 状況 | ステータス | エラーコード | 説明 |
-| --- | --- | --- | --- |
-| JWT 無効 | 401 | UNAUTHORIZED | token が無効 |
-| DB エラー | 500 | DB_ERROR | ※Otomo 状態更新時 |
+| 状況      | ステータス | エラーコード | 説明              |
+| --------- | ---------- | ------------ | ----------------- |
+| JWT 無効  | 401        | UNAUTHORIZED | token が無効      |
+| DB エラー | 500        | DB_ERROR     | ※Otomo 状態更新時 |
 
 ---
 
@@ -122,25 +123,27 @@ WHERE user_id = $userId;
 # 7. Fastify + TypeScript 擬似実装
 
 ```tsx
-app.post('/auth/logout', async (req, reply) => {
+app.post("/auth/logout", async (req, reply) => {
   const userId = req.user.userId;
   const role = req.user.role; // 'user' | 'otomo'
 
-  if (role === 'otomo') {
+  if (role === "otomo") {
     await db.query(
       `UPDATE otomo_status SET status = 'offline' WHERE user_id = $1`,
-      [userId]
+      [userId],
     );
 
-    wsManager.broadcastToAll(JSON.stringify({
-      type: "otomo_status_update",
-      userId,
-      status: "offline",
-      timestamp: Math.floor(Date.now() / 1000)
-    }));
+    wsManager.broadcastToAll(
+      JSON.stringify({
+        type: "otomo_status_update",
+        userId,
+        status: "offline",
+        timestamp: Math.floor(Date.now() / 1000),
+      }),
+    );
   }
 
-  return reply.send({ status: 'success' });
+  return reply.send({ status: "success" });
 });
 ```
 

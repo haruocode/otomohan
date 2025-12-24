@@ -8,13 +8,14 @@
 
 # 1. イベント概要
 
-| 項目 | 内容 |
-| --- | --- |
-| ID | **WS-S08** |
-| type | `otomo_status_update`  |
-| direction | **Server → 全ユーザー（User & Otomo）** |
-| 役割 | おともはんのステータス変化をリアルタイムに一覧へ反映する |
-| 発火タイミング | ・おともはんのログイン / ログアウト
+| 項目           | 内容                                                     |
+| -------------- | -------------------------------------------------------- |
+| ID             | **WS-S08**                                               |
+| type           | `otomo_status_update`                                    |
+| direction      | **Server → 全ユーザー（User & Otomo）**                  |
+| 役割           | おともはんのステータス変化をリアルタイムに一覧へ反映する |
+| 発火タイミング | ・おともはんのログイン / ログアウト                      |
+
 ・待機（online）/ 離席（break）更新
 ・通話開始時 busy へ
 ・通話終了後 online へ |
@@ -36,23 +37,23 @@
 
 # 3. フィールド仕様
 
-| フィールド | 型 | 必須 | 内容 |
-| --- | --- | --- | --- |
-| type | string | ○ | `"otomo_status_update"` 固定 |
-| userId | string | ○ | 対象おともはんの userId |
-| status | string | ○ | `"online" |
-| timestamp | number | ○ | 状態変更の発生時刻（UNIX秒） |
+| フィールド | 型     | 必須 | 内容                          |
+| ---------- | ------ | ---- | ----------------------------- |
+| type       | string | ○    | `"otomo_status_update"` 固定  |
+| userId     | string | ○    | 対象おともはんの userId       |
+| status     | string | ○    | `"online"                     |
+| timestamp  | number | ○    | 状態変更の発生時刻（UNIX 秒） |
 
 ---
 
 # 4. ステータスの種類（正規化）
 
-| 状態 | 説明 |
-| --- | --- |
-| `online` | 待機中で通話可能 |
-| `busy` | 通話中 |
+| 状態      | 説明                   |
+| --------- | ---------------------- |
+| `online`  | 待機中で通話可能       |
+| `busy`    | 通話中                 |
 | `offline` | 非ログイン or 強制終了 |
-| `break` | 一時離席（任意機能） |
+| `break`   | 一時離席（任意機能）   |
 
 ---
 
@@ -123,11 +124,11 @@ otomo[userId].status = status
 
 ### 表示更新例：
 
-| status | 表示例 |
-| --- | --- |
-| online | 緑のインジケータ |
-| busy | 赤の「通話中」バッジ |
-| break | 黄色の「離席中」バッジ |
+| status  | 表示例                   |
+| ------- | ------------------------ |
+| online  | 緑のインジケータ         |
+| busy    | 赤の「通話中」バッジ     |
+| break   | 黄色の「離席中」バッジ   |
 | offline | グレー表示・非アクティブ |
 
 ---
@@ -150,7 +151,7 @@ function broadcastOtomoStatus(userId: string, status: string) {
     type: "otomo_status_update",
     userId,
     status,
-    timestamp: Math.floor(Date.now() / 1000)
+    timestamp: Math.floor(Date.now() / 1000),
   });
 
   wsManager.broadcastToAll(message);

@@ -18,14 +18,14 @@ DB の avatar_url 更新
 
 # 1. API 概要
 
-| 項目 | 内容 |
-| --- | --- |
-| API ID | **USER-03** |
-| メソッド | PUT |
-| エンドポイント | `/user/avatar` |
-| 認証 | 必須（JWT） |
-| フォーマット | multipart/form-data |
-| 目的 | ユーザーのプロフィール画像の変更 |
+| 項目           | 内容                             |
+| -------------- | -------------------------------- |
+| API ID         | **USER-03**                      |
+| メソッド       | PUT                              |
+| エンドポイント | `/user/avatar`                   |
+| 認証           | 必須（JWT）                      |
+| フォーマット   | multipart/form-data              |
+| 目的           | ユーザーのプロフィール画像の変更 |
 
 ---
 
@@ -39,9 +39,9 @@ Content-Type: multipart/form-data
 
 ### フィールド
 
-| フィールド | 型 | 必須 | 説明 |
-| --- | --- | --- | --- |
-| avatar | file(binary) | ○ | 新しいプロフィール画像 |
+| フィールド | 型           | 必須 | 説明                   |
+| ---------- | ------------ | ---- | ---------------------- |
+| avatar     | file(binary) | ○    | 新しいプロフィール画像 |
 
 ---
 
@@ -56,11 +56,11 @@ Content-Type: multipart/form-data
 
 # 4. バリデーションルール
 
-| 項目 | 設定 |
-| --- | --- |
-| 最大ファイルサイズ | 5MB |
-| 画像の最小サイズ | 64×64以上 |
-| MIMEタイプ | image/jpeg / png / webp |
+| 項目               | 設定                    |
+| ------------------ | ----------------------- |
+| 最大ファイルサイズ | 5MB                     |
+| 画像の最小サイズ   | 64×64 以上              |
+| MIME タイプ        | image/jpeg / png / webp |
 
 ※ セキュリティ対策として ImageMagick / Sharp でリサイズ検証を行うのがよい。
 
@@ -74,7 +74,7 @@ Content-Type: multipart/form-data
 /avatars/{userId}/{randomFileName}.webp
 ```
 
-- ユーザーIDでディレクトリ分け
+- ユーザー ID でディレクトリ分け
 - ランダムファイル名にしてキャッシュ問題を回避
 - アップロード後 WebP に強制変換して軽量化（任意）
 
@@ -141,14 +141,14 @@ RETURNING id, avatar_url;
 import { randomUUID } from "crypto";
 import sharp from "sharp";
 
-app.put('/user/avatar', async (req, reply) => {
+app.put("/user/avatar", async (req, reply) => {
   const { userId } = req.user;
 
   const data = await req.file(); // fastify-multipart
   if (!data) {
     return reply.code(400).send({
       status: "error",
-      error: "NO_FILE"
+      error: "NO_FILE",
     });
   }
 
@@ -156,7 +156,7 @@ app.put('/user/avatar', async (req, reply) => {
   if (data.file.bytesRead > 5 * 1024 * 1024) {
     return reply.code(400).send({
       status: "error",
-      error: "FILE_TOO_LARGE"
+      error: "FILE_TOO_LARGE",
     });
   }
 
@@ -164,7 +164,7 @@ app.put('/user/avatar', async (req, reply) => {
   if (!["image/jpeg", "image/png", "image/webp"].includes(data.mimetype)) {
     return reply.code(400).send({
       status: "error",
-      error: "INVALID_FILE_TYPE"
+      error: "INVALID_FILE_TYPE",
     });
   }
 
@@ -179,7 +179,7 @@ app.put('/user/avatar', async (req, reply) => {
   const url = await storage.upload(
     `avatars/${userId}/${fileName}`,
     buffer,
-    "image/webp"
+    "image/webp",
   );
 
   const row = await db.query(
@@ -187,12 +187,12 @@ app.put('/user/avatar', async (req, reply) => {
      SET avatar_url = $1, updated_at = NOW()
      WHERE id = $2
      RETURNING id, avatar_url`,
-    [url, userId]
+    [url, userId],
   );
 
   reply.send({
     status: "success",
-    avatar: row.rows[0].avatar_url
+    avatar: row.rows[0].avatar_url,
   });
 });
 ```

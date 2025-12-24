@@ -1,6 +1,6 @@
 # CALL-03 課金明細取得（GET /calls/{callId}/billing）
 
-この API は **CALL-02（通話詳細）を細分化した専用エンドポイント** であり、U-09（通話詳細画面）内で **「1分ごとの課金ログだけ再取得したい」** 場面に使えます。
+この API は **CALL-02（通話詳細）を細分化した専用エンドポイント** であり、U-09（通話詳細画面）内で **「1 分ごとの課金ログだけ再取得したい」** 場面に使えます。
 
 特に以下で有効である。
 
@@ -12,14 +12,14 @@
 
 # 1. API 概要
 
-| 項目 | 内容 |
-| --- | --- |
-| API ID | **CALL-03** |
-| メソッド | GET |
-| パス | `/calls/{callId}/billing` |
-| 認証 | 必須（JWT） |
-| 対象ロール | User / Otomo |
-| 目的 | 1分ごとの billing_units（課金ログ）の取得 |
+| 項目       | 内容                                       |
+| ---------- | ------------------------------------------ |
+| API ID     | **CALL-03**                                |
+| メソッド   | GET                                        |
+| パス       | `/calls/{callId}/billing`                  |
+| 認証       | 必須（JWT）                                |
+| 対象ロール | User / Otomo                               |
+| 目的       | 1 分ごとの billing_units（課金ログ）の取得 |
 
 ---
 
@@ -53,11 +53,11 @@
 
 # 3. billingUnits のフィールド仕様
 
-| フィールド | 型 | 説明 |
-| --- | --- | --- |
-| minute | number | 0始まりの minute index |
-| chargedPoints | number | 1分ごとに課金されたポイント |
-| timestamp | string | 課金処理された時刻（WS-S05 時の created_at） |
+| フィールド    | 型     | 説明                                         |
+| ------------- | ------ | -------------------------------------------- |
+| minute        | number | 0 始まりの minute index                      |
+| chargedPoints | number | 1 分ごとに課金されたポイント                 |
+| timestamp     | string | 課金処理された時刻（WS-S05 時の created_at） |
 
 ---
 
@@ -76,13 +76,13 @@ WHERE id=$callId AND (user_id=$currentUser OR otomo_id=$currentUser)
 
 # 5. DB 構造（call_billing_units）
 
-| カラム | 型 | 説明 |
-| --- | --- | --- |
-| id | uuid | PK |
-| call_id | uuid | calls.id |
-| minute_index | int | 0-origin minute |
-| charged_points | int | 課金ポイント |
-| created_at | timestamp | 課金処理時刻 |
+| カラム         | 型        | 説明            |
+| -------------- | --------- | --------------- |
+| id             | uuid      | PK              |
+| call_id        | uuid      | calls.id        |
+| minute_index   | int       | 0-origin minute |
+| charged_points | int       | 課金ポイント    |
+| created_at     | timestamp | 課金処理時刻    |
 
 ---
 
@@ -141,7 +141,7 @@ ORDER BY minute_index ASC;
 # 9. Fastify + TypeScript 擬似実装
 
 ```tsx
-app.get('/calls/:callId/billing', async (req, reply) => {
+app.get("/calls/:callId/billing", async (req, reply) => {
   const { callId } = req.params;
   const { userId } = req.user;
 
@@ -150,13 +150,13 @@ app.get('/calls/:callId/billing', async (req, reply) => {
     `SELECT user_id, otomo_id
      FROM calls
      WHERE id = $1`,
-    [callId]
+    [callId],
   );
 
   if (callRow.rowCount === 0) {
     return reply.code(404).send({
       status: "error",
-      error: "CALL_NOT_FOUND"
+      error: "CALL_NOT_FOUND",
     });
   }
 
@@ -165,7 +165,7 @@ app.get('/calls/:callId/billing', async (req, reply) => {
   if (call.user_id !== userId && call.otomo_id !== userId) {
     return reply.code(403).send({
       status: "error",
-      error: "FORBIDDEN"
+      error: "FORBIDDEN",
     });
   }
 
@@ -175,17 +175,17 @@ app.get('/calls/:callId/billing', async (req, reply) => {
      FROM call_billing_units
      WHERE call_id = $1
      ORDER BY minute_index ASC`,
-    [callId]
+    [callId],
   );
 
   return reply.send({
     status: "success",
     callId,
-    billingUnits: rows.rows.map(r => ({
+    billingUnits: rows.rows.map((r) => ({
       minute: r.minute_index,
       chargedPoints: r.charged_points,
-      timestamp: r.created_at
-    }))
+      timestamp: r.created_at,
+    })),
   });
 });
 ```
@@ -203,11 +203,11 @@ app.get('/calls/:callId/billing', async (req, reply) => {
 
 # 11. CALL-01 / CALL-02 との違い
 
-| API | 内容 | 役割 |
-| --- | --- | --- |
-| CALL-01 | 通話履歴一覧 | 一覧表示（サマリー） |
-| CALL-02 | 通話詳細 | 全情報（withUser, totalUnits, totalPoints など） |
-| **CALL-03** | **billingUnitsのみ取得** | 課金の透明性・内訳確認 |
+| API         | 内容                      | 役割                                             |
+| ----------- | ------------------------- | ------------------------------------------------ |
+| CALL-01     | 通話履歴一覧              | 一覧表示（サマリー）                             |
+| CALL-02     | 通話詳細                  | 全情報（withUser, totalUnits, totalPoints など） |
+| **CALL-03** | **billingUnits のみ取得** | 課金の透明性・内訳確認                           |
 
 CALL-03 は軽量で更新頻度が高い場面で有用。
 
@@ -217,7 +217,7 @@ CALL-03 は軽量で更新頻度が高い場面で有用。
 
 CALL-03 は「課金透明性」を支える、顧客満足度の高い API である。
 
-- 1分ごとの課金ログを正確に取得
+- 1 分ごとの課金ログを正確に取得
 - User / Otomo 共通の詳細確認
 - 「いつ」「何ポイント」消費されたかを可視化
 - サポート（返金・調査対応）で必須

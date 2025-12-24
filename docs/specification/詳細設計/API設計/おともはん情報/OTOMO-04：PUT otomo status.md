@@ -18,9 +18,7 @@ PUT /otomo/status
 
 - 必須（Supabase Auth JWT）
 - かつ「おともはん本人」または「管理者」ロールのみ操作可能
-    
-    （例：`role = 'otomo' | 'admin'`）
-    
+  （例：`role = 'otomo' | 'admin'`）
 
 ### **リクエストボディ**
 
@@ -37,12 +35,12 @@ PUT /otomo/status
 
 # リクエストフィールド定義
 
-| フィールド | 型 | 必須 | 説明 |
-| --- | --- | --- | --- |
-| `otomoId` | string | ◯ | 更新対象のおともはんID |
-| `isOnline` | boolean | ◯ | オンライン状態 |
-| `isAvailable` | boolean | ◯ | 通話可能状態（true＝待機中、false＝通話中／非稼働） |
-| `statusMessage` | string | 任意 | 任意のステータスメッセージ（例：休憩中、待機中 etc） |
+| フィールド      | 型      | 必須 | 説明                                                  |
+| --------------- | ------- | ---- | ----------------------------------------------------- |
+| `otomoId`       | string  | ◯    | 更新対象のおともはん ID                               |
+| `isOnline`      | boolean | ◯    | オンライン状態                                        |
+| `isAvailable`   | boolean | ◯    | 通話可能状態（true ＝待機中、false ＝通話中／非稼働） |
+| `statusMessage` | string  | 任意 | 任意のステータスメッセージ（例：休憩中、待機中 etc）  |
 
 ---
 
@@ -108,13 +106,13 @@ fastify.put("/otomo/status", async (request, reply) => {
   // おともはんの存在チェック
   const otomo = await fastify.db.otomo.findUnique({
     where: { otomoId },
-    select: { otomoId: true, userId: true }
+    select: { otomoId: true, userId: true },
   });
 
   if (!otomo) {
     return reply.status(404).send({
       error: "OTOMO_NOT_FOUND",
-      message: "指定されたおともはんは存在しません。"
+      message: "指定されたおともはんは存在しません。",
     });
   }
 
@@ -122,7 +120,7 @@ fastify.put("/otomo/status", async (request, reply) => {
   if (!(role === "admin" || otomo.userId === userId)) {
     return reply.status(403).send({
       error: "FORBIDDEN",
-      message: "ステータスを更新する権限がありません。"
+      message: "ステータスを更新する権限がありません。",
     });
   }
 
@@ -133,8 +131,8 @@ fastify.put("/otomo/status", async (request, reply) => {
       isOnline,
       isAvailable,
       statusMessage,
-      updatedAt: new Date()
-    }
+      updatedAt: new Date(),
+    },
   });
 
   return reply.send(updated);
@@ -145,10 +143,10 @@ fastify.put("/otomo/status", async (request, reply) => {
 
 # ステータス更新の利用シーン例
 
-| シーン | isOnline | isAvailable |
-| --- | --- | --- |
-| アプリにログイン | true | true |
-| 電話中 | true | false |
-| 休憩 | false | false |
-| ログアウト | false | false |
-| 運営側が強制停止 | false | false |
+| シーン           | isOnline | isAvailable |
+| ---------------- | -------- | ----------- |
+| アプリにログイン | true     | true        |
+| 電話中           | true     | false       |
+| 休憩             | false    | false       |
+| ログアウト       | false    | false       |
+| 運営側が強制停止 | false    | false       |

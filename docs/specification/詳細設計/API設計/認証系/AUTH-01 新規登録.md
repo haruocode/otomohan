@@ -6,14 +6,14 @@
 
 # 1. API 概要
 
-| 項目 | 内容 |
-| --- | --- |
-| API ID | AUTH-01 |
-| メソッド | POST |
-| エンドポイント | `/auth/signup` |
-| 認証 | 不要（public） |
-| 主な目的 | ユーザーアカウントを作成し、JWT セッションを発行する |
-| 返却 | user 情報 + JWT（または session token） |
+| 項目           | 内容                                                 |
+| -------------- | ---------------------------------------------------- |
+| API ID         | AUTH-01                                              |
+| メソッド       | POST                                                 |
+| エンドポイント | `/auth/signup`                                       |
+| 認証           | 不要（public）                                       |
+| 主な目的       | ユーザーアカウントを作成し、JWT セッションを発行する |
+| 返却           | user 情報 + JWT（または session token）              |
 
 ---
 
@@ -53,11 +53,11 @@
 
 ### 入力要件（バリデーション）
 
-| フィールド | 型 | 必須 | 制約 |
-| --- | --- | --- | --- |
-| name | string | ○ | 1〜32文字、前後空白除去 |
-| email | string | ○ | email形式、lowercaseに正規化 |
-| password | string | ○ | 8〜64文字、英数字記号可 |
+| フィールド | 型     | 必須 | 制約                           |
+| ---------- | ------ | ---- | ------------------------------ |
+| name       | string | ○    | 1〜32 文字、前後空白除去       |
+| email      | string | ○    | email 形式、lowercase に正規化 |
+| password   | string | ○    | 8〜64 文字、英数字記号可       |
 
 ### バリデーション例（エラー時）
 
@@ -107,7 +107,7 @@ SELECT id FROM users WHERE email = $1;
 
 ## STEP 3️⃣：パスワードのハッシュ化
 
-推奨：argon2id または bcrypt（bcryptなら cost=10〜12）
+推奨：argon2id または bcrypt（bcrypt なら cost=10〜12）
 
 ```
 hashedPassword = hash(password)
@@ -125,12 +125,12 @@ RETURNING id, name, email, avatar_url, intro, balance;
 
 初期値：
 
-| カラム | 値 |
-| --- | --- |
+| カラム     | 値              |
+| ---------- | --------------- |
 | avatar_url | null or default |
-| intro | "" |
-| balance | 0 |
-| role | user（固定） |
+| intro      | ""              |
+| balance    | 0               |
+| role       | user（固定）    |
 
 ---
 
@@ -187,14 +187,14 @@ HS256 / RS256
 
 # 6. エラーレスポンス一覧（完全版）
 
-| 状況 | ステータス | error | message |
-| --- | --- | --- | --- |
-| name不正 | 400 | INVALID_NAME | 名前を正しく入力してください |
-| email形式不正 | 400 | INVALID_EMAIL | 正しいメールアドレスを入力してください |
-| password不正 | 400 | INVALID_PASSWORD | パスワードは8〜64文字で入力してください |
-| email重複 | 409 | EMAIL_ALREADY_USED | このメールアドレスはすでに登録されています |
-| DB障害 | 500 | DB_ERROR | サーバーエラーが発生しました |
-| JWT生成失敗 | 500 | TOKEN_ERROR | トークン生成に失敗しました |
+| 状況           | ステータス | error              | message                                    |
+| -------------- | ---------- | ------------------ | ------------------------------------------ |
+| name 不正      | 400        | INVALID_NAME       | 名前を正しく入力してください               |
+| email 形式不正 | 400        | INVALID_EMAIL      | 正しいメールアドレスを入力してください     |
+| password 不正  | 400        | INVALID_PASSWORD   | パスワードは 8〜64 文字で入力してください  |
+| email 重複     | 409        | EMAIL_ALREADY_USED | このメールアドレスはすでに登録されています |
+| DB 障害        | 500        | DB_ERROR           | サーバーエラーが発生しました               |
+| JWT 生成失敗   | 500        | TOKEN_ERROR        | トークン生成に失敗しました                 |
 
 ---
 
@@ -224,23 +224,36 @@ sequenceDiagram
 # 8. Fastify + TypeScript 擬似実装例（参考）
 
 ```tsx
-app.post('/auth/signup', async (req, reply) => {
+app.post("/auth/signup", async (req, reply) => {
   const { name, email, password } = req.body;
 
   // Validation
   if (!name || name.trim().length < 1)
-    return reply.code(400).send({ error: 'INVALID_NAME', message: '名前を正しく入力してください' });
+    return reply
+      .code(400)
+      .send({ error: "INVALID_NAME", message: "名前を正しく入力してください" });
 
   if (!isValidEmail(email))
-    return reply.code(400).send({ error: 'INVALID_EMAIL', message: '正しいメールアドレスを入力してください' });
+    return reply.code(400).send({
+      error: "INVALID_EMAIL",
+      message: "正しいメールアドレスを入力してください",
+    });
 
   if (!password || password.length < 8)
-    return reply.code(400).send({ error: 'INVALID_PASSWORD', message: 'パスワードは8文字以上です' });
+    return reply.code(400).send({
+      error: "INVALID_PASSWORD",
+      message: "パスワードは8文字以上です",
+    });
 
   // Duplicate check
-  const exists = await db.query(`SELECT id FROM users WHERE email = $1`, [email]);
+  const exists = await db.query(`SELECT id FROM users WHERE email = $1`, [
+    email,
+  ]);
   if (exists.rowCount > 0)
-    return reply.code(409).send({ error: 'EMAIL_ALREADY_USED', message: 'このメールは既に使われています' });
+    return reply.code(409).send({
+      error: "EMAIL_ALREADY_USED",
+      message: "このメールは既に使われています",
+    });
 
   // Hash
   const hash = await argon2.hash(password);
@@ -250,7 +263,7 @@ app.post('/auth/signup', async (req, reply) => {
     `INSERT INTO users (name, email, password_hash, balance)
      VALUES ($1, $2, $3, 0)
      RETURNING id, name, email, intro, avatar_url, balance`,
-    [name, email, hash]
+    [name, email, hash],
   );
 
   // JWT
@@ -258,7 +271,7 @@ app.post('/auth/signup', async (req, reply) => {
 
   return reply.code(201).send({
     user: user.rows[0],
-    token
+    token,
   });
 });
 ```
@@ -271,10 +284,8 @@ app.post('/auth/signup', async (req, reply) => {
 - 強度：argon2id / bcrypt（cost 10〜12）
 - email の一意制約（UNIQUE）
 - レートリミットを設ける
-    
-    → Signup に対しては bot 対策として重要
-    
-- JWT の期限（例：24時間）
+  → Signup に対しては bot 対策として重要
+- JWT の期限（例：24 時間）
 
 ---
 

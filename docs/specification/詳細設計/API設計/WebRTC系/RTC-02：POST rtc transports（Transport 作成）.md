@@ -1,6 +1,6 @@
 # RTC-02：POST /rtc/transports（Transport 作成）
 
-これは SFU（mediasoup）を使った WebRTC 通話で **最も重要な API の1つ** で、クライアントが「音声データの送受信用の WebRTC Transport」を生成するために呼びます。
+これは SFU（mediasoup）を使った WebRTC 通話で **最も重要な API の 1 つ** で、クライアントが「音声データの送受信用の WebRTC Transport」を生成するために呼びます。
 
 ---
 
@@ -51,9 +51,9 @@ Authorization: Bearer <token>
 }
 ```
 
-| パラメータ | 型 | 説明 |
-| --- | --- | --- |
-| `callId` | string | 通話を識別するID |
+| パラメータ  | 型                   | 説明                                       |
+| ----------- | -------------------- | ------------------------------------------ |
+| `callId`    | string               | 通話を識別する ID                          |
 | `direction` | `"send"` or `"recv"` | 送信用 / 受信用 Transport のどちらを作るか |
 
 ---
@@ -71,7 +71,14 @@ Authorization: Bearer <token>
     "iceLite": true
   },
   "iceCandidates": [
-    { "foundation": "...", "priority": 123456, "ip": "11.22.33.44", "protocol": "udp", "port": 3478, "type": "host" }
+    {
+      "foundation": "...",
+      "priority": 123456,
+      "ip": "11.22.33.44",
+      "protocol": "udp",
+      "port": 3478,
+      "type": "host"
+    }
   ],
   "dtlsParameters": {
     "role": "auto",
@@ -83,19 +90,18 @@ Authorization: Bearer <token>
     ]
   }
 }
-
 ```
 
 ---
 
 # ■ レスポンス項目説明
 
-| フィールド | 説明 |
-| --- | --- |
-| `transportId` | サーバーで生成された mediasoup Transport の ID |
-| `iceParameters` | ICE接続のためのパラメータ |
-| `iceCandidates` | SFU の ICE candidate（クライアントは addIceCandidate する） |
-| `dtlsParameters` | DTLS ハンドシェイク情報 |
+| フィールド       | 説明                                                        |
+| ---------------- | ----------------------------------------------------------- |
+| `transportId`    | サーバーで生成された mediasoup Transport の ID              |
+| `iceParameters`  | ICE 接続のためのパラメータ                                  |
+| `iceCandidates`  | SFU の ICE candidate（クライアントは addIceCandidate する） |
+| `dtlsParameters` | DTLS ハンドシェイク情報                                     |
 
 これらを受け取ったクライアントは、
 
@@ -110,12 +116,12 @@ const res = await fetch("/rtc/transports", {
   method: "POST",
   headers: {
     Authorization: `Bearer ${token}`,
-    "Content-Type": "application/json"
+    "Content-Type": "application/json",
   },
   body: JSON.stringify({
     callId,
-    direction: "send"
-  })
+    direction: "send",
+  }),
 });
 
 const data = await res.json();
@@ -124,11 +130,10 @@ const sendTransport = device.createSendTransport({
   id: data.transportId,
   iceParameters: data.iceParameters,
   iceCandidates: data.iceCandidates,
-  dtlsParameters: data.dtlsParameters
+  dtlsParameters: data.dtlsParameters,
 });
 
 // この後 RTC-03 で transport.connect() を呼ぶ
-
 ```
 
 ---
@@ -146,7 +151,7 @@ fastify.post("/rtc/transports", async (request, reply) => {
   if (!room) {
     return reply.status(404).send({
       error: "ROOM_NOT_FOUND",
-      message: "指定された callId の通話は存在しません。"
+      message: "指定された callId の通話は存在しません。",
     });
   }
 
@@ -157,7 +162,7 @@ fastify.post("/rtc/transports", async (request, reply) => {
     enableUdp: true,
     enableTcp: true,
     preferUdp: true,
-    initialAvailableOutgoingBitrate: 600000
+    initialAvailableOutgoingBitrate: 600000,
   });
 
   // どのユーザーに紐づく Transport か保存しておく
@@ -167,24 +172,19 @@ fastify.post("/rtc/transports", async (request, reply) => {
     transportId: transport.id,
     iceParameters: transport.iceParameters,
     iceCandidates: transport.iceCandidates,
-    dtlsParameters: transport.dtlsParameters
+    dtlsParameters: transport.dtlsParameters,
   });
 });
-
 ```
 
 ---
 
 # ■ セキュリティ面
 
-- 1ユーザーが複数の Transport を無限に作らないように制限する
-    
-    → room.addTransport() 内でチェック
-    
-- callId単位で権限を確認する
-    
-    → その callId の当事者のみ許可
-    
+- 1 ユーザーが複数の Transport を無限に作らないように制限する
+  → room.addTransport() 内でチェック
+- callId 単位で権限を確認する
+  → その callId の当事者のみ許可
 - listenIps は NAT / Reverse proxy に合わせて設定する必要あり
 
 ---
@@ -192,25 +192,24 @@ fastify.post("/rtc/transports", async (request, reply) => {
 # ■ フロー全体（送信用 Transport の場合）
 
 1. クライアント
-    
-    → **RTC-01 /rtc/capabilities** で Router 能力を読み込む
-    
+
+   → **RTC-01 /rtc/capabilities** で Router 能力を読み込む
+
 2. クライアント
-    
-    → **RTC-02 /rtc/transports（direction: "send"）** を呼ぶ
-    
+
+   → **RTC-02 /rtc/transports（direction: "send"）** を呼ぶ
+
 3. サーバー
-    
-    → sendTransport 生成、パラメータを返す
-    
+
+   → sendTransport 生成、パラメータを返す
+
 4. クライアント
-    
-    → device.createSendTransport() で初期化
-    
+
+   → device.createSendTransport() で初期化
+
 5. クライアント
-    
-    → sendTransport.connect() すると、RTC-03 が必要
-    
+
+   → sendTransport.connect() すると、RTC-03 が必要
 
 ---
 

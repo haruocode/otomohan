@@ -29,9 +29,9 @@ Authorization: Bearer <token>
 
 # パスパラメータ
 
-| パラメータ | 型 | 説明 |
-| --- | --- | --- |
-| `id` | string | おともはんID |
+| パラメータ | 型     | 説明          |
+| ---------- | ------ | ------------- |
+| `id`       | string | おともはん ID |
 
 ---
 
@@ -89,47 +89,47 @@ Authorization: Bearer <token>
 
 ### **基本情報**
 
-| フィールド | 型 | 内容 |
-| --- | --- | --- |
-| `otomoId` | string | おともはんID |
-| `displayName` | string | 表示名 |
-| `profileImageUrl` | string | プロフィール画像URL |
-| `age` | number | 年齢 |
-| `gender` | string | `"male" |
-| `genres` | string[] | 得意ジャンル（例：healing, talk, consult） |
-| `introduction` | string | 自己紹介テキスト |
-| `tags` | string[] | 補助的なタグ表示用 |
+| フィールド        | 型       | 内容                                       |
+| ----------------- | -------- | ------------------------------------------ |
+| `otomoId`         | string   | おともはん ID                              |
+| `displayName`     | string   | 表示名                                     |
+| `profileImageUrl` | string   | プロフィール画像 URL                       |
+| `age`             | number   | 年齢                                       |
+| `gender`          | string   | `"male"                                    |
+| `genres`          | string[] | 得意ジャンル（例：healing, talk, consult） |
+| `introduction`    | string   | 自己紹介テキスト                           |
+| `tags`            | string[] | 補助的なタグ表示用                         |
 
 ---
 
 ### **ステータス**
 
-| フィールド | 型 | 内容 |
-| --- | --- | --- |
-| `isOnline` | boolean | オンラインか |
+| フィールド    | 型      | 内容                                     |
+| ------------- | ------- | ---------------------------------------- |
+| `isOnline`    | boolean | オンラインか                             |
 | `isAvailable` | boolean | 通話可能か（他のユーザーと通話中でない） |
 
 ---
 
 ### **料金・評価情報**
 
-| フィールド | 型 | 内容 |
-| --- | --- | --- |
-| `pricePerMinute` | number | 1分あたり料金 |
-| `rating` | number | 平均評価 |
-| `reviewCount` | number | レビュー件数 |
+| フィールド       | 型     | 内容           |
+| ---------------- | ------ | -------------- |
+| `pricePerMinute` | number | 1 分あたり料金 |
+| `rating`         | number | 平均評価       |
+| `reviewCount`    | number | レビュー件数   |
 
 ---
 
 ### **reviews[]（直近数件のみ返す）**
 
-| フィールド | 説明 |
-| --- | --- |
-| `reviewId` | レビューID |
+| フィールド        | 説明           |
+| ----------------- | -------------- |
+| `reviewId`        | レビュー ID    |
 | `userDisplayName` | 投稿者の表示名 |
-| `score` | 星評価（1〜5） |
-| `comment` | コメント |
-| `createdAt` | 投稿日 |
+| `score`           | 星評価（1〜5） |
+| `comment`         | コメント       |
+| `createdAt`       | 投稿日         |
 
 補足:
 
@@ -179,16 +179,16 @@ fastify.get("/otomo/:id", async (request, reply) => {
     include: {
       reviews: {
         take: 5,
-        orderBy: { createdAt: "desc" }
+        orderBy: { createdAt: "desc" },
       },
-      schedules: true
-    }
+      schedules: true,
+    },
   });
 
   if (!otomo) {
     return reply.status(404).send({
       error: "OTOMO_NOT_FOUND",
-      message: "指定されたおともはんは存在しません。"
+      message: "指定されたおともはんは存在しません。",
     });
   }
 

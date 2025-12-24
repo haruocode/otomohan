@@ -31,19 +31,19 @@ Authorization: Bearer <token>
 
 ### **パスパラメータ**
 
-| パラメータ | 型 | 説明 |
-| --- | --- | --- |
-| `id` | string | おともはんID |
+| パラメータ | 型     | 説明          |
+| ---------- | ------ | ------------- |
+| `id`       | string | おともはん ID |
 
 ---
 
 # クエリパラメータ（任意）
 
-| パラメータ | 型 | 初期値 | 説明 |
-| --- | --- | --- | --- |
-| `limit` | number | `20` | 取得件数 |
-| `offset` | number | `0` | ページング用オフセット |
-| `sort` | `"newest" | "highest" | "lowest"` | `"newest"` | 並び順 |
+| パラメータ | 型        | 初期値    | 説明                   |
+| ---------- | --------- | --------- | ---------------------- | ---------- | ------ |
+| `limit`    | number    | `20`      | 取得件数               |
+| `offset`   | number    | `0`       | ページング用オフセット |
+| `sort`     | `"newest" | "highest" | "lowest"`              | `"newest"` | 並び順 |
 
 ---
 
@@ -72,23 +72,23 @@ Authorization: Bearer <token>
 
 ### items[]
 
-| フィールド | 型 | 内容 |
-| --- | --- | --- |
-| `reviewId` | string | レビューID |
+| フィールド        | 型     | 内容                       |
+| ----------------- | ------ | -------------------------- |
+| `reviewId`        | string | レビュー ID                |
 | `userDisplayName` | string | 表示名（ニックネームなど） |
-| `score` | number | 1〜5の評価 |
-| `comment` | string | コメント内容 |
-| `createdAt` | string | 投稿日 |
+| `score`           | number | 1〜5 の評価                |
+| `comment`         | string | コメント内容               |
+| `createdAt`       | string | 投稿日                     |
 
 ---
 
 # 並び順（sort パラメータ）
 
-| sort | 説明 |
-| --- | --- |
-| `newest` | 投稿日が新しい順（デフォルト） |
-| `highest` | スコアが高い順 |
-| `lowest` | スコアが低い順 |
+| sort      | 説明                           |
+| --------- | ------------------------------ |
+| `newest`  | 投稿日が新しい順（デフォルト） |
+| `highest` | スコアが高い順                 |
+| `lowest`  | スコアが低い順                 |
 
 ---
 
@@ -111,7 +111,11 @@ Authorization: Bearer <token>
 fastify.get("/otomo/:id/reviews", async (request, reply) => {
   const { id } = request.params as { id: string };
 
-  const { limit = 20, offset = 0, sort = "newest" } = request.query as {
+  const {
+    limit = 20,
+    offset = 0,
+    sort = "newest",
+  } = request.query as {
     limit?: number;
     offset?: number;
     sort?: "newest" | "highest" | "lowest";
@@ -121,19 +125,19 @@ fastify.get("/otomo/:id/reviews", async (request, reply) => {
     sort === "highest"
       ? { score: "desc" }
       : sort === "lowest"
-      ? { score: "asc" }
-      : { createdAt: "desc" };
+        ? { score: "asc" }
+        : { createdAt: "desc" };
 
   // otomo の存在チェック
   const otomoExists = await fastify.db.otomo.findUnique({
     where: { otomoId: id },
-    select: { otomoId: true }
+    select: { otomoId: true },
   });
 
   if (!otomoExists) {
     return reply.status(404).send({
       error: "OTOMO_NOT_FOUND",
-      message: "指定されたおともはんは存在しません。"
+      message: "指定されたおともはんは存在しません。",
     });
   }
 
@@ -141,11 +145,11 @@ fastify.get("/otomo/:id/reviews", async (request, reply) => {
     where: { otomoId: id },
     take: limit,
     skip: offset,
-    orderBy: sortOption
+    orderBy: sortOption,
   });
 
   const total = await fastify.db.review.count({
-    where: { otomoId: id }
+    where: { otomoId: id },
   });
 
   return reply.send({ items, total });

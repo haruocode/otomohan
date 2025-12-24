@@ -4,7 +4,7 @@
 
 ---
 
-当API はユーザーが通知の ON/OFF を好みに合わせて制御できるようにするもので、アプリ体験や通話受信の利便性に関わる重要な設定である。
+当 API はユーザーが通知の ON/OFF を好みに合わせて制御できるようにするもので、アプリ体験や通話受信の利便性に関わる重要な設定である。
 
 通知とは、以下のようなものを想定：
 
@@ -16,14 +16,14 @@
 
 # 1. API 概要
 
-| 項目 | 内容 |
-| --- | --- |
-| API ID | SET-02 |
-| メソッド | PUT |
-| エンドポイント | `/settings/notifications` |
-| 認証 | 必須（JWT） |
-| 主な目的 | ユーザーの通知設定を更新する |
-| 対象画面 | C-04 設定画面 |
+| 項目           | 内容                         |
+| -------------- | ---------------------------- |
+| API ID         | SET-02                       |
+| メソッド       | PUT                          |
+| エンドポイント | `/settings/notifications`    |
+| 認証           | 必須（JWT）                  |
+| 主な目的       | ユーザーの通知設定を更新する |
+| 対象画面       | C-04 設定画面                |
 
 ---
 
@@ -31,12 +31,12 @@
 
 MVP では下記を想定：
 
-| 項目名 | 説明 | デフォルト |
-| --- | --- | --- |
-| incomingCall | おともはんからの着信通知 | true |
-| callSummary | 通話終了後のサマリー通知（任意） | true |
-| walletAlert | 残ポイントが一定以下の通知 | true |
-| marketing | 運営からのお知らせ（任意） | false |
+| 項目名       | 説明                             | デフォルト |
+| ------------ | -------------------------------- | ---------- |
+| incomingCall | おともはんからの着信通知         | true       |
+| callSummary  | 通話終了後のサマリー通知（任意） | true       |
+| walletAlert  | 残ポイントが一定以下の通知       | true       |
+| marketing    | 運営からのお知らせ（任意）       | false      |
 
 ※ 必要に応じて追加可能。
 
@@ -55,12 +55,12 @@ MVP では下記を想定：
 
 ### 各フィールドの仕様
 
-| フィールド | 型 | 必須 | 備考 |
-| --- | --- | --- | --- |
+| フィールド   | 型      | 必須 | 備考               |
+| ------------ | ------- | ---- | ------------------ |
 | incomingCall | boolean | 任意 | 未設定なら変更なし |
-| callSummary | boolean | 任意 | 同上 |
-| walletAlert | boolean | 任意 | 同上 |
-| marketing | boolean | 任意 | 同上 |
+| callSummary  | boolean | 任意 | 同上               |
+| walletAlert  | boolean | 任意 | 同上               |
+| marketing    | boolean | 任意 | 同上               |
 
 ※ PATCH 方式に近い挙動（渡した値だけ更新）。
 
@@ -84,11 +84,11 @@ MVP では下記を想定：
 
 # 5. エラーレスポンス一覧
 
-| 状況 | ステータス | error | message |
-| --- | --- | --- | --- |
-| JWT無効 | 401 | UNAUTHORIZED | 認証が必要です |
-| 各値が boolean でない | 400 | INVALID_VALUE | 不正な値が含まれています |
-| DB更新失敗 | 500 | DB_ERROR | 設定を更新できませんでした |
+| 状況                  | ステータス | error         | message                    |
+| --------------------- | ---------- | ------------- | -------------------------- |
+| JWT 無効              | 401        | UNAUTHORIZED  | 認証が必要です             |
+| 各値が boolean でない | 400        | INVALID_VALUE | 不正な値が含まれています   |
+| DB 更新失敗           | 500        | DB_ERROR      | 設定を更新できませんでした |
 
 ---
 
@@ -102,10 +102,10 @@ MVP では下記を想定：
 
 ## テーブル例：user_settings
 
-| カラム名 | 型 | NOT NULL | 説明 |
-| --- | --- | --- | --- |
-| user_id | uuid | PK / FK | users.id |
-| notifications | jsonb | ✓ | 通知設定 |
+| カラム名      | 型    | NOT NULL | 説明     |
+| ------------- | ----- | -------- | -------- |
+| user_id       | uuid  | PK / FK  | users.id |
+| notifications | jsonb | ✓        | 通知設定 |
 
 ### JSONB の例：
 
@@ -131,7 +131,7 @@ WHERE user_id = $2;
 # 7. Fastify + TypeScript 擬似実装
 
 ```tsx
-app.put('/settings/notifications', async (req, reply) => {
+app.put("/settings/notifications", async (req, reply) => {
   const userId = req.user.userId; // JWTから取得
   const settings = req.body;
 
@@ -140,7 +140,7 @@ app.put('/settings/notifications', async (req, reply) => {
     if (typeof settings[key] !== "boolean") {
       return reply.code(400).send({
         error: "INVALID_VALUE",
-        message: `${key} には boolean を指定してください`
+        message: `${key} には boolean を指定してください`,
       });
     }
   }
@@ -150,18 +150,18 @@ app.put('/settings/notifications', async (req, reply) => {
     `UPDATE user_settings
      SET notifications = notifications || $1::jsonb
      WHERE user_id = $2`,
-    [settings, userId]
+    [settings, userId],
   );
 
   // Return new settings
   const updated = await db.query(
     `SELECT notifications FROM user_settings WHERE user_id = $1`,
-    [userId]
+    [userId],
   );
 
   return reply.send({
     status: "success",
-    settings: updated.rows[0].notifications
+    settings: updated.rows[0].notifications,
   });
 });
 ```

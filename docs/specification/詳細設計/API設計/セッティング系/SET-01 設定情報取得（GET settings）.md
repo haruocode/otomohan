@@ -8,14 +8,15 @@
 
 # 1. API 概要
 
-| 項目 | 内容 |
-| --- | --- |
-| API ID | **SET-01** |
-| メソッド | GET |
-| エンドポイント | `/settings` |
-| 認証 | 任意（※MVP ではユーザー認証後のみでOK） |
-| 対象画面 | C-04（設定画面） |
-| 主目的 | ・通知設定の取得
+| 項目           | 内容                                     |
+| -------------- | ---------------------------------------- |
+| API ID         | **SET-01**                               |
+| メソッド       | GET                                      |
+| エンドポイント | `/settings`                              |
+| 認証           | 任意（※MVP ではユーザー認証後のみで OK） |
+| 対象画面       | C-04（設定画面）                         |
+| 主目的         | ・通知設定の取得                         |
+
 ・利用規約 URL 取得
 ・プライバシーポリシー URL
 ・アプリバージョン情報 |
@@ -56,12 +57,12 @@
 
 `user_settings.notifications(jsonb)` をそのまま返却
 
-| 項目 | 型 | 説明 |
-| --- | --- | --- |
-| incomingCall | boolean | 着信通知 |
-| callSummary | boolean | 通話サマリー通知 |
-| walletAlert | boolean | 残高警告通知 |
-| marketing | boolean | お知らせ通知 |
+| 項目         | 型      | 説明             |
+| ------------ | ------- | ---------------- |
+| incomingCall | boolean | 着信通知         |
+| callSummary  | boolean | 通話サマリー通知 |
+| walletAlert  | boolean | 残高警告通知     |
+| marketing    | boolean | お知らせ通知     |
 
 ---
 
@@ -69,9 +70,9 @@
 
 アプリの静的メタ情報：
 
-| 項目 | 説明 |
-| --- | --- |
-| terms | 利用規約 URL |
+| 項目    | 説明                     |
+| ------- | ------------------------ |
+| terms   | 利用規約 URL             |
 | privacy | プライバシーポリシー URL |
 
 ※ バックエンドの env から読み込む想定（例：`process.env.TERMS_URL`）。
@@ -80,10 +81,10 @@
 
 ## (3) app（アプリ情報）
 
-| 項目 | 説明 |
-| --- | --- |
-| version | 現行アプリのバージョン（バックエンド定義） |
-| minSupportedVersion | このバージョン未満は警告表示 |
+| 項目                | 説明                                       |
+| ------------------- | ------------------------------------------ |
+| version             | 現行アプリのバージョン（バックエンド定義） |
+| minSupportedVersion | このバージョン未満は警告表示               |
 
 → 強制アップデートの判定にも利用できる拡張性。
 
@@ -115,10 +116,10 @@ Authorization: Bearer <JWT>
 
 # 6. エラーレスポンス
 
-| 状況 | ステータス | エラー |
-| --- | --- | --- |
-| 認証が必要 | 401 | UNAUTHORIZED |
-| DBエラー | 500 | DB_ERROR |
+| 状況       | ステータス | エラー       |
+| ---------- | ---------- | ------------ |
+| 認証が必要 | 401        | UNAUTHORIZED |
+| DB エラー  | 500        | DB_ERROR     |
 
 ---
 
@@ -126,11 +127,11 @@ Authorization: Bearer <JWT>
 
 ### user_settings テーブル
 
-| カラム | 型 | 説明 |
-| --- | --- | --- |
-| user_id | uuid | FK users.id |
-| notifications | jsonb | 通知設定 |
-| theme | text | 予備（ダークモードなど） |
+| カラム        | 型    | 説明                     |
+| ------------- | ----- | ------------------------ |
+| user_id       | uuid  | FK users.id              |
+| notifications | jsonb | 通知設定                 |
+| theme         | text  | 予備（ダークモードなど） |
 
 ---
 
@@ -147,12 +148,12 @@ WHERE user_id = $1;
 # 8. Fastify + TypeScript 実装例（擬似コード）
 
 ```tsx
-app.get('/settings', async (req, reply) => {
+app.get("/settings", async (req, reply) => {
   const userId = req.user.userId;
 
   const row = await db.query(
-    'SELECT notifications FROM user_settings WHERE user_id = $1',
-    [userId]
+    "SELECT notifications FROM user_settings WHERE user_id = $1",
+    [userId],
   );
 
   const notifications = row.rows[0]?.notifications ?? {};
@@ -163,13 +164,13 @@ app.get('/settings', async (req, reply) => {
       notifications,
       links: {
         terms: process.env.TERMS_URL,
-        privacy: process.env.PRIVACY_URL
+        privacy: process.env.PRIVACY_URL,
       },
       app: {
         version: process.env.APP_VERSION,
-        minSupportedVersion: process.env.MIN_APP_VERSION
-      }
-    }
+        minSupportedVersion: process.env.MIN_APP_VERSION,
+      },
+    },
   });
 });
 ```

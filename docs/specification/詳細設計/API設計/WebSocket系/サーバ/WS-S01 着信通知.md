@@ -12,13 +12,13 @@
 
 # 1. イベント概要
 
-| 項目 | 内容 |
-| --- | --- |
-| ID | WS-S01 |
-| type | `incoming_call` |
-| direction | Server → Client（Otomo） |
-| 役割 | おともはんに着信を知らせ、応答（accept/reject）を促す |
-| トリガー | WS-C01（ユーザーの call_request）を受信したとき |
+| 項目      | 内容                                                  |
+| --------- | ----------------------------------------------------- |
+| ID        | WS-S01                                                |
+| type      | `incoming_call`                                       |
+| direction | Server → Client（Otomo）                              |
+| 役割      | おともはんに着信を知らせ、応答（accept/reject）を促す |
+| トリガー  | WS-C01（ユーザーの call_request）を受信したとき       |
 
 ---
 
@@ -41,14 +41,14 @@
 
 # 3. 各フィールド詳細
 
-| フィールド | 型 | 必須 | 説明 |
-| --- | --- | --- | --- |
-| type | string | ○ | `"incoming_call"` 固定 |
-| callId | string | ○ | 通話を特定する UUID |
-| fromUserId | string | ○ | 発信者（User）のID |
-| fromUserName | string | ○ | 発信者の表示名 |
-| fromUserAvatar | string/null | ○ | ユーザーのアイコンURL |
-| timestamp | number | ○ | 着信が生成されたUNIX秒 |
+| フィールド     | 型          | 必須 | 説明                     |
+| -------------- | ----------- | ---- | ------------------------ |
+| type           | string      | ○    | `"incoming_call"` 固定   |
+| callId         | string      | ○    | 通話を特定する UUID      |
+| fromUserId     | string      | ○    | 発信者（User）の ID      |
+| fromUserName   | string      | ○    | 発信者の表示名           |
+| fromUserAvatar | string/null | ○    | ユーザーのアイコン URL   |
+| timestamp      | number      | ○    | 着信が生成された UNIX 秒 |
 
 ---
 
@@ -61,7 +61,7 @@
 3. **おともはん側 WS 接続を特定**
 4. **incoming_call を送信**
 
-おともはん側がオンライン（websocket接続中）であることが前提。
+おともはん側がオンライン（websocket 接続中）であることが前提。
 
 ---
 
@@ -100,14 +100,16 @@ incoming_call は **ringing 状態** を作るイベント。
 const otomoSocket = wsManager.getSocket(toUserId);
 
 if (otomoSocket) {
-  otomoSocket.send(JSON.stringify({
-    type: "incoming_call",
-    callId,
-    fromUserId: user.id,
-    fromUserName: user.name,
-    fromUserAvatar: user.avatarUrl,
-    timestamp: Date.now() / 1000
-  }));
+  otomoSocket.send(
+    JSON.stringify({
+      type: "incoming_call",
+      callId,
+      fromUserId: user.id,
+      fromUserName: user.name,
+      fromUserAvatar: user.avatarUrl,
+      timestamp: Date.now() / 1000,
+    }),
+  );
 }
 ```
 
