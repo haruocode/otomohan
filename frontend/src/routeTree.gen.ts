@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as OtomoOtomoIdRouteImport } from './routes/otomo.$otomoId'
 import { Route as DemoTanstackQueryRouteImport } from './routes/demo/tanstack-query'
+import { Route as CallCallIdRouteImport } from './routes/call.$callId'
 import { Route as DemoStartServerFuncsRouteImport } from './routes/demo/start.server-funcs'
 import { Route as DemoStartApiRequestRouteImport } from './routes/demo/start.api-request'
 import { Route as DemoApiTqTodosRouteImport } from './routes/demo/api.tq-todos'
@@ -34,6 +35,11 @@ const OtomoOtomoIdRoute = OtomoOtomoIdRouteImport.update({
 const DemoTanstackQueryRoute = DemoTanstackQueryRouteImport.update({
   id: '/demo/tanstack-query',
   path: '/demo/tanstack-query',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CallCallIdRoute = CallCallIdRouteImport.update({
+  id: '/call/$callId',
+  path: '/call/$callId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DemoStartServerFuncsRoute = DemoStartServerFuncsRouteImport.update({
@@ -79,6 +85,7 @@ const DemoStartSsrDataOnlyRoute = DemoStartSsrDataOnlyRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/call/$callId': typeof CallCallIdRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
   '/otomo/$otomoId': typeof OtomoOtomoIdRoute
   '/demo/api/names': typeof DemoApiNamesRoute
@@ -92,6 +99,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/call/$callId': typeof CallCallIdRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
   '/otomo/$otomoId': typeof OtomoOtomoIdRoute
   '/demo/api/names': typeof DemoApiNamesRoute
@@ -106,6 +114,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/call/$callId': typeof CallCallIdRoute
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
   '/otomo/$otomoId': typeof OtomoOtomoIdRoute
   '/demo/api/names': typeof DemoApiNamesRoute
@@ -121,6 +130,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/call/$callId'
     | '/demo/tanstack-query'
     | '/otomo/$otomoId'
     | '/demo/api/names'
@@ -134,6 +144,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/call/$callId'
     | '/demo/tanstack-query'
     | '/otomo/$otomoId'
     | '/demo/api/names'
@@ -147,6 +158,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/call/$callId'
     | '/demo/tanstack-query'
     | '/otomo/$otomoId'
     | '/demo/api/names'
@@ -161,6 +173,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CallCallIdRoute: typeof CallCallIdRoute
   DemoTanstackQueryRoute: typeof DemoTanstackQueryRoute
   OtomoOtomoIdRoute: typeof OtomoOtomoIdRoute
   DemoApiNamesRoute: typeof DemoApiNamesRoute
@@ -194,6 +207,13 @@ declare module '@tanstack/react-router' {
       path: '/demo/tanstack-query'
       fullPath: '/demo/tanstack-query'
       preLoaderRoute: typeof DemoTanstackQueryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/call/$callId': {
+      id: '/call/$callId'
+      path: '/call/$callId'
+      fullPath: '/call/$callId'
+      preLoaderRoute: typeof CallCallIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/demo/start/server-funcs': {
@@ -257,6 +277,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CallCallIdRoute: CallCallIdRoute,
   DemoTanstackQueryRoute: DemoTanstackQueryRoute,
   OtomoOtomoIdRoute: OtomoOtomoIdRoute,
   DemoApiNamesRoute: DemoApiNamesRoute,

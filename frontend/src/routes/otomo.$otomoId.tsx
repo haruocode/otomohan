@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, createFileRoute } from '@tanstack/react-router'
+import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import {
   AlarmClock,
@@ -85,6 +85,7 @@ export const Route = createFileRoute('/otomo/$otomoId')({
 
 function OtomoDetailScreen() {
   const { otomoId } = Route.useParams()
+  const navigate = useNavigate({ from: '/otomo/$otomoId' })
   const [isRequestModalOpen, setRequestModalOpen] = useState(false)
   const [requestError, setRequestError] = useState<string | null>(null)
   const [isSendingRequest, setIsSendingRequest] = useState(false)
@@ -153,15 +154,15 @@ function OtomoDetailScreen() {
     setIsSendingRequest(true)
     setRequestError(null)
     try {
-      await sendMockCallRequest({
+      const result = await sendMockCallRequest({
         toUserId: detailQuery.data.id,
         pricePerMinute: detailQuery.data.pricePerMinute,
       })
-      setBanner({
-        message: '通話リクエストを送信しました。応答を待っています。',
-        tone: 'info',
-      })
       setRequestModalOpen(false)
+      navigate({
+        to: '/call/$callId',
+        params: { callId: result.callId },
+      })
     } catch (error) {
       const message =
         error instanceof Error

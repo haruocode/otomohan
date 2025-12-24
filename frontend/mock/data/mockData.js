@@ -122,25 +122,30 @@ export const otomoList = [
   },
 ]
 
-export const calls = [
-  {
-    id: 'call-20241201-001',
-    otomoId: 'otomo-001',
-    otomoName: 'Hana',
-    startedAt: '2024-12-01T13:00:00.000Z',
-    endedAt: '2024-12-01T13:32:00.000Z',
-    durationMinutes: 32,
-    pointsUsed: 384,
-    summary: '年末の予定について雑談しました。',
-  },
-  {
-    id: 'call-20241215-002',
-    otomoId: 'otomo-003',
-    otomoName: 'Mika',
-    startedAt: '2024-12-15T01:10:00.000Z',
-    endedAt: '2024-12-15T01:55:00.000Z',
-    durationMinutes: 45,
-    pointsUsed: 810,
-    summary: '作業通話で集中サポート。',
-  },
-]
+const minutesFromNow = (minutes) =>
+  new Date(Date.now() + minutes * 60_000).toISOString()
+
+const createActiveCall = (otomo, index) => {
+  const startedMinutesAgo = 2 + index
+  return {
+    id: `call-${otomo.id}`,
+    status: 'in_call',
+    partner: {
+      id: otomo.id,
+      name: otomo.displayName,
+      avatarUrl: otomo.avatarUrl,
+    },
+    pricePerMinute: otomo.pricePerMinute,
+    startedAt: minutesFromNow(-startedMinutesAgo),
+    lastBilledAt: minutesFromNow(-1),
+    nextBillingAt: minutesFromNow(1 - index * 0.2),
+    balance: Math.max(
+      otomo.pricePerMinute,
+      walletBalance.balance - index * 180,
+    ),
+  }
+}
+
+export const calls = otomoList.map((otomo, index) =>
+  createActiveCall(otomo, index),
+)

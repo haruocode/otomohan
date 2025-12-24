@@ -1,5 +1,3 @@
-import { v4 as uuid } from 'uuid'
-
 export interface CallRequestPayload {
   toUserId: string
   pricePerMinute: number
@@ -32,8 +30,10 @@ export async function sendMockCallRequest(
     throw new Error('通信エラーが発生しました。もう一度お試しください。')
   }
 
+  const callId = `call-${payload.toUserId}`
+
   return {
-    callId: uuid(),
+    callId,
     requestedAt: new Date().toISOString(),
   }
 }

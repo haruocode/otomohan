@@ -34,6 +34,25 @@ export interface WalletBalance {
   updatedAt: string
 }
 
+export type CallStatus = 'connecting' | 'in_call' | 'finishing' | 'ended'
+
+export interface CallPartner {
+  id: string
+  name: string
+  avatarUrl: string
+}
+
+export interface CallSession {
+  id: string
+  status: CallStatus
+  partner: CallPartner
+  pricePerMinute: number
+  startedAt: string
+  lastBilledAt?: string
+  nextBillingAt?: string
+  balance: number
+}
+
 interface RawOtomoResponseItem {
   id: string
   displayName: string
@@ -68,6 +87,7 @@ interface RawOtomoDetail extends RawOtomoResponseItem {
 }
 
 interface WalletBalanceResponse extends WalletBalance {}
+interface RawCallSession extends CallSession {}
 
 const RAW_TO_PRESENT_STATUS: Record<RawOtomoStatus, OtomoPresenceStatus> = {
   available: 'online',
@@ -104,8 +124,10 @@ function computeApiBaseUrl() {
 
 const API_BASE_URL = computeApiBaseUrl()
 
-const normalizePrice = (item: { pricePerMinute?: number; pricePerMin?: number }) =>
-  item.pricePerMinute ?? item.pricePerMin ?? 0
+const normalizePrice = (item: {
+  pricePerMinute?: number
+  pricePerMin?: number
+}) => item.pricePerMinute ?? item.pricePerMin ?? 0
 
 const mapRawOtomo = (item: RawOtomoResponseItem): OtomoProfile => ({
   id: item.id,
@@ -161,9 +183,7 @@ export async function fetchWalletBalance(): Promise<WalletBalanceResponse> {
   return http<WalletBalanceResponse>('/wallet/balance')
 }
 
-export async function fetchOtomoDetail(
-  otomoId: string,
-): Promise<OtomoDetail> {
+export async function fetchOtomoDetail(otomoId: string): Promise<OtomoDetail> {
   const data = await http<RawOtomoDetail>(`/otomo/${otomoId}`)
   const base = mapRawOtomo(data)
 
@@ -180,4 +200,8 @@ export async function fetchOtomoDetail(
       date: review.date,
     })),
   }
+}
+
+export async function fetchCallSession(callId: string): Promise<CallSession> {
+  return http<RawCallSession>(`/calls/${callId}`)
 }
