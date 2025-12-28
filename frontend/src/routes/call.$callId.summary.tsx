@@ -89,7 +89,7 @@ function CallSummaryScreen() {
                 pricePerMinute={summary.pricePerMinute}
               />
             )}
-            <ActionButtons />
+            <ActionButtons callId={summary.id} />
           </>
         )}
       </main>
@@ -221,7 +221,7 @@ function BillingBreakdown({
   )
 }
 
-function ActionButtons() {
+function ActionButtons({ callId }: { callId: string }) {
   return (
     <div className="grid gap-3 sm:grid-cols-2">
       <Button
@@ -247,9 +247,9 @@ function ActionButtons() {
         asChild
         className="rounded-2xl border-white/30 text-white hover:bg-white/10"
       >
-        <Link to="/">
+        <Link to="/history/$callId" params={{ callId }}>
           <List className="mr-2 h-4 w-4" />
-          通話履歴を見る
+          この通話の詳細を見る
         </Link>
       </Button>
       <Button

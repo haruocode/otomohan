@@ -249,7 +249,7 @@ function HistoryCard({ entry }: { entry: CallHistoryEntry }) {
               )}
             </div>
             <p className="text-sm text-white/70">
-              {dateLabel}　{startTime} - {endTime}
+              {dateLabel} {startTime} - {endTime}
             </p>
             <p className="text-sm text-white/80">{durationLabel}</p>
             <p className="text-sm font-semibold text-white">
@@ -264,7 +264,7 @@ function HistoryCard({ entry }: { entry: CallHistoryEntry }) {
             className="rounded-2xl border border-white/10"
             asChild
           >
-            <Link to="/call/$callId/summary" params={{ callId: entry.callId }}>
+            <Link to="/history/$callId" params={{ callId: entry.callId }}>
               詳細を見る
               <ChevronRight className="ml-1 h-4 w-4" />
             </Link>
@@ -352,27 +352,25 @@ function EmptyState() {
 }
 
 function matchesFilter(entry: CallHistoryEntry, filter: HistoryFilter) {
-  if (filter === 'all') return true
-
   const startedAtMs = entry.startedAt * 1000
   const startedDate = new Date(startedAtMs)
 
-  if (filter === 'cancelled') {
-    return entry.durationSec <= 0
+  switch (filter) {
+    case 'all':
+      return true
+    case 'cancelled':
+      return entry.durationSec <= 0
+    case 'this-month': {
+      const now = new Date()
+      return (
+        startedDate.getFullYear() === now.getFullYear() &&
+        startedDate.getMonth() === now.getMonth()
+      )
+    }
+    case 'three-months':
+    default: {
+      const ninetyDaysMs = 90 * 24 * 60 * 60 * 1000
+      return Date.now() - startedAtMs <= ninetyDaysMs
+    }
   }
-
-  if (filter === 'this-month') {
-    const now = new Date()
-    return (
-      startedDate.getFullYear() === now.getFullYear() &&
-      startedDate.getMonth() === now.getMonth()
-    )
-  }
-
-  if (filter === 'three-months') {
-    const ninetyDaysMs = 90 * 24 * 60 * 60 * 1000
-    return Date.now() - startedAtMs <= ninetyDaysMs
-  }
-
-  return true
 }
