@@ -177,6 +177,16 @@ const unixMinutesFromNow = (minutes) =>
 
 const END_REASONS = ['user_end', 'otomo_end', 'no_point', 'network_lost']
 
+export const SCHEDULE_WEEKDAYS = [
+  { day: 1, key: 'mon', label: '月', fullLabel: '月曜日' },
+  { day: 2, key: 'tue', label: '火', fullLabel: '火曜日' },
+  { day: 3, key: 'wed', label: '水', fullLabel: '水曜日' },
+  { day: 4, key: 'thu', label: '木', fullLabel: '木曜日' },
+  { day: 5, key: 'fri', label: '金', fullLabel: '金曜日' },
+  { day: 6, key: 'sat', label: '土', fullLabel: '土曜日' },
+  { day: 7, key: 'sun', label: '日', fullLabel: '日曜日' },
+]
+
 const createBillingUnits = (price, count) =>
   Array.from({ length: count }, (_value, unitIndex) => ({
     unitIndex: unitIndex + 1,
@@ -500,4 +510,102 @@ export const otomoStatsRepeat = {
     totalMinutes: 50,
     totalCalls: 6,
   },
+}
+
+const buildRangeId = (day, start, end, suffix = 0) =>
+  `range-${day}-${start.replace(':', '')}-${end.replace(':', '')}-${suffix}`
+
+const createScheduleRange = (day, start, end, suffix = 0) => ({
+  id: buildRangeId(day, start, end, suffix),
+  start,
+  end,
+})
+
+const createScheduleDay = ({ day, ranges = [], isDayOff }) => {
+  const meta = SCHEDULE_WEEKDAYS.find((weekday) => weekday.day === day)
+  const normalizedRanges = ranges.map((range, index) => ({
+    ...range,
+    id: range.id ?? buildRangeId(day, range.start, range.end, index),
+  }))
+  const resolvedDayOff =
+    typeof isDayOff === 'boolean'
+      ? isDayOff || normalizedRanges.length === 0
+      : normalizedRanges.length === 0
+
+  return {
+    day,
+    label: meta?.label ?? '日',
+    fullLabel: meta?.fullLabel ?? '日曜日',
+    isDayOff: resolvedDayOff,
+    ranges: normalizedRanges,
+  }
+}
+
+const createScheduleException = ({
+  id,
+  date,
+  type = 'off',
+  start,
+  end,
+  note,
+}) => ({
+  id: id ?? `exc-${date}`,
+  date,
+  type,
+  start,
+  end,
+  note,
+})
+
+export const otomoSchedule = {
+  weekly: [
+    createScheduleDay({
+      day: 1,
+      ranges: [createScheduleRange(1, '20:00', '23:00')],
+    }),
+    createScheduleDay({
+      day: 2,
+      ranges: [createScheduleRange(2, '20:00', '23:00')],
+    }),
+    createScheduleDay({
+      day: 3,
+      isDayOff: true,
+    }),
+    createScheduleDay({
+      day: 4,
+      ranges: [createScheduleRange(4, '18:00', '22:00')],
+    }),
+    createScheduleDay({
+      day: 5,
+      ranges: [createScheduleRange(5, '21:00', '23:30')],
+    }),
+    createScheduleDay({
+      day: 6,
+      ranges: [
+        createScheduleRange(6, '10:00', '14:00'),
+        createScheduleRange(6, '20:00', '23:00', 1),
+      ],
+    }),
+    createScheduleDay({
+      day: 7,
+      isDayOff: true,
+    }),
+  ],
+  exceptions: [
+    createScheduleException({
+      date: '2025-02-10',
+      type: 'off',
+      note: '旅行',
+    }),
+    createScheduleException({
+      date: '2025-02-13',
+      type: 'partial',
+      start: '18:00',
+      end: '20:00',
+      note: 'イベント出演',
+    }),
+  ],
+  autoStatusEnabled: true,
+  timezone: 'Asia/Tokyo',
+  lastUpdatedAt: now(),
 }

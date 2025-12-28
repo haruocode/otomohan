@@ -238,6 +238,61 @@ export interface OtomoStatsRepeatStats {
   }
 }
 
+export interface OtomoScheduleRange {
+  id: string
+  start: string
+  end: string
+}
+
+export interface OtomoScheduleDay {
+  day: number
+  label: string
+  fullLabel?: string
+  isDayOff: boolean
+  ranges: Array<OtomoScheduleRange>
+}
+
+export type OtomoScheduleExceptionType = 'off' | 'partial'
+
+export interface OtomoScheduleException {
+  id: string
+  date: string
+  type: OtomoScheduleExceptionType
+  start?: string
+  end?: string
+  note?: string
+}
+
+export interface OtomoSchedulePayload {
+  weekly: Array<OtomoScheduleDay>
+  exceptions: Array<OtomoScheduleException>
+  autoStatusEnabled: boolean
+  timezone: string
+  lastUpdatedAt: string
+}
+
+export interface UpdateOtomoSchedulePayload {
+  weekly: Array<{
+    day: number
+    isDayOff?: boolean
+    ranges: Array<{
+      id?: string
+      start: string
+      end: string
+    }>
+  }>
+  exceptions?: Array<{
+    id?: string
+    date: string
+    type?: OtomoScheduleExceptionType
+    start?: string
+    end?: string
+    note?: string
+  }>
+  autoStatusEnabled?: boolean
+  timezone?: string
+}
+
 export interface OtomoRecentCall {
   callId: string
   userName: string
@@ -354,6 +409,15 @@ interface OtomoStatsCallsResponse {
 interface OtomoStatsRepeatResponse {
   range: OtomoStatsRange
   stats: OtomoStatsRepeatStats
+}
+
+interface OtomoScheduleResponse {
+  schedule: OtomoSchedulePayload
+}
+
+interface UpdateOtomoScheduleResponse {
+  status: string
+  schedule: OtomoSchedulePayload
 }
 
 interface RawOtomoResponseItem {
@@ -740,4 +804,19 @@ export async function fetchOtomoStatsRepeat(
     `/otomo/stats/repeat${query}`,
   )
   return response.stats
+}
+
+export async function fetchOtomoSchedule(): Promise<OtomoSchedulePayload> {
+  const response = await http<OtomoScheduleResponse>('/otomo/schedule')
+  return response.schedule
+}
+
+export async function updateOtomoSchedule(
+  payload: UpdateOtomoSchedulePayload,
+): Promise<OtomoSchedulePayload> {
+  const response = await http<UpdateOtomoScheduleResponse>('/otomo/schedule', {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  })
+  return response.schedule
 }

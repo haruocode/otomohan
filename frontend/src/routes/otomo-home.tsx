@@ -5,6 +5,7 @@ import {
   AlertCircle,
   BarChart3,
   Bell,
+  CalendarDays,
   ChevronRight,
   Headphones,
   History,
@@ -140,6 +141,9 @@ function OtomoHomeScreen() {
         <StatusHelper status={profile.status} />
         <RewardSection profile={profile} />
         <WaitingVisualizer status={profile.status} />
+        <ScheduleShortcut
+          onClick={() => router.navigate({ to: '/otomo-schedule' })}
+        />
         <Button
           type="button"
           variant="outline"
@@ -401,6 +405,34 @@ function WaitingVisualizer({
         </p>
       </div>
     </div>
+  )
+}
+
+function ScheduleShortcut({ onClick }: { onClick: () => void }) {
+  return (
+    <Card className="border-2 border-dashed border-white/20 bg-white/5">
+      <CardContent className="flex flex-col gap-4 p-6 text-left sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-white/10 px-3 py-1 text-xs uppercase tracking-wide text-white/70">
+            <CalendarDays className="h-3.5 w-3.5" />
+            O-06 preview
+          </div>
+          <p className="text-lg font-semibold text-white">
+            稼働スケジュールを設定
+          </p>
+          <p className="text-sm text-white/70">
+            1週間分の稼働時間を登録すると、自動で待機/離席の切替が行われます。
+          </p>
+        </div>
+        <Button
+          type="button"
+          className="w-full rounded-2xl bg-white/90 text-slate-900 hover:bg-white sm:w-auto"
+          onClick={onClick}
+        >
+          予定を編集
+        </Button>
+      </CardContent>
+    </Card>
   )
 }
 

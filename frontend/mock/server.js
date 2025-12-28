@@ -24,6 +24,8 @@ import {
   otomoStatsHourly,
   otomoStatsCalls,
   otomoStatsRepeat,
+  otomoSchedule,
+  SCHEDULE_WEEKDAYS,
 } from './data/mockData.js'
 
 const app = express()
@@ -36,6 +38,11 @@ const upload = multer({
 const MAX_NAME_LENGTH = 32
 const MAX_INTRO_LENGTH = 300
 const STATS_RANGES = ['today', 'week', 'month', 'all']
+const TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/
+const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/
+const WEEKDAY_LOOKUP = new Map(
+  SCHEDULE_WEEKDAYS.map((weekday) => [weekday.day, weekday]),
+)
 
 const getActiveIncomingCall = () => {
   const call = otomoIncomingCall.current
@@ -141,6 +148,157 @@ const pickDailyStatsByRange = (range) => {
       return otomoStatsDaily
   }
 }
+
+const toMinutes = (time) => {
+  if (typeof time !== 'string' || !TIME_PATTERN.test(time)) {
+    return null
+  }
+  const [hours, minutes] = time.split(':').map((value) => Number(value))
+  return hours * 60 + minutes
+}
+
+const ensureRangeId = (day, providedId) => {
+  if (typeof providedId === 'string' && providedId.trim().length > 0) {
+    return providedId.trim()
+  }
+  return `range-${day}-${uuid()}`
+}
+
+const normalizeScheduleRanges = (day, ranges = []) => {
+  if (!Array.isArray(ranges) || ranges.length === 0) {
+    return []
+  }
+
+  const normalized = ranges.map((range, index) => {
+    if (!range || typeof range !== 'object') {
+      throw new Error('時間帯の形式が不正です。')
+    }
+    const startMinutes = toMinutes(range.start)
+    const endMinutes = toMinutes(range.end)
+    if (startMinutes === null) {
+      throw new Error('開始時間は HH:MM 形式で入力してください。')
+    }
+    if (endMinutes === null) {
+      throw new Error('終了時間は HH:MM 形式で入力してください。')
+    }
+    if (endMinutes <= startMinutes) {
+      throw new Error('終了時間は開始時間より後に設定してください。')
+    }
+
+    return {
+      id: ensureRangeId(day, range.id ?? `range-${day}-${index}`),
+      start: range.start,
+      end: range.end,
+      _startMinutes: startMinutes,
+      _endMinutes: endMinutes,
+    }
+  })
+
+  const sorted = normalized.sort((a, b) => a._startMinutes - b._startMinutes)
+  for (let i = 1; i < sorted.length; i += 1) {
+    const prev = sorted[i - 1]
+    const current = sorted[i]
+    if (current._startMinutes < prev._endMinutes) {
+      throw new Error('同じ曜日で時間帯が重複しています。')
+    }
+  }
+
+  return sorted.map(({ _startMinutes, _endMinutes, ...rest }) => rest)
+}
+
+const normalizeScheduleWeekly = (weeklyInput = []) => {
+  if (!Array.isArray(weeklyInput)) {
+    throw new Error('週次スケジュールを配列で指定してください。')
+  }
+  const normalizedMap = new Map()
+
+  weeklyInput.forEach((entry) => {
+    const dayNumber = Number(entry?.day)
+    if (!Number.isInteger(dayNumber) || dayNumber < 1 || dayNumber > 7) {
+      throw new Error('曜日の指定が不正です。')
+    }
+    const meta = WEEKDAY_LOOKUP.get(dayNumber)
+    const ranges = normalizeScheduleRanges(dayNumber, entry.ranges)
+    const isDayOff = Boolean(entry?.isDayOff) || ranges.length === 0
+
+    normalizedMap.set(dayNumber, {
+      day: dayNumber,
+      label: meta?.label ?? '日',
+      fullLabel: meta?.fullLabel ?? '日曜日',
+      isDayOff,
+      ranges: isDayOff ? [] : ranges,
+    })
+  })
+
+  return SCHEDULE_WEEKDAYS.map(
+    (weekday) =>
+      normalizedMap.get(weekday.day) ?? {
+        day: weekday.day,
+        label: weekday.label,
+        fullLabel: weekday.fullLabel,
+        isDayOff: true,
+        ranges: [],
+      },
+  )
+}
+
+const normalizeScheduleExceptions = (exceptionsInput = []) => {
+  if (!Array.isArray(exceptionsInput) || exceptionsInput.length === 0) {
+    return otomoSchedule.exceptions ?? []
+  }
+
+  return exceptionsInput.slice(0, 20).map((item) => {
+    const date = String(item?.date ?? '').trim()
+    if (!DATE_PATTERN.test(date)) {
+      throw new Error('例外設定の日付は YYYY-MM-DD 形式で指定してください。')
+    }
+    const type = item?.type === 'partial' ? 'partial' : 'off'
+    let start
+    let end
+    if (type === 'partial') {
+      const startMinutes = toMinutes(item?.start)
+      const endMinutes = toMinutes(item?.end)
+      if (startMinutes === null || endMinutes === null) {
+        throw new Error('例外設定の時間は HH:MM 形式で指定してください。')
+      }
+      if (endMinutes <= startMinutes) {
+        throw new Error(
+          '例外設定の終了時間は開始時間より後に設定してください。',
+        )
+      }
+      start = item.start
+      end = item.end
+    }
+
+    return {
+      id:
+        typeof item?.id === 'string' && item.id.trim().length > 0
+          ? item.id.trim()
+          : `exc-${date}-${uuid()}`,
+      date,
+      type,
+      start,
+      end,
+      note: typeof item?.note === 'string' ? item.note : '',
+    }
+  })
+}
+
+const cloneScheduleDay = (day) => ({
+  ...day,
+  ranges: day.ranges.map((range) => ({ ...range })),
+})
+
+const serializeSchedule = () => ({
+  weekly: otomoSchedule.weekly.map((day) => cloneScheduleDay(day)),
+  exceptions: otomoSchedule.exceptions.map((exception) => ({ ...exception })),
+  autoStatusEnabled: otomoSchedule.autoStatusEnabled,
+  timezone: otomoSchedule.timezone,
+  lastUpdatedAt: otomoSchedule.lastUpdatedAt,
+})
+
+const respondWithSchedule = (res, status = 200) =>
+  res.status(status).json({ schedule: serializeSchedule() })
 
 app.use(cors())
 app.use(express.json())
@@ -254,6 +412,37 @@ app.get('/otomo/calls', (req, res) => {
 
 app.get('/otomo/rewards', (_req, res) => {
   res.json(otomoRewardSummary)
+})
+
+app.get('/otomo/schedule', (_req, res) => {
+  respondWithSchedule(res)
+})
+
+app.put('/otomo/schedule', (req, res) => {
+  const { weekly, exceptions, autoStatusEnabled, timezone } = req.body || {}
+  if (!Array.isArray(weekly)) {
+    return res
+      .status(400)
+      .json({ error: '週次スケジュールを指定してください。' })
+  }
+
+  try {
+    otomoSchedule.weekly = normalizeScheduleWeekly(weekly)
+    if (Array.isArray(exceptions)) {
+      otomoSchedule.exceptions = normalizeScheduleExceptions(exceptions)
+    }
+    if (typeof autoStatusEnabled === 'boolean') {
+      otomoSchedule.autoStatusEnabled = autoStatusEnabled
+    }
+    if (typeof timezone === 'string' && timezone.trim().length > 0) {
+      otomoSchedule.timezone = timezone.trim()
+    }
+    otomoSchedule.lastUpdatedAt = now()
+  } catch (error) {
+    return res.status(400).json({ error: error.message })
+  }
+
+  return res.json({ status: 'saved', schedule: serializeSchedule() })
 })
 
 app.get('/otomo/stats/summary', (req, res) => {
