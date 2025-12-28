@@ -340,3 +340,20 @@ export const otomoSelf = {
   statusNote: 'オンライン',
   notifications: 2,
 }
+
+export const otomoIncomingCall = {
+  current: {
+    callId: 'incoming-001',
+    user: {
+      id: 'user-101',
+      name: 'たろう',
+      avatarUrl: '/static/avatar/user-default.png',
+      profileLink: '/users/user-101',
+    },
+    ratePerMinute: 100,
+    requestedAt: now(),
+    expiresAt: minutesFromNow(0.5),
+    note: '夜ふかし雑談をお願いしたいです！',
+    badges: ['常連', '高評価'],
+  },
+}

@@ -1,5 +1,5 @@
-import { useMemo } from 'react'
-import { createFileRoute } from '@tanstack/react-router'
+import { useEffect, useMemo } from 'react'
+import { createFileRoute, useRouter } from '@tanstack/react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   AlertCircle,
@@ -17,7 +17,7 @@ import {
 } from 'lucide-react'
 
 import type { OtomoDashboardProfile, OtomoRecentCall } from '@/lib/api'
-import { fetchOtomoSelf, updateOtomoStatus } from '@/lib/api'
+import { fetchIncomingCall, fetchOtomoSelf, updateOtomoStatus } from '@/lib/api'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -61,12 +61,25 @@ export const Route = createFileRoute('/otomo-home')({
 })
 
 function OtomoHomeScreen() {
+  const router = useRouter()
   const queryClient = useQueryClient()
   const otomoQuery = useQuery({
     queryKey: ['otomo-self'],
     queryFn: fetchOtomoSelf,
     refetchInterval: 45_000,
   })
+
+  const incomingCallQuery = useQuery({
+    queryKey: ['otomo-incoming-call'],
+    queryFn: fetchIncomingCall,
+    refetchInterval: 5_000,
+  })
+
+  useEffect(() => {
+    if (incomingCallQuery.data?.call) {
+      router.navigate({ to: '/otomo-call/incoming' })
+    }
+  }, [incomingCallQuery.data?.call?.callId, router])
 
   const statusMutation = useMutation({
     mutationFn: updateOtomoStatus,
@@ -110,6 +123,14 @@ function OtomoHomeScreen() {
         <StatusHelper status={profile.status} />
         <RewardSection profile={profile} />
         <WaitingVisualizer status={profile.status} />
+        <Button
+          type="button"
+          variant="outline"
+          className="rounded-2xl border border-dashed border-white/30 bg-white/5 text-white"
+          onClick={() => router.navigate({ to: '/otomo-call/incoming' })}
+        >
+          デモ: 着信画面を開く
+        </Button>
         <RecentCallSection recentCalls={profile.recentCalls} />
       </main>
 

@@ -16,6 +16,7 @@ import {
   otomoSelf,
   otomoRewardSummary,
   otomoCallFeed,
+  otomoIncomingCall,
 } from './data/mockData.js'
 
 const app = express()
@@ -27,6 +28,17 @@ const upload = multer({
 })
 const MAX_NAME_LENGTH = 32
 const MAX_INTRO_LENGTH = 300
+
+const getActiveIncomingCall = () => {
+  const call = otomoIncomingCall.current
+  if (!call) return null
+  const expiresAtMs = new Date(call.expiresAt).getTime()
+  if (Number.isFinite(expiresAtMs) && expiresAtMs <= Date.now()) {
+    otomoIncomingCall.current = null
+    return null
+  }
+  return call
+}
 
 const buildLatestCallSummary = () => {
   const latest = callHistory[0]
@@ -164,6 +176,36 @@ app.get('/otomo/calls', (req, res) => {
 
 app.get('/otomo/rewards', (_req, res) => {
   res.json(otomoRewardSummary)
+})
+
+app.get('/otomo/incoming-call', (_req, res) => {
+  const call = getActiveIncomingCall()
+  res.json({ call, status: call ? 'ringing' : 'idle' })
+})
+
+app.post('/otomo/incoming-call/accept', (_req, res) => {
+  const call = getActiveIncomingCall()
+  if (!call) {
+    return res
+      .status(409)
+      .json({ error: '現在着信はありません', reason: 'call_ended' })
+  }
+  otomoIncomingCall.current = null
+  otomoSelf.status = 'busy'
+  res.json({ status: 'accepted', callId: call.callId })
+})
+
+app.post('/otomo/incoming-call/reject', (req, res) => {
+  const call = getActiveIncomingCall()
+  if (!call) {
+    return res
+      .status(409)
+      .json({ error: '現在着信はありません', reason: 'call_ended' })
+  }
+  const { reason = 'busy' } = req.body || {}
+  otomoIncomingCall.current = null
+  otomoSelf.status = 'online'
+  res.json({ status: 'rejected', callId: call.callId, reason })
 })
 
 app.get('/otomo', (req, res) => {

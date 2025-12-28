@@ -120,6 +120,23 @@ export interface CallHistoryEntry {
   totalCharged: number
 }
 
+export interface IncomingCallUser {
+  id: string
+  name: string
+  avatarUrl: string
+  profileLink?: string
+}
+
+export interface IncomingCall {
+  callId: string
+  user: IncomingCallUser
+  ratePerMinute: number
+  requestedAt: string
+  expiresAt: string
+  note?: string
+  badges?: Array<string>
+}
+
 export interface OtomoRecentCall {
   callId: string
   userName: string
@@ -186,6 +203,11 @@ interface UpdateUserAvatarResponse {
 interface UpdateOtomoStatusResponse {
   status: string
   profile: OtomoDashboardProfile
+}
+
+interface IncomingCallResponse {
+  call: IncomingCall | null
+  status: 'ringing' | 'idle'
 }
 
 interface RawOtomoResponseItem {
@@ -453,4 +475,31 @@ export async function fetchOtomoCalls(
 
 export async function fetchOtomoRewards(): Promise<OtomoRewardSummary> {
   return http<OtomoRewardSummary>('/otomo/rewards')
+}
+
+export async function fetchIncomingCall(): Promise<IncomingCallResponse> {
+  return http<IncomingCallResponse>('/otomo/incoming-call')
+}
+
+export async function acceptIncomingCall(callId: string): Promise<void> {
+  await http<{ status: string; callId: string }>(
+    '/otomo/incoming-call/accept',
+    {
+      method: 'POST',
+      body: JSON.stringify({ callId }),
+    },
+  )
+}
+
+export async function rejectIncomingCall(
+  callId: string,
+  reason: string = 'busy',
+): Promise<void> {
+  await http<{ status: string; callId: string; reason: string }>(
+    '/otomo/incoming-call/reject',
+    {
+      method: 'POST',
+      body: JSON.stringify({ callId, reason }),
+    },
+  )
 }
