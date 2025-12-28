@@ -365,3 +365,139 @@ export const otomoActiveCall = {
 export const otomoLastCallSummary = {
   current: null,
 }
+
+const generateDailyRevenueSeries = () =>
+  Array.from({ length: 14 }, (_value, index) => {
+    const daysAgo = 13 - index
+    const date = new Date(Date.now() - daysAgo * 86_400_000)
+    const points = 220 + ((index % 6) + 1) * 110
+    const minutes = 45 + ((index * 7) % 60)
+    const callCount = 2 + (index % 4)
+    return {
+      date: date.toISOString().slice(0, 10),
+      points,
+      minutes,
+      callCount,
+    }
+  })
+
+const generateHourlyHeatmap = () =>
+  Array.from({ length: 24 }, (_value, hour) => {
+    const base =
+      hour >= 20 || hour <= 1 ? 6 : hour >= 18 ? 5 : hour >= 12 ? 3 : 2
+    const callCount = base + (hour % 2)
+    return {
+      hour,
+      callCount,
+    }
+  })
+
+export const otomoStatsSummaryByRange = {
+  today: {
+    totalRevenue: 1280,
+    totalMinutes: 62,
+    averageMinutes: 8.3,
+    repeatRate: 0.38,
+    totalCalls: 9,
+    trend: {
+      revenue: 0.12,
+      minutes: 0.08,
+      repeatRate: 0.04,
+    },
+  },
+  week: {
+    totalRevenue: 4320,
+    totalMinutes: 120,
+    averageMinutes: 7.5,
+    repeatRate: 0.42,
+    totalCalls: 28,
+    trend: {
+      revenue: 0.18,
+      minutes: 0.14,
+      repeatRate: 0.05,
+    },
+  },
+  month: {
+    totalRevenue: 15_200,
+    totalMinutes: 510,
+    averageMinutes: 9.1,
+    repeatRate: 0.47,
+    totalCalls: 110,
+    trend: {
+      revenue: 0.22,
+      minutes: 0.16,
+      repeatRate: 0.06,
+    },
+  },
+  all: {
+    totalRevenue: 58_400,
+    totalMinutes: 2_010,
+    averageMinutes: 10.4,
+    repeatRate: 0.51,
+    totalCalls: 410,
+    trend: {
+      revenue: 0.05,
+      minutes: 0.04,
+      repeatRate: 0.02,
+    },
+  },
+}
+
+export const otomoStatsDaily = generateDailyRevenueSeries()
+
+export const otomoStatsHourly = generateHourlyHeatmap()
+
+export const otomoStatsCalls = [
+  {
+    callId: 'dash-call-001',
+    userName: 'たろう',
+    durationMinutes: 7,
+    earnedPoints: 420,
+    startedAt: minutesFromNow(-90),
+  },
+  {
+    callId: 'dash-call-002',
+    userName: 'みゆき',
+    durationMinutes: 20,
+    earnedPoints: 1_200,
+    startedAt: minutesFromNow(-240),
+  },
+  {
+    callId: 'dash-call-003',
+    userName: 'さくら',
+    durationMinutes: 12,
+    earnedPoints: 720,
+    startedAt: minutesFromNow(-360),
+  },
+  {
+    callId: 'dash-call-004',
+    userName: 'けんと',
+    durationMinutes: 15,
+    earnedPoints: 900,
+    startedAt: minutesFromNow(-540),
+  },
+  {
+    callId: 'dash-call-005',
+    userName: 'ひかる',
+    durationMinutes: 9,
+    earnedPoints: 540,
+    startedAt: minutesFromNow(-720),
+  },
+  {
+    callId: 'dash-call-006',
+    userName: 'ゆう',
+    durationMinutes: 6,
+    earnedPoints: 360,
+    startedAt: minutesFromNow(-960),
+  },
+]
+
+export const otomoStatsRepeat = {
+  repeatUsers: 12,
+  newUsers: 5,
+  topUser: {
+    name: 'たろう',
+    totalMinutes: 50,
+    totalCalls: 6,
+  },
+}

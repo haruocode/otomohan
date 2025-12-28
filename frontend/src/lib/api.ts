@@ -186,6 +186,58 @@ export interface OtomoCallSummary {
   memo?: string
 }
 
+export type OtomoStatsRange = 'today' | 'week' | 'month' | 'all'
+
+export interface OtomoStatsSummaryTrend {
+  revenue: number
+  minutes: number
+  repeatRate: number
+}
+
+export interface OtomoStatsSummaryPayload {
+  totalRevenue: number
+  totalMinutes: number
+  averageMinutes: number
+  repeatRate: number
+  totalCalls: number
+  trend: OtomoStatsSummaryTrend
+}
+
+export interface OtomoStatsSummaryResult {
+  range: OtomoStatsRange
+  summary: OtomoStatsSummaryPayload
+}
+
+export interface OtomoStatsDailyPoint {
+  date: string
+  points: number
+  minutes: number
+  callCount: number
+}
+
+export interface OtomoStatsHourlyPoint {
+  hour: number
+  callCount: number
+}
+
+export interface OtomoStatsCallEntry {
+  callId: string
+  userName: string
+  durationMinutes: number
+  earnedPoints: number
+  startedAt: string
+}
+
+export interface OtomoStatsRepeatStats {
+  repeatUsers: number
+  newUsers: number
+  topUser: {
+    name: string
+    totalMinutes: number
+    totalCalls: number
+  }
+}
+
 export interface OtomoRecentCall {
   callId: string
   userName: string
@@ -280,6 +332,28 @@ interface OtomoCallSummaryResponse {
 interface SaveOtomoCallMemoResponse {
   status: string
   summary: OtomoCallSummary
+}
+
+interface OtomoStatsSummaryResponse extends OtomoStatsSummaryResult {}
+
+interface OtomoStatsDailyResponse {
+  range: OtomoStatsRange
+  items: Array<OtomoStatsDailyPoint>
+}
+
+interface OtomoStatsHourlyResponse {
+  range: OtomoStatsRange
+  items: Array<OtomoStatsHourlyPoint>
+}
+
+interface OtomoStatsCallsResponse {
+  range: OtomoStatsRange
+  items: Array<OtomoStatsCallEntry>
+}
+
+interface OtomoStatsRepeatResponse {
+  range: OtomoStatsRange
+  stats: OtomoStatsRepeatStats
 }
 
 interface RawOtomoResponseItem {
@@ -396,6 +470,14 @@ async function http<T>(path: string, init?: RequestInit): Promise<T> {
   }
 
   return response.json() as Promise<T>
+}
+
+const buildRangeQuery = (range?: OtomoStatsRange) => {
+  if (!range) return ''
+  const params = new URLSearchParams()
+  params.set('range', range)
+  const query = params.toString()
+  return query ? `?${query}` : ''
 }
 
 export async function fetchOtomoProfiles(
@@ -605,4 +687,57 @@ export async function updateOtomoCallMemo(
     },
   )
   return response.summary
+}
+
+export async function fetchOtomoStatsSummary(
+  range?: OtomoStatsRange,
+): Promise<OtomoStatsSummaryResult> {
+  const query = buildRangeQuery(range)
+  return http<OtomoStatsSummaryResponse>(`/otomo/stats/summary${query}`)
+}
+
+export async function fetchOtomoStatsDaily(
+  range?: OtomoStatsRange,
+): Promise<Array<OtomoStatsDailyPoint>> {
+  const query = buildRangeQuery(range)
+  const response = await http<OtomoStatsDailyResponse>(
+    `/otomo/stats/daily${query}`,
+  )
+  return response.items
+}
+
+export async function fetchOtomoStatsHourly(
+  range?: OtomoStatsRange,
+): Promise<Array<OtomoStatsHourlyPoint>> {
+  const query = buildRangeQuery(range)
+  const response = await http<OtomoStatsHourlyResponse>(
+    `/otomo/stats/hourly${query}`,
+  )
+  return response.items
+}
+
+export async function fetchOtomoStatsCalls({
+  range,
+  limit,
+}: {
+  range?: OtomoStatsRange
+  limit?: number
+} = {}): Promise<Array<OtomoStatsCallEntry>> {
+  const params = new URLSearchParams()
+  if (range) params.set('range', range)
+  if (limit && Number.isFinite(limit)) params.set('limit', `${limit}`)
+  const query = params.toString()
+  const endpoint = `/otomo/stats/calls${query ? `?${query}` : ''}`
+  const response = await http<OtomoStatsCallsResponse>(endpoint)
+  return response.items
+}
+
+export async function fetchOtomoStatsRepeat(
+  range?: OtomoStatsRange,
+): Promise<OtomoStatsRepeatStats> {
+  const query = buildRangeQuery(range)
+  const response = await http<OtomoStatsRepeatResponse>(
+    `/otomo/stats/repeat${query}`,
+  )
+  return response.stats
 }

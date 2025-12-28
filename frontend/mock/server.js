@@ -19,6 +19,11 @@ import {
   otomoIncomingCall,
   otomoActiveCall,
   otomoLastCallSummary,
+  otomoStatsSummaryByRange,
+  otomoStatsDaily,
+  otomoStatsHourly,
+  otomoStatsCalls,
+  otomoStatsRepeat,
 } from './data/mockData.js'
 
 const app = express()
@@ -30,6 +35,7 @@ const upload = multer({
 })
 const MAX_NAME_LENGTH = 32
 const MAX_INTRO_LENGTH = 300
+const STATS_RANGES = ['today', 'week', 'month', 'all']
 
 const getActiveIncomingCall = () => {
   const call = otomoIncomingCall.current
@@ -116,6 +122,25 @@ const buildOtomoPayload = () => ({
   rewardSummary: otomoRewardSummary,
   recentCalls: otomoCallFeed.slice(0, 4),
 })
+
+const normalizeStatsRange = (value) => {
+  const normalized = String(value || 'week').toLowerCase()
+  return STATS_RANGES.includes(normalized) ? normalized : 'week'
+}
+
+const pickDailyStatsByRange = (range) => {
+  switch (range) {
+    case 'today':
+      return otomoStatsDaily.slice(-1)
+    case 'week':
+      return otomoStatsDaily.slice(-7)
+    case 'month':
+      return otomoStatsDaily
+    case 'all':
+    default:
+      return otomoStatsDaily
+  }
+}
 
 app.use(cors())
 app.use(express.json())
@@ -229,6 +254,34 @@ app.get('/otomo/calls', (req, res) => {
 
 app.get('/otomo/rewards', (_req, res) => {
   res.json(otomoRewardSummary)
+})
+
+app.get('/otomo/stats/summary', (req, res) => {
+  const range = normalizeStatsRange(req.query.range)
+  res.json({ range, summary: otomoStatsSummaryByRange[range] })
+})
+
+app.get('/otomo/stats/daily', (req, res) => {
+  const range = normalizeStatsRange(req.query.range)
+  res.json({ range, items: pickDailyStatsByRange(range) })
+})
+
+app.get('/otomo/stats/hourly', (req, res) => {
+  const range = normalizeStatsRange(req.query.range)
+  res.json({ range, items: otomoStatsHourly })
+})
+
+app.get('/otomo/stats/calls', (req, res) => {
+  const limit = Number(req.query.limit)
+  const range = normalizeStatsRange(req.query.range)
+  const normalizedLimit =
+    Number.isFinite(limit) && limit > 0 ? limit : otomoStatsCalls.length
+  res.json({ range, items: otomoStatsCalls.slice(0, normalizedLimit) })
+})
+
+app.get('/otomo/stats/repeat', (req, res) => {
+  const range = normalizeStatsRange(req.query.range)
+  res.json({ range, stats: otomoStatsRepeat })
 })
 
 app.get('/otomo/incoming-call', (_req, res) => {
