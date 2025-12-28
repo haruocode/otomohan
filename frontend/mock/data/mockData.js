@@ -288,3 +288,55 @@ export const userProfile = {
   intro:
     '深夜の雑談と作業通話が好きなエンジニアです。コーヒー片手に話せる方を探しています。',
 }
+
+export const otomoRewardSummary = {
+  todayPoints: 1250,
+  totalPoints: 43200,
+  weekPoints: 8200,
+  pendingPoints: 240,
+  lastUpdatedAt: now(),
+}
+
+export const otomoCallFeed = [
+  {
+    callId: 'otomo-call-001',
+    userName: 'たろう',
+    startedAt: minutesFromNow(-90),
+    durationMinutes: 7,
+  },
+  {
+    callId: 'otomo-call-002',
+    userName: 'みゆき',
+    startedAt: minutesFromNow(-180),
+    durationMinutes: 20,
+  },
+  {
+    callId: 'otomo-call-003',
+    userName: 'ケント',
+    startedAt: minutesFromNow(-1440),
+    durationMinutes: 12,
+  },
+  {
+    callId: 'otomo-call-004',
+    userName: 'ひかる',
+    startedAt: minutesFromNow(-2200),
+    durationMinutes: 30,
+  },
+]
+
+export const otomoSelf = {
+  id: 'otomo-self-001',
+  name: 'さくら',
+  avatarUrl: '/static/avatar/hana.png',
+  status: 'online',
+  bio: '夜ふかし雑談と作業通話が得意。落ち着いた声でゆったり話します。',
+  specialties: ['夜ふかし雑談', '作業通話', '恋愛相談'],
+  rating: 4.9,
+  reviewCount: 210,
+  streakDays: 12,
+  todayPoints: otomoRewardSummary.todayPoints,
+  totalPoints: otomoRewardSummary.totalPoints,
+  availabilityMessage: '待機中：リクエストを受信できます',
+  statusNote: 'オンライン',
+  notifications: 2,
+}

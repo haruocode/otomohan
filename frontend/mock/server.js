@@ -13,6 +13,9 @@ import {
   calls,
   callHistory,
   userProfile,
+  otomoSelf,
+  otomoRewardSummary,
+  otomoCallFeed,
 } from './data/mockData.js'
 
 const app = express()
@@ -41,6 +44,12 @@ const buildUserPayload = () => ({
   intro: userProfile.intro ?? '',
   balance: walletBalance.balance,
   latestCall: buildLatestCallSummary(),
+})
+
+const buildOtomoPayload = () => ({
+  ...otomoSelf,
+  rewardSummary: otomoRewardSummary,
+  recentCalls: otomoCallFeed.slice(0, 4),
 })
 
 app.use(cors())
@@ -125,6 +134,36 @@ app.put('/user/avatar', upload.single('avatar'), (req, res) => {
   userProfile.avatarUrl = `data:${req.file.mimetype};base64,${base64}`
 
   res.json({ status: 'success', avatarUrl: userProfile.avatarUrl })
+})
+
+app.get('/otomo/me', (_req, res) => {
+  res.json(buildOtomoPayload())
+})
+
+app.put('/otomo/status', (req, res) => {
+  const { status } = req.body || {}
+  const allowed = ['online', 'away', 'busy']
+  if (!allowed.includes(status)) {
+    return res.status(400).json({ error: '不正なステータスです。' })
+  }
+  otomoSelf.status = status
+  otomoSelf.statusNote =
+    status === 'online' ? '待機中' : status === 'away' ? '離席中' : '通話中'
+  res.json({ status: 'success', profile: buildOtomoPayload() })
+})
+
+app.get('/otomo/calls', (req, res) => {
+  const limit = Number(req.query.limit)
+  const normalizedLimit =
+    Number.isFinite(limit) && limit > 0 ? limit : undefined
+  const items = normalizedLimit
+    ? otomoCallFeed.slice(0, normalizedLimit)
+    : otomoCallFeed
+  res.json({ items, total: otomoCallFeed.length })
+})
+
+app.get('/otomo/rewards', (_req, res) => {
+  res.json(otomoRewardSummary)
 })
 
 app.get('/otomo', (req, res) => {

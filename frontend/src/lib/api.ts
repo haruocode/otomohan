@@ -120,6 +120,40 @@ export interface CallHistoryEntry {
   totalCharged: number
 }
 
+export interface OtomoRecentCall {
+  callId: string
+  userName: string
+  startedAt: string
+  durationMinutes: number
+}
+
+export interface OtomoRewardSummary {
+  todayPoints: number
+  totalPoints: number
+  weekPoints?: number
+  pendingPoints?: number
+  lastUpdatedAt?: string
+}
+
+export interface OtomoDashboardProfile {
+  id: string
+  name: string
+  avatarUrl: string
+  status: OtomoPresenceStatus
+  bio?: string
+  specialties?: Array<string>
+  rating?: number
+  reviewCount?: number
+  streakDays?: number
+  availabilityMessage?: string
+  statusNote?: string
+  notifications?: number
+  todayPoints: number
+  totalPoints: number
+  rewardSummary: OtomoRewardSummary
+  recentCalls: Array<OtomoRecentCall>
+}
+
 export interface CurrentUserProfile {
   id: string
   name: string
@@ -147,6 +181,11 @@ interface UpdateUserProfileResponse {
 interface UpdateUserAvatarResponse {
   status: string
   avatarUrl: string
+}
+
+interface UpdateOtomoStatusResponse {
+  status: string
+  profile: OtomoDashboardProfile
 }
 
 interface RawOtomoResponseItem {
@@ -383,4 +422,35 @@ export async function uploadUserAvatar(file: File): Promise<string> {
 
   const data = (await response.json()) as UpdateUserAvatarResponse
   return data.avatarUrl
+}
+
+export async function fetchOtomoSelf(): Promise<OtomoDashboardProfile> {
+  return http<OtomoDashboardProfile>('/otomo/me')
+}
+
+export async function updateOtomoStatus(
+  status: OtomoPresenceStatus,
+): Promise<OtomoDashboardProfile> {
+  const response = await http<UpdateOtomoStatusResponse>('/otomo/status', {
+    method: 'PUT',
+    body: JSON.stringify({ status }),
+  })
+  return response.profile
+}
+
+export async function fetchOtomoCalls(
+  limit?: number,
+): Promise<Array<OtomoRecentCall>> {
+  const searchParams = new URLSearchParams()
+  if (limit && Number.isFinite(limit)) {
+    searchParams.append('limit', `${limit}`)
+  }
+  const query = searchParams.toString()
+  const endpoint = `/otomo/calls${query ? `?${query}` : ''}`
+  const data = await http<{ items: Array<OtomoRecentCall> }>(endpoint)
+  return data.items
+}
+
+export async function fetchOtomoRewards(): Promise<OtomoRewardSummary> {
+  return http<OtomoRewardSummary>('/otomo/rewards')
 }
