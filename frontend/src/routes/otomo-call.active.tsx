@@ -102,11 +102,14 @@ function OtomoActiveCallScreen() {
 
   const mutation = useMutation({
     mutationFn: () => endOtomoActiveCall('otomo_end'),
-    onSuccess: () => {
+    onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: ['otomo-active-call'] })
       queryClient.invalidateQueries({ queryKey: ['otomo-self'] })
+      queryClient.setQueryData(['otomo-call-summary'], {
+        summary: response.summary,
+      })
       setIsConfirmOpen(false)
-      router.navigate({ to: '/otomo-home' })
+      router.navigate({ to: '/otomo-call/summary' })
     },
     onError: (error: unknown) => {
       setActionError(

@@ -18,6 +18,7 @@ import {
   otomoCallFeed,
   otomoIncomingCall,
   otomoActiveCall,
+  otomoLastCallSummary,
 } from './data/mockData.js'
 
 const app = express()
@@ -51,6 +52,7 @@ const buildActiveCallState = (call) => ({
   voiceStatus: '音声品質は良好です',
   transport: 'SFU (mediasoup)',
   remoteMicState: 'on',
+  ratePerMinute: call.ratePerMinute ?? 0,
   events: [
     {
       id: `evt-${Date.now()}`,
@@ -60,6 +62,36 @@ const buildActiveCallState = (call) => ({
     },
   ],
 })
+
+const buildCallSummaryPayload = ({
+  call,
+  reason,
+  endedAt,
+  durationSeconds,
+}) => {
+  const billedMinutes = Math.max(1, Math.ceil(durationSeconds / 60))
+  const earnedPoints = billedMinutes * (call.ratePerMinute ?? 0)
+  otomoRewardSummary.todayPoints += earnedPoints
+  otomoRewardSummary.totalPoints += earnedPoints
+  otomoSelf.todayPoints = otomoRewardSummary.todayPoints
+  otomoSelf.totalPoints = otomoRewardSummary.totalPoints
+
+  return {
+    callId: call.callId,
+    user: call.user,
+    reason,
+    startedAt: call.startedAt,
+    endedAt,
+    durationSeconds,
+    billedMinutes,
+    reward: {
+      earnedPoints,
+      totalPoints: otomoRewardSummary.totalPoints,
+      ratePerMinute: call.ratePerMinute ?? 0,
+    },
+    memo: otomoLastCallSummary.current?.memo ?? '',
+  }
+}
 
 const buildLatestCallSummary = () => {
   const latest = callHistory[0]
@@ -212,6 +244,7 @@ app.post('/otomo/incoming-call/accept', (_req, res) => {
       .json({ error: '現在着信はありません', reason: 'call_ended' })
   }
   otomoIncomingCall.current = null
+  otomoLastCallSummary.current = null
   otomoSelf.status = 'busy'
   otomoSelf.statusNote = '通話中'
   otomoActiveCall.current = buildActiveCallState(call)
@@ -253,13 +286,39 @@ app.post('/otomo/active-call/end', (req, res) => {
   const durationSeconds = Number.isFinite(startedAtMs)
     ? Math.max(0, Math.round((Date.now() - startedAtMs) / 1000))
     : 0
+  const summary = buildCallSummaryPayload({
+    call,
+    reason,
+    endedAt,
+    durationSeconds,
+  })
+  otomoLastCallSummary.current = summary
   res.json({
     status: 'ended',
     callId: call.callId,
     reason,
     endedAt,
     durationSeconds,
+    summary,
   })
+})
+
+app.get('/otomo/call-summary', (_req, res) => {
+  res.json({ summary: otomoLastCallSummary.current })
+})
+
+app.put('/otomo/call-summary/memo', (req, res) => {
+  const { callId, memo = '' } = req.body || {}
+  const summary = otomoLastCallSummary.current
+  if (!summary || summary.callId !== callId) {
+    return res.status(404).json({ error: '保存対象の通話が見つかりません。' })
+  }
+  if (typeof memo !== 'string') {
+    return res.status(400).json({ error: 'memo は文字列で指定してください。' })
+  }
+  summary.memo = memo.slice(0, 2000)
+  otomoLastCallSummary.current = summary
+  res.json({ status: 'saved', summary })
 })
 
 app.get('/otomo', (req, res) => {

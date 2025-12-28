@@ -76,6 +76,7 @@ function IncomingCallScreen() {
       queryClient.invalidateQueries({ queryKey: ['otomo-incoming-call'] })
       queryClient.invalidateQueries({ queryKey: ['otomo-active-call'] })
       queryClient.invalidateQueries({ queryKey: ['otomo-self'] })
+      queryClient.setQueryData(['otomo-call-summary'], { summary: null })
       router.navigate({ to: '/otomo-call/active' })
     },
     onError: (error: unknown) => {
@@ -91,6 +92,7 @@ function IncomingCallScreen() {
       queryClient.invalidateQueries({ queryKey: ['otomo-incoming-call'] })
       queryClient.invalidateQueries({ queryKey: ['otomo-active-call'] })
       queryClient.invalidateQueries({ queryKey: ['otomo-self'] })
+      queryClient.setQueryData(['otomo-call-summary'], { summary: null })
       router.navigate({ to: '/otomo-home' })
     },
     onError: (error: unknown) => {

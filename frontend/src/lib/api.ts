@@ -165,6 +165,25 @@ export interface OtomoActiveCall {
   latencyMs?: number
   bitrateKbps?: number
   events?: Array<OtomoCallEvent>
+  ratePerMinute?: number
+}
+
+export interface OtomoCallRewardSummary {
+  earnedPoints: number
+  totalPoints: number
+  ratePerMinute: number
+}
+
+export interface OtomoCallSummary {
+  callId: string
+  user: IncomingCallUser
+  reason: string
+  startedAt: string
+  endedAt: string
+  durationSeconds: number
+  billedMinutes: number
+  reward: OtomoCallRewardSummary
+  memo?: string
 }
 
 export interface OtomoRecentCall {
@@ -251,6 +270,16 @@ interface EndOtomoCallResponse {
   reason: string
   endedAt: string
   durationSeconds: number
+  summary: OtomoCallSummary
+}
+
+interface OtomoCallSummaryResponse {
+  summary: OtomoCallSummary | null
+}
+
+interface SaveOtomoCallMemoResponse {
+  status: string
+  summary: OtomoCallSummary
 }
 
 interface RawOtomoResponseItem {
@@ -558,4 +587,22 @@ export async function endOtomoActiveCall(
     method: 'POST',
     body: JSON.stringify({ reason }),
   })
+}
+
+export async function fetchOtomoCallSummary(): Promise<OtomoCallSummaryResponse> {
+  return http<OtomoCallSummaryResponse>('/otomo/call-summary')
+}
+
+export async function updateOtomoCallMemo(
+  callId: string,
+  memo: string,
+): Promise<OtomoCallSummary> {
+  const response = await http<SaveOtomoCallMemoResponse>(
+    '/otomo/call-summary/memo',
+    {
+      method: 'PUT',
+      body: JSON.stringify({ callId, memo }),
+    },
+  )
+  return response.summary
 }

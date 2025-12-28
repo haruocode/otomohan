@@ -361,3 +361,7 @@ export const otomoIncomingCall = {
 export const otomoActiveCall = {
   current: null,
 }
+
+export const otomoLastCallSummary = {
+  current: null,
+}
