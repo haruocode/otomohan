@@ -14,6 +14,7 @@ import { Route as HistoryRouteImport } from './routes/history'
 import { Route as HistoryCallIdRouteImport } from './routes/history.$callId'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as MypageRouteImport } from './routes/mypage'
+import { Route as MypageEditRouteImport } from './routes/mypage.edit'
 import { Route as WalletChargeRouteImport } from './routes/wallet.charge'
 import { Route as OtomoOtomoIdRouteImport } from './routes/otomo.$otomoId'
 import { Route as DemoTanstackQueryRouteImport } from './routes/demo/tanstack-query'
@@ -51,6 +52,11 @@ const IndexRoute = IndexRouteImport.update({
 const MypageRoute = MypageRouteImport.update({
   id: '/mypage',
   path: '/mypage',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MypageEditRoute = MypageEditRouteImport.update({
+  id: '/mypage/edit',
+  path: '/mypage/edit',
   getParentRoute: () => rootRouteImport,
 } as any)
 const WalletChargeRoute = WalletChargeRouteImport.update({
@@ -122,6 +128,7 @@ const DemoStartSsrDataOnlyRoute = DemoStartSsrDataOnlyRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/mypage': typeof MypageRoute
+  '/mypage/edit': typeof MypageEditRoute
   '/history': typeof HistoryRoute
   '/history/$callId': typeof HistoryCallIdRoute
   '/wallet': typeof WalletRouteWithChildren
@@ -142,6 +149,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/mypage': typeof MypageRoute
+  '/mypage/edit': typeof MypageEditRoute
   '/history': typeof HistoryRoute
   '/history/$callId': typeof HistoryCallIdRoute
   '/wallet': typeof WalletRouteWithChildren
@@ -163,6 +171,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/mypage': typeof MypageRoute
+  '/mypage/edit': typeof MypageEditRoute
   '/history': typeof HistoryRoute
   '/history/$callId': typeof HistoryCallIdRoute
   '/wallet': typeof WalletRouteWithChildren
@@ -185,6 +194,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/mypage'
+    | '/mypage/edit'
     | '/history'
     | '/history/$callId'
     | '/wallet'
@@ -205,6 +215,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/mypage'
+    | '/mypage/edit'
     | '/history'
     | '/history/$callId'
     | '/wallet'
@@ -225,6 +236,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/mypage'
+    | '/mypage/edit'
     | '/history'
     | '/history/$callId'
     | '/wallet'
@@ -246,6 +258,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   MypageRoute: typeof MypageRoute
+  MypageEditRoute: typeof MypageEditRoute
   HistoryRoute: typeof HistoryRoute
   HistoryCallIdRoute: typeof HistoryCallIdRoute
   WalletRoute: typeof WalletRouteWithChildren
@@ -283,6 +296,13 @@ declare module '@tanstack/react-router' {
       path: '/mypage'
       fullPath: '/mypage'
       preLoaderRoute: typeof MypageRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mypage/edit': {
+      id: '/mypage/edit'
+      path: '/mypage/edit'
+      fullPath: '/mypage/edit'
+      preLoaderRoute: typeof MypageEditRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/history': {
@@ -419,6 +439,7 @@ const CallCallIdRouteWithChildren = CallCallIdRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   MypageRoute: MypageRoute,
+  MypageEditRoute: MypageEditRoute,
   HistoryRoute: HistoryRoute,
   HistoryCallIdRoute: HistoryCallIdRoute,
   WalletRoute: WalletRouteWithChildren,

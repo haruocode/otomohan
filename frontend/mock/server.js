@@ -1,6 +1,7 @@
 import express from 'express'
 import cors from 'cors'
 import morgan from 'morgan'
+import multer from 'multer'
 import { v4 as uuid } from 'uuid'
 
 import {
@@ -17,6 +18,30 @@ import {
 const app = express()
 const PORT = process.env.PORT || 5050
 const artificialDelayMs = Number(process.env.MOCK_DELAY_MS || 0)
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 },
+})
+const MAX_NAME_LENGTH = 32
+const MAX_INTRO_LENGTH = 300
+
+const buildLatestCallSummary = () => {
+  const latest = callHistory[0]
+  return latest
+    ? {
+        callId: latest.callId,
+        otomoName: latest.otomo.name,
+        durationSec: latest.durationSec,
+      }
+    : null
+}
+
+const buildUserPayload = () => ({
+  ...userProfile,
+  intro: userProfile.intro ?? '',
+  balance: walletBalance.balance,
+  latestCall: buildLatestCallSummary(),
+})
 
 app.use(cors())
 app.use(express.json())
@@ -70,18 +95,36 @@ app.get('/wallet/usage', (req, res) => {
 })
 
 app.get('/user/me', (_req, res) => {
-  const latest = callHistory[0]
-  res.json({
-    ...userProfile,
-    balance: walletBalance.balance,
-    latestCall: latest
-      ? {
-          callId: latest.callId,
-          otomoName: latest.otomo.name,
-          durationSec: latest.durationSec,
-        }
-      : null,
-  })
+  res.json(buildUserPayload())
+})
+
+app.put('/user/profile', (req, res) => {
+  const { name, intro } = req.body || {}
+  if (typeof name !== 'string' || name.trim().length === 0) {
+    return res.status(400).json({ error: '名前を入力してください。' })
+  }
+
+  const trimmedName = name.trim().slice(0, MAX_NAME_LENGTH)
+  userProfile.name = trimmedName
+
+  if (typeof intro === 'string') {
+    userProfile.intro = intro.slice(0, MAX_INTRO_LENGTH)
+  } else if (intro === null) {
+    userProfile.intro = ''
+  }
+
+  res.json({ status: 'success', user: buildUserPayload() })
+})
+
+app.put('/user/avatar', upload.single('avatar'), (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: '画像ファイルが必要です。' })
+  }
+
+  const base64 = req.file.buffer.toString('base64')
+  userProfile.avatarUrl = `data:${req.file.mimetype};base64,${base64}`
+
+  res.json({ status: 'success', avatarUrl: userProfile.avatarUrl })
 })
 
 app.get('/otomo', (req, res) => {
@@ -145,6 +188,14 @@ app.use((req, res) => {
 })
 
 app.use((err, _req, res, _next) => {
+  if (err instanceof multer.MulterError) {
+    const message =
+      err.code === 'LIMIT_FILE_SIZE'
+        ? '画像サイズは5MB以下にしてください。'
+        : err.message
+    return res.status(400).json({ error: message })
+  }
+
   console.error(err)
   res.status(500).json({ error: 'Unexpected mock server error' })
 })

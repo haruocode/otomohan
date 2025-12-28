@@ -110,10 +110,12 @@ function ProfileCard({ user }: { user: CurrentUserProfile }) {
         <Button
           variant="secondary"
           className="rounded-2xl border border-white/20 text-slate-950"
-          disabled
+          asChild
         >
-          <Edit className="mr-2 h-4 w-4" />
-          プロフィールを編集（近日公開）
+          <Link to="/mypage/edit">
+            <Edit className="mr-2 h-4 w-4" />
+            プロフィールを編集
+          </Link>
         </Button>
       </CardContent>
     </Card>

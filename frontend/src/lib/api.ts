@@ -125,12 +125,28 @@ export interface CurrentUserProfile {
   name: string
   email: string
   avatarUrl: string
+  intro?: string | null
   balance: number
   latestCall?: {
     callId: string
     otomoName: string
     durationSec: number
   } | null
+}
+
+export interface UpdateUserProfilePayload {
+  name: string
+  intro?: string | null
+}
+
+interface UpdateUserProfileResponse {
+  status: string
+  user: CurrentUserProfile
+}
+
+interface UpdateUserAvatarResponse {
+  status: string
+  avatarUrl: string
 }
 
 interface RawOtomoResponseItem {
@@ -335,4 +351,36 @@ export async function fetchCallHistory(
 
 export async function fetchCurrentUser(): Promise<CurrentUserProfile> {
   return http<CurrentUserProfile>('/user/me')
+}
+
+export async function updateUserProfile(
+  payload: UpdateUserProfilePayload,
+): Promise<CurrentUserProfile> {
+  const response = await http<UpdateUserProfileResponse>('/user/profile', {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  })
+
+  return response.user
+}
+
+export async function uploadUserAvatar(file: File): Promise<string> {
+  const formData = new FormData()
+  formData.append('avatar', file)
+
+  const response = await fetch(`${API_BASE_URL}/user/avatar`, {
+    method: 'PUT',
+    body: formData,
+    headers: { Accept: 'application/json' },
+  })
+
+  if (!response.ok) {
+    const body = await response.text()
+    throw new Error(
+      `Avatar upload failed ${response.status}: ${response.statusText} - ${body}`,
+    )
+  }
+
+  const data = (await response.json()) as UpdateUserAvatarResponse
+  return data.avatarUrl
 }

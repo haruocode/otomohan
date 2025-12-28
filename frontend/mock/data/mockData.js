@@ -285,4 +285,6 @@ export const userProfile = {
   name: 'たろう',
   email: 'taro@example.com',
   avatarUrl: '/static/avatar/user-default.png',
+  intro:
+    '深夜の雑談と作業通話が好きなエンジニアです。コーヒー片手に話せる方を探しています。',
 }
