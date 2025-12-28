@@ -30,6 +30,7 @@ import { Route as DemoStartSsrFullSsrRouteImport } from './routes/demo/start.ssr
 import { Route as DemoStartSsrDataOnlyRouteImport } from './routes/demo/start.ssr.data-only'
 import { Route as OtomoHomeRouteImport } from './routes/otomo-home'
 import { Route as OtomoCallIncomingRouteImport } from './routes/otomo-call.incoming'
+import { Route as OtomoCallActiveRouteImport } from './routes/otomo-call.active'
 
 const WalletRoute = WalletRouteImport.update({
   id: '/wallet',
@@ -136,6 +137,11 @@ const OtomoCallIncomingRoute = OtomoCallIncomingRouteImport.update({
   path: '/otomo-call/incoming',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OtomoCallActiveRoute = OtomoCallActiveRouteImport.update({
+  id: '/otomo-call/active',
+  path: '/otomo-call/active',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -151,6 +157,7 @@ export interface FileRoutesByFullPath {
   '/call/$callId/summary': typeof CallCallIdSummaryRoute
   '/otomo-home': typeof OtomoHomeRoute
   '/otomo-call/incoming': typeof OtomoCallIncomingRoute
+  '/otomo-call/active': typeof OtomoCallActiveRoute
   '/demo/api/names': typeof DemoApiNamesRoute
   '/demo/api/tq-todos': typeof DemoApiTqTodosRoute
   '/demo/start/api-request': typeof DemoStartApiRequestRoute
@@ -174,6 +181,7 @@ export interface FileRoutesByTo {
   '/call/$callId/summary': typeof CallCallIdSummaryRoute
   '/otomo-home': typeof OtomoHomeRoute
   '/otomo-call/incoming': typeof OtomoCallIncomingRoute
+  '/otomo-call/active': typeof OtomoCallActiveRoute
   '/demo/api/names': typeof DemoApiNamesRoute
   '/demo/api/tq-todos': typeof DemoApiTqTodosRoute
   '/demo/start/api-request': typeof DemoStartApiRequestRoute
@@ -198,6 +206,7 @@ export interface FileRoutesById {
   '/call/$callId/summary': typeof CallCallIdSummaryRoute
   '/otomo-home': typeof OtomoHomeRoute
   '/otomo-call/incoming': typeof OtomoCallIncomingRoute
+  '/otomo-call/active': typeof OtomoCallActiveRoute
   '/demo/api/names': typeof DemoApiNamesRoute
   '/demo/api/tq-todos': typeof DemoApiTqTodosRoute
   '/demo/start/api-request': typeof DemoStartApiRequestRoute
@@ -223,6 +232,7 @@ export interface FileRouteTypes {
     | '/call/$callId/summary'
     | '/otomo-home'
     | '/otomo-call/incoming'
+    | '/otomo-call/active'
     | '/demo/api/names'
     | '/demo/api/tq-todos'
     | '/demo/start/api-request'
@@ -246,6 +256,7 @@ export interface FileRouteTypes {
     | '/call/$callId/summary'
     | '/otomo-home'
     | '/otomo-call/incoming'
+    | '/otomo-call/active'
     | '/demo/api/names'
     | '/demo/api/tq-todos'
     | '/demo/start/api-request'
@@ -269,6 +280,7 @@ export interface FileRouteTypes {
     | '/call/$callId/summary'
     | '/otomo-home'
     | '/otomo-call/incoming'
+    | '/otomo-call/active'
     | '/demo/api/names'
     | '/demo/api/tq-todos'
     | '/demo/start/api-request'
@@ -299,6 +311,7 @@ export interface RootRouteChildren {
   DemoStartSsrIndexRoute: typeof DemoStartSsrIndexRoute
   OtomoHomeRoute: typeof OtomoHomeRoute
   OtomoCallIncomingRoute: typeof OtomoCallIncomingRoute
+  OtomoCallActiveRoute: typeof OtomoCallActiveRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -450,6 +463,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OtomoCallIncomingRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/otomo-call/active': {
+      id: '/otomo-call/active'
+      path: '/otomo-call/active'
+      fullPath: '/otomo-call/active'
+      preLoaderRoute: typeof OtomoCallActiveRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -496,6 +516,7 @@ const rootRouteChildren: RootRouteChildren = {
   DemoStartSsrIndexRoute: DemoStartSsrIndexRoute,
   OtomoHomeRoute: OtomoHomeRoute,
   OtomoCallIncomingRoute: OtomoCallIncomingRoute,
+  OtomoCallActiveRoute: OtomoCallActiveRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

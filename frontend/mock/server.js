@@ -17,6 +17,7 @@ import {
   otomoRewardSummary,
   otomoCallFeed,
   otomoIncomingCall,
+  otomoActiveCall,
 } from './data/mockData.js'
 
 const app = express()
@@ -39,6 +40,26 @@ const getActiveIncomingCall = () => {
   }
   return call
 }
+
+const getActiveOtomoCall = () => otomoActiveCall.current
+
+const buildActiveCallState = (call) => ({
+  callId: call.callId,
+  user: call.user,
+  startedAt: now(),
+  connectionQuality: 'good',
+  voiceStatus: '音声品質は良好です',
+  transport: 'SFU (mediasoup)',
+  remoteMicState: 'on',
+  events: [
+    {
+      id: `evt-${Date.now()}`,
+      level: 'info',
+      message: '通話を開始しました',
+      occurredAt: now(),
+    },
+  ],
+})
 
 const buildLatestCallSummary = () => {
   const latest = callHistory[0]
@@ -192,6 +213,8 @@ app.post('/otomo/incoming-call/accept', (_req, res) => {
   }
   otomoIncomingCall.current = null
   otomoSelf.status = 'busy'
+  otomoSelf.statusNote = '通話中'
+  otomoActiveCall.current = buildActiveCallState(call)
   res.json({ status: 'accepted', callId: call.callId })
 })
 
@@ -205,7 +228,38 @@ app.post('/otomo/incoming-call/reject', (req, res) => {
   const { reason = 'busy' } = req.body || {}
   otomoIncomingCall.current = null
   otomoSelf.status = 'online'
+  otomoSelf.statusNote = '待機中'
   res.json({ status: 'rejected', callId: call.callId, reason })
+})
+
+app.get('/otomo/active-call', (_req, res) => {
+  const call = getActiveOtomoCall()
+  res.json({ call, status: call ? 'in_call' : 'idle' })
+})
+
+app.post('/otomo/active-call/end', (req, res) => {
+  const call = getActiveOtomoCall()
+  if (!call) {
+    return res
+      .status(409)
+      .json({ error: '現在通話中ではありません', reason: 'call_not_found' })
+  }
+  const { reason = 'otomo_end' } = req.body || {}
+  otomoActiveCall.current = null
+  otomoSelf.status = 'online'
+  otomoSelf.statusNote = '待機中'
+  const endedAt = now()
+  const startedAtMs = new Date(call.startedAt).getTime()
+  const durationSeconds = Number.isFinite(startedAtMs)
+    ? Math.max(0, Math.round((Date.now() - startedAtMs) / 1000))
+    : 0
+  res.json({
+    status: 'ended',
+    callId: call.callId,
+    reason,
+    endedAt,
+    durationSeconds,
+  })
 })
 
 app.get('/otomo', (req, res) => {

@@ -137,6 +137,36 @@ export interface IncomingCall {
   badges?: Array<string>
 }
 
+export type OtomoConnectionQuality =
+  | 'excellent'
+  | 'good'
+  | 'unstable'
+  | 'critical'
+
+export type OtomoRemoteMicState = 'on' | 'muted'
+
+export type OtomoCallEventLevel = 'info' | 'warning' | 'error'
+
+export interface OtomoCallEvent {
+  id: string
+  level: OtomoCallEventLevel
+  message: string
+  occurredAt: string
+}
+
+export interface OtomoActiveCall {
+  callId: string
+  user: IncomingCallUser
+  startedAt: string
+  connectionQuality: OtomoConnectionQuality
+  voiceStatus: string
+  transport: string
+  remoteMicState: OtomoRemoteMicState
+  latencyMs?: number
+  bitrateKbps?: number
+  events?: Array<OtomoCallEvent>
+}
+
 export interface OtomoRecentCall {
   callId: string
   userName: string
@@ -208,6 +238,19 @@ interface UpdateOtomoStatusResponse {
 interface IncomingCallResponse {
   call: IncomingCall | null
   status: 'ringing' | 'idle'
+}
+
+interface OtomoActiveCallResponse {
+  call: OtomoActiveCall | null
+  status: 'in_call' | 'idle'
+}
+
+interface EndOtomoCallResponse {
+  status: string
+  callId: string
+  reason: string
+  endedAt: string
+  durationSeconds: number
 }
 
 interface RawOtomoResponseItem {
@@ -502,4 +545,17 @@ export async function rejectIncomingCall(
       body: JSON.stringify({ callId, reason }),
     },
   )
+}
+
+export async function fetchOtomoActiveCall(): Promise<OtomoActiveCallResponse> {
+  return http<OtomoActiveCallResponse>('/otomo/active-call')
+}
+
+export async function endOtomoActiveCall(
+  reason: string = 'otomo_end',
+): Promise<EndOtomoCallResponse> {
+  return http<EndOtomoCallResponse>('/otomo/active-call/end', {
+    method: 'POST',
+    body: JSON.stringify({ reason }),
+  })
 }

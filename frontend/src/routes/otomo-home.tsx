@@ -17,7 +17,12 @@ import {
 } from 'lucide-react'
 
 import type { OtomoDashboardProfile, OtomoRecentCall } from '@/lib/api'
-import { fetchIncomingCall, fetchOtomoSelf, updateOtomoStatus } from '@/lib/api'
+import {
+  fetchIncomingCall,
+  fetchOtomoActiveCall,
+  fetchOtomoSelf,
+  updateOtomoStatus,
+} from '@/lib/api'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -75,11 +80,23 @@ function OtomoHomeScreen() {
     refetchInterval: 5_000,
   })
 
+  const activeCallQuery = useQuery({
+    queryKey: ['otomo-active-call'],
+    queryFn: fetchOtomoActiveCall,
+    refetchInterval: 5_000,
+  })
+
   useEffect(() => {
     if (incomingCallQuery.data?.call) {
       router.navigate({ to: '/otomo-call/incoming' })
     }
   }, [incomingCallQuery.data?.call?.callId, router])
+
+  useEffect(() => {
+    if (activeCallQuery.data?.call) {
+      router.navigate({ to: '/otomo-call/active' })
+    }
+  }, [activeCallQuery.data?.call?.callId, router])
 
   const statusMutation = useMutation({
     mutationFn: updateOtomoStatus,
@@ -130,6 +147,14 @@ function OtomoHomeScreen() {
           onClick={() => router.navigate({ to: '/otomo-call/incoming' })}
         >
           デモ: 着信画面を開く
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          className="rounded-2xl border border-dashed border-white/30 bg-white/5 text-white"
+          onClick={() => router.navigate({ to: '/otomo-call/active' })}
+        >
+          デモ: 通話中画面を開く
         </Button>
         <RecentCallSection recentCalls={profile.recentCalls} />
       </main>

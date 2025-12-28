@@ -74,9 +74,9 @@ function IncomingCallScreen() {
     mutationFn: (callId: string) => acceptIncomingCall(callId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['otomo-incoming-call'] })
+      queryClient.invalidateQueries({ queryKey: ['otomo-active-call'] })
       queryClient.invalidateQueries({ queryKey: ['otomo-self'] })
-      window.alert('通話に応答しました（モック）')
-      router.navigate({ to: '/otomo-home' })
+      router.navigate({ to: '/otomo-call/active' })
     },
     onError: (error: unknown) => {
       setActionError(
@@ -89,6 +89,7 @@ function IncomingCallScreen() {
     mutationFn: (callId: string) => rejectIncomingCall(callId, 'busy'),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['otomo-incoming-call'] })
+      queryClient.invalidateQueries({ queryKey: ['otomo-active-call'] })
       queryClient.invalidateQueries({ queryKey: ['otomo-self'] })
       router.navigate({ to: '/otomo-home' })
     },

@@ -357,3 +357,7 @@ export const otomoIncomingCall = {
     badges: ['常連', '高評価'],
   },
 }
+
+export const otomoActiveCall = {
+  current: null,
+}
