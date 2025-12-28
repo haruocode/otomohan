@@ -11,6 +11,7 @@ import {
   otomoList,
   calls,
   callHistory,
+  userProfile,
 } from './data/mockData.js'
 
 const app = express()
@@ -68,6 +69,21 @@ app.get('/wallet/usage', (req, res) => {
   res.json({ items, total: walletUsage.length })
 })
 
+app.get('/user/me', (_req, res) => {
+  const latest = callHistory[0]
+  res.json({
+    ...userProfile,
+    balance: walletBalance.balance,
+    latestCall: latest
+      ? {
+          callId: latest.callId,
+          otomoName: latest.otomo.name,
+          durationSec: latest.durationSec,
+        }
+      : null,
+  })
+})
+
 app.get('/otomo', (req, res) => {
   const { status, tag } = req.query
   let filtered = [...otomoList]
@@ -92,8 +108,14 @@ app.get('/calls', (_req, res) => {
   res.json({ items: calls, total: calls.length })
 })
 
-app.get('/calls/history', (_req, res) => {
-  res.json(callHistory)
+app.get('/calls/history', (req, res) => {
+  const limit = Number(req.query.limit)
+  const normalizedLimit =
+    Number.isFinite(limit) && limit > 0 ? limit : undefined
+  const items = normalizedLimit
+    ? callHistory.slice(0, normalizedLimit)
+    : callHistory
+  res.json(items)
 })
 
 app.get('/calls/:id', (req, res) => {

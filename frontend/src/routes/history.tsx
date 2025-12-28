@@ -60,6 +60,8 @@ function CallHistoryScreen() {
     queryFn: fetchCallHistory,
     staleTime: 30_000,
   })
+  const isLoading = historyQuery.status === 'pending'
+  const isError = historyQuery.status === 'error'
 
   const entries = historyQuery.data ?? []
   const sortedEntries = useMemo(() => {
@@ -74,10 +76,7 @@ function CallHistoryScreen() {
     return sortedEntries.filter((entry) => matchesFilter(entry, filter))
   }, [sortedEntries, filter])
 
-  const isEmptyState =
-    !historyQuery.isLoading &&
-    !historyQuery.isError &&
-    filteredEntries.length === 0
+  const isEmptyState = !isLoading && !isError && filteredEntries.length === 0
 
   return (
     <div className="relative isolate min-h-screen overflow-hidden bg-slate-950 text-white">
@@ -159,9 +158,9 @@ function CallHistoryScreen() {
           </Card>
 
           <TabsContent value={filter} className="outline-none">
-            {historyQuery.isLoading && <HistorySkeleton />}
+            {isLoading && <HistorySkeleton />}
 
-            {historyQuery.isError && (
+            {isError && (
               <ErrorState
                 message="履歴の取得に失敗しました"
                 onRetry={() => historyQuery.refetch()}
@@ -170,15 +169,13 @@ function CallHistoryScreen() {
 
             {isEmptyState && <EmptyState />}
 
-            {!historyQuery.isLoading &&
-              !historyQuery.isError &&
-              filteredEntries.length > 0 && (
-                <section className="space-y-4">
-                  {filteredEntries.map((entry) => (
-                    <HistoryCard key={entry.callId} entry={entry} />
-                  ))}
-                </section>
-              )}
+            {!isLoading && !isError && filteredEntries.length > 0 && (
+              <section className="space-y-4">
+                {filteredEntries.map((entry) => (
+                  <HistoryCard key={entry.callId} entry={entry} />
+                ))}
+              </section>
+            )}
           </TabsContent>
         </Tabs>
       </main>

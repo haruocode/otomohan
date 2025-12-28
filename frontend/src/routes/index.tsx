@@ -10,10 +10,10 @@ import {
   Loader2,
   PhoneCall,
   RefreshCw,
-  Settings,
   Sparkles,
   Star,
   Tag,
+  UserRound,
   Wallet,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
@@ -67,7 +67,7 @@ const NAV_ITEMS: Array<NavItem> = [
   { id: 'home', label: 'ホーム', icon: HomeIcon, to: '/' },
   { id: 'history', label: '履歴', icon: History, to: '/history' },
   { id: 'wallet', label: 'ウォレット', icon: Wallet, to: '/wallet' },
-  { id: 'settings', label: '設定', icon: Settings, disabled: true },
+  { id: 'mypage', label: 'マイページ', icon: UserRound, to: '/mypage' },
 ]
 
 const numberFormatter = new Intl.NumberFormat('ja-JP')

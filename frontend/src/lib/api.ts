@@ -120,6 +120,19 @@ export interface CallHistoryEntry {
   totalCharged: number
 }
 
+export interface CurrentUserProfile {
+  id: string
+  name: string
+  email: string
+  avatarUrl: string
+  balance: number
+  latestCall?: {
+    callId: string
+    otomoName: string
+    durationSec: number
+  } | null
+}
+
 interface RawOtomoResponseItem {
   id: string
   displayName: string
@@ -307,6 +320,19 @@ export async function fetchCallSession(callId: string): Promise<CallSession> {
   return http<RawCallSession>(`/calls/${callId}`)
 }
 
-export async function fetchCallHistory(): Promise<Array<CallHistoryEntry>> {
-  return http<Array<CallHistoryEntry>>('/calls/history')
+export async function fetchCallHistory(
+  limit?: number,
+): Promise<Array<CallHistoryEntry>> {
+  const searchParams = new URLSearchParams()
+  if (limit && Number.isFinite(limit)) {
+    searchParams.append('limit', `${limit}`)
+  }
+  const query = searchParams.toString()
+  return http<Array<CallHistoryEntry>>(
+    `/calls/history${query ? `?${query}` : ''}`,
+  )
+}
+
+export async function fetchCurrentUser(): Promise<CurrentUserProfile> {
+  return http<CurrentUserProfile>('/user/me')
 }

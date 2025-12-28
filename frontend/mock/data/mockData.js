@@ -279,3 +279,10 @@ export const callHistory = callHistorySeed.map((record) => {
     totalCharged: chargeUnits * otomo.pricePerMinute,
   }
 })
+
+export const userProfile = {
+  id: 'user-001',
+  name: 'たろう',
+  email: 'taro@example.com',
+  avatarUrl: '/static/avatar/user-default.png',
+}
