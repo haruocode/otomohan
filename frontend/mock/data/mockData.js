@@ -609,3 +609,106 @@ export const otomoSchedule = {
   timezone: 'Asia/Tokyo',
   lastUpdatedAt: now(),
 }
+
+const maskedNames = ['ユーザーA', 'ユーザーB', 'ユーザーC', 'ユーザーD']
+
+const buildReview = ({
+  id,
+  rating,
+  comment,
+  minutesAgo,
+  durationSeconds,
+  maskedName,
+}) => ({
+  id,
+  rating,
+  comment,
+  createdAt: minutesFromNow(-minutesAgo),
+  durationSeconds,
+  maskedName,
+  hasComment: Boolean(comment && comment.length > 0),
+})
+
+export const otomoReviewSummary = {
+  averageRating: 4.6,
+  totalReviews: 128,
+  totalCalls: 350,
+  repeatRate: 0.42,
+  distribution: [
+    { rating: 5, percentage: 0.7, count: 90 },
+    { rating: 4, percentage: 0.2, count: 26 },
+    { rating: 3, percentage: 0.07, count: 9 },
+    { rating: 2, percentage: 0.02, count: 2 },
+    { rating: 1, percentage: 0.01, count: 1 },
+  ],
+  lastUpdatedAt: now(),
+}
+
+export const otomoReviews = [
+  buildReview({
+    id: 'review-001',
+    rating: 5,
+    comment: '夜遅くにも丁寧に対応してくれて助かりました。',
+    minutesAgo: 90,
+    durationSeconds: 720,
+    maskedName: maskedNames[0],
+  }),
+  buildReview({
+    id: 'review-002',
+    rating: 4,
+    comment: '落ち着いた声で話しやすかったです。またお願いしたい。',
+    minutesAgo: 240,
+    durationSeconds: 540,
+    maskedName: maskedNames[1],
+  }),
+  buildReview({
+    id: 'review-003',
+    rating: 5,
+    comment: '作業通話で集中できました！進捗も報告できて満足。',
+    minutesAgo: 600,
+    durationSeconds: 900,
+    maskedName: maskedNames[2],
+  }),
+  buildReview({
+    id: 'review-004',
+    rating: 3,
+    comment: 'もう少し会話のテンポが合うと嬉しいです。',
+    minutesAgo: 900,
+    durationSeconds: 480,
+    maskedName: maskedNames[3],
+  }),
+  buildReview({
+    id: 'review-005',
+    rating: 4,
+    comment: '',
+    minutesAgo: 1320,
+    durationSeconds: 660,
+    maskedName: 'ユーザーE',
+  }),
+  buildReview({
+    id: 'review-006',
+    rating: 2,
+    comment: '途中で接続が不安定だったので改善してほしい。',
+    minutesAgo: 1440,
+    durationSeconds: 300,
+    maskedName: 'ユーザーF',
+  }),
+  buildReview({
+    id: 'review-007',
+    rating: 5,
+    comment: '英語練習を優しくサポートしてくれました。',
+    minutesAgo: 2880,
+    durationSeconds: 840,
+    maskedName: 'ユーザーG',
+  }),
+]
+
+export const otomoReviewAlerts = [
+  {
+    id: 'alert-001',
+    level: 'warning',
+    message:
+      '先週、★2 以下のレビューが 2 件ありました。注意事項を確認してください。',
+    issuedAt: minutesFromNow(-3600),
+  },
+]

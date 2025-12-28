@@ -293,6 +293,41 @@ export interface UpdateOtomoSchedulePayload {
   timezone?: string
 }
 
+export interface OtomoReviewDistributionEntry {
+  rating: number
+  percentage: number
+  count: number
+}
+
+export interface OtomoReviewSummary {
+  averageRating: number
+  totalReviews: number
+  totalCalls: number
+  repeatRate?: number
+  distribution: Array<OtomoReviewDistributionEntry>
+  lastUpdatedAt?: string
+}
+
+export interface OtomoReviewEntry {
+  id: string
+  rating: number
+  comment?: string
+  createdAt: string
+  durationSeconds?: number
+  durationMinutes: number
+  maskedName: string
+  hasComment: boolean
+}
+
+export type OtomoReviewFilterComment = 'with' | 'without'
+
+export interface OtomoReviewAlert {
+  id: string
+  level: 'info' | 'warning'
+  message: string
+  issuedAt: string
+}
+
 export interface OtomoRecentCall {
   callId: string
   userName: string
@@ -418,6 +453,17 @@ interface OtomoScheduleResponse {
 interface UpdateOtomoScheduleResponse {
   status: string
   schedule: OtomoSchedulePayload
+}
+
+type OtomoReviewSummaryResponse = OtomoReviewSummary
+
+interface OtomoReviewsResponse {
+  items: Array<OtomoReviewEntry>
+  total: number
+}
+
+interface OtomoAlertsResponse {
+  items: Array<OtomoReviewAlert>
 }
 
 interface RawOtomoResponseItem {
@@ -819,4 +865,46 @@ export async function updateOtomoSchedule(
     body: JSON.stringify(payload),
   })
   return response.schedule
+}
+
+export async function fetchOtomoReviewSummary(): Promise<OtomoReviewSummary> {
+  return http<OtomoReviewSummaryResponse>('/otomo/reviews/summary')
+}
+
+export interface FetchOtomoReviewsParams {
+  ratings?: Array<number> | number
+  comment?: OtomoReviewFilterComment
+  limit?: number
+  sort?: 'latest' | 'duration_desc'
+}
+
+export async function fetchOtomoReviews(
+  params: FetchOtomoReviewsParams = {},
+): Promise<Array<OtomoReviewEntry>> {
+  const searchParams = new URLSearchParams()
+  if (typeof params.ratings === 'number') {
+    searchParams.set('rating', `${params.ratings}`)
+  } else if (Array.isArray(params.ratings) && params.ratings.length) {
+    searchParams.set('rating', params.ratings.join(','))
+  }
+  if (params.comment) {
+    searchParams.set('comment', params.comment)
+  }
+  if (params.limit && Number.isFinite(params.limit)) {
+    searchParams.set('limit', `${params.limit}`)
+  }
+  if (params.sort === 'duration_desc') {
+    searchParams.set('sort', 'duration_desc')
+  }
+  const query = searchParams.toString()
+  const endpoint = `/otomo/reviews${query ? `?${query}` : ''}`
+  const response = await http<OtomoReviewsResponse>(endpoint)
+  return response.items
+}
+
+export async function fetchOtomoReviewAlerts(): Promise<
+  Array<OtomoReviewAlert>
+> {
+  const response = await http<OtomoAlertsResponse>('/otomo/alerts')
+  return response.items
 }

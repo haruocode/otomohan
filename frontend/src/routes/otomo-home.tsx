@@ -13,6 +13,7 @@ import {
   Loader2,
   Settings,
   SignalHigh,
+  Star,
   Wallet,
   Waves,
 } from 'lucide-react'
@@ -143,6 +144,9 @@ function OtomoHomeScreen() {
         <WaitingVisualizer status={profile.status} />
         <ScheduleShortcut
           onClick={() => router.navigate({ to: '/otomo-schedule' })}
+        />
+        <ReviewsShortcut
+          onClick={() => router.navigate({ to: '/otomo-reviews' })}
         />
         <Button
           type="button"
@@ -430,6 +434,33 @@ function ScheduleShortcut({ onClick }: { onClick: () => void }) {
           onClick={onClick}
         >
           予定を編集
+        </Button>
+      </CardContent>
+    </Card>
+  )
+}
+
+function ReviewsShortcut({ onClick }: { onClick: () => void }) {
+  return (
+    <Card className="border-white/10 bg-gradient-to-br from-rose-500/10 via-sky-500/5 to-slate-900/40">
+      <CardContent className="flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-white/10 px-3 py-1 text-xs uppercase tracking-wide text-white/70">
+            <Star className="h-3.5 w-3.5" />
+            O-07 preview
+          </div>
+          <p className="text-lg font-semibold text-white">レビューをチェック</p>
+          <p className="text-sm text-white/70">
+            最新の評価やコメントを確認して、対応品質の改善に役立てましょう。
+          </p>
+        </div>
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full rounded-2xl border-white/30 text-white hover:bg-white/20 sm:w-auto"
+          onClick={onClick}
+        >
+          レビューを見る
         </Button>
       </CardContent>
     </Card>

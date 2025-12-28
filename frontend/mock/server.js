@@ -26,6 +26,9 @@ import {
   otomoStatsRepeat,
   otomoSchedule,
   SCHEDULE_WEEKDAYS,
+  otomoReviewSummary,
+  otomoReviews,
+  otomoReviewAlerts,
 } from './data/mockData.js'
 
 const app = express()
@@ -300,6 +303,28 @@ const serializeSchedule = () => ({
 const respondWithSchedule = (res, status = 200) =>
   res.status(status).json({ schedule: serializeSchedule() })
 
+const parseRatingFilter = (value) => {
+  if (typeof value !== 'string' || value.trim().length === 0) {
+    return null
+  }
+  const ratings = value
+    .split(',')
+    .map((token) => Number(token.trim()))
+    .filter((num) => Number.isInteger(num) && num >= 1 && num <= 5)
+  return ratings.length ? ratings : null
+}
+
+const normalizeCommentFilter = (value) => {
+  if (value === 'with') return 'with'
+  if (value === 'without') return 'without'
+  return null
+}
+
+const buildReviewResponse = (review) => ({
+  ...review,
+  durationMinutes: Math.max(1, Math.round((review.durationSeconds ?? 0) / 60)),
+})
+
 app.use(cors())
 app.use(express.json())
 app.use(morgan('dev'))
@@ -412,6 +437,42 @@ app.get('/otomo/calls', (req, res) => {
 
 app.get('/otomo/rewards', (_req, res) => {
   res.json(otomoRewardSummary)
+})
+
+app.get('/otomo/reviews/summary', (_req, res) => {
+  res.json(otomoReviewSummary)
+})
+
+app.get('/otomo/reviews', (req, res) => {
+  const ratingFilter = parseRatingFilter(req.query.rating)
+  const commentFilter = normalizeCommentFilter(req.query.comment)
+  const limit = Number(req.query.limit)
+  const sort = req.query.sort === 'duration_desc' ? 'duration_desc' : 'latest'
+
+  let items = otomoReviews.map((review) => buildReviewResponse(review))
+  if (ratingFilter) {
+    items = items.filter((item) => ratingFilter.includes(item.rating))
+  }
+  if (commentFilter === 'with') {
+    items = items.filter((item) => item.hasComment)
+  } else if (commentFilter === 'without') {
+    items = items.filter((item) => !item.hasComment)
+  }
+
+  items = items.sort((a, b) => {
+    if (sort === 'duration_desc') {
+      return (b.durationSeconds ?? 0) - (a.durationSeconds ?? 0)
+    }
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  })
+
+  const normalizedLimit =
+    Number.isFinite(limit) && limit > 0 ? limit : items.length
+  res.json({ items: items.slice(0, normalizedLimit), total: items.length })
+})
+
+app.get('/otomo/alerts', (_req, res) => {
+  res.json({ items: otomoReviewAlerts })
 })
 
 app.get('/otomo/schedule', (_req, res) => {
