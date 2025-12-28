@@ -10,6 +10,7 @@ import {
   walletUsage,
   otomoList,
   calls,
+  callHistory,
 } from './data/mockData.js'
 
 const app = express()
@@ -89,6 +90,10 @@ app.get('/otomo/:id', (req, res) => {
 
 app.get('/calls', (_req, res) => {
   res.json({ items: calls, total: calls.length })
+})
+
+app.get('/calls/history', (_req, res) => {
+  res.json(callHistory)
 })
 
 app.get('/calls/:id', (req, res) => {

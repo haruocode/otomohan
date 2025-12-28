@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WalletRouteImport } from './routes/wallet'
+import { Route as HistoryRouteImport } from './routes/history'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as WalletChargeRouteImport } from './routes/wallet.charge'
 import { Route as OtomoOtomoIdRouteImport } from './routes/otomo.$otomoId'
@@ -28,6 +29,11 @@ import { Route as DemoStartSsrDataOnlyRouteImport } from './routes/demo/start.ss
 const WalletRoute = WalletRouteImport.update({
   id: '/wallet',
   path: '/wallet',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HistoryRoute = HistoryRouteImport.update({
+  id: '/history',
+  path: '/history',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -103,6 +109,7 @@ const DemoStartSsrDataOnlyRoute = DemoStartSsrDataOnlyRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/history': typeof HistoryRoute
   '/wallet': typeof WalletRouteWithChildren
   '/call/$callId': typeof CallCallIdRouteWithChildren
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
@@ -120,6 +127,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/history': typeof HistoryRoute
   '/wallet': typeof WalletRouteWithChildren
   '/call/$callId': typeof CallCallIdRouteWithChildren
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
@@ -138,6 +146,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/history': typeof HistoryRoute
   '/wallet': typeof WalletRouteWithChildren
   '/call/$callId': typeof CallCallIdRouteWithChildren
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
@@ -157,6 +166,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/history'
     | '/wallet'
     | '/call/$callId'
     | '/demo/tanstack-query'
@@ -174,6 +184,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/history'
     | '/wallet'
     | '/call/$callId'
     | '/demo/tanstack-query'
@@ -191,6 +202,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/history'
     | '/wallet'
     | '/call/$callId'
     | '/demo/tanstack-query'
@@ -209,6 +221,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  HistoryRoute: typeof HistoryRoute
   WalletRoute: typeof WalletRouteWithChildren
   CallCallIdRoute: typeof CallCallIdRouteWithChildren
   DemoTanstackQueryRoute: typeof DemoTanstackQueryRoute
@@ -237,6 +250,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/history': {
+      id: '/history'
+      path: '/history'
+      fullPath: '/history'
+      preLoaderRoute: typeof HistoryRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/wallet/charge': {
@@ -358,6 +378,7 @@ const CallCallIdRouteWithChildren = CallCallIdRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  HistoryRoute: HistoryRoute,
   WalletRoute: WalletRouteWithChildren,
   CallCallIdRoute: CallCallIdRouteWithChildren,
   DemoTanstackQueryRoute: DemoTanstackQueryRoute,

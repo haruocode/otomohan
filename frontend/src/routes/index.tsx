@@ -65,7 +65,7 @@ type NavItem = {
 
 const NAV_ITEMS: Array<NavItem> = [
   { id: 'home', label: 'ホーム', icon: HomeIcon, to: '/' },
-  { id: 'history', label: '履歴', icon: History, disabled: true },
+  { id: 'history', label: '履歴', icon: History, to: '/history' },
   { id: 'wallet', label: 'ウォレット', icon: Wallet, to: '/wallet' },
   { id: 'settings', label: '設定', icon: Settings, disabled: true },
 ]

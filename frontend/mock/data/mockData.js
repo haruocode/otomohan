@@ -172,6 +172,9 @@ export const otomoList = [
 const minutesFromNow = (minutes) =>
   new Date(Date.now() + minutes * 60_000).toISOString()
 
+const unixMinutesFromNow = (minutes) =>
+  Math.floor((Date.now() + minutes * 60_000) / 1000)
+
 const END_REASONS = ['user_end', 'otomo_end', 'no_point', 'network_lost']
 
 const createBillingUnits = (price, count) =>
@@ -216,3 +219,63 @@ const createCallRecord = (otomo, index) => {
 export const calls = otomoList.map((otomo, index) =>
   createCallRecord(otomo, index),
 )
+
+const callHistorySeed = [
+  {
+    callId: 'history-001',
+    otomoId: 'otomo-001',
+    minutesAgo: 90,
+    durationSec: 420,
+  },
+  {
+    callId: 'history-002',
+    otomoId: 'otomo-002',
+    minutesAgo: 320,
+    durationSec: 540,
+  },
+  {
+    callId: 'history-003',
+    otomoId: 'otomo-003',
+    minutesAgo: 1440,
+    durationSec: 360,
+  },
+  {
+    callId: 'history-004',
+    otomoId: 'otomo-002',
+    minutesAgo: 4320,
+    durationSec: 0,
+  },
+  {
+    callId: 'history-005',
+    otomoId: 'otomo-001',
+    minutesAgo: 7200,
+    durationSec: 360,
+  },
+]
+
+const billedMinutes = (seconds) => {
+  if (!seconds) return 0
+  return Math.max(1, Math.ceil(seconds / 60))
+}
+
+export const callHistory = callHistorySeed.map((record) => {
+  const otomo =
+    otomoList.find((item) => item.id === record.otomoId) ?? otomoList[0]
+  const startedAt = unixMinutesFromNow(-record.minutesAgo)
+  const durationSec = record.durationSec
+  const endedAt = durationSec > 0 ? startedAt + durationSec : startedAt
+  const chargeUnits = billedMinutes(durationSec)
+
+  return {
+    callId: record.callId,
+    otomo: {
+      id: otomo.id,
+      name: otomo.displayName,
+      avatarUrl: otomo.avatarUrl,
+    },
+    startedAt,
+    endedAt,
+    durationSec,
+    totalCharged: chargeUnits * otomo.pricePerMinute,
+  }
+})

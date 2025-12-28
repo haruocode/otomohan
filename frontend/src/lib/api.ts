@@ -111,6 +111,15 @@ export interface CallSession {
   billingUnits?: Array<CallBillingUnit>
 }
 
+export interface CallHistoryEntry {
+  callId: string
+  otomo: CallPartner
+  startedAt: number
+  endedAt?: number
+  durationSec: number
+  totalCharged: number
+}
+
 interface RawOtomoResponseItem {
   id: string
   displayName: string
@@ -296,4 +305,8 @@ export async function fetchOtomoDetail(otomoId: string): Promise<OtomoDetail> {
 
 export async function fetchCallSession(callId: string): Promise<CallSession> {
   return http<RawCallSession>(`/calls/${callId}`)
+}
+
+export async function fetchCallHistory(): Promise<Array<CallHistoryEntry>> {
+  return http<Array<CallHistoryEntry>>('/calls/history')
 }
