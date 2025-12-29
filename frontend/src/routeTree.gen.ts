@@ -36,6 +36,7 @@ import { Route as OtomoDashboardRevenueRouteImport } from './routes/otomo-dashbo
 import { Route as OtomoScheduleRouteImport } from './routes/otomo-schedule'
 import { Route as OtomoReviewsRouteImport } from './routes/otomo-reviews'
 import { Route as AdminLoginRouteImport } from './routes/admin.login'
+import { Route as AdminUsersRouteImport } from './routes/admin.users'
 
 const WalletRoute = WalletRouteImport.update({
   id: '/wallet',
@@ -172,6 +173,11 @@ const AdminLoginRoute = AdminLoginRouteImport.update({
   path: '/admin/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminUsersRoute = AdminUsersRouteImport.update({
+  id: '/admin/users',
+  path: '/admin/users',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -193,6 +199,7 @@ export interface FileRoutesByFullPath {
   '/otomo-schedule': typeof OtomoScheduleRoute
   '/otomo-reviews': typeof OtomoReviewsRoute
   '/admin/login': typeof AdminLoginRoute
+  '/admin/users': typeof AdminUsersRoute
   '/demo/api/names': typeof DemoApiNamesRoute
   '/demo/api/tq-todos': typeof DemoApiTqTodosRoute
   '/demo/start/api-request': typeof DemoStartApiRequestRoute
@@ -222,6 +229,7 @@ export interface FileRoutesByTo {
   '/otomo-schedule': typeof OtomoScheduleRoute
   '/otomo-reviews': typeof OtomoReviewsRoute
   '/admin/login': typeof AdminLoginRoute
+  '/admin/users': typeof AdminUsersRoute
   '/demo/api/names': typeof DemoApiNamesRoute
   '/demo/api/tq-todos': typeof DemoApiTqTodosRoute
   '/demo/start/api-request': typeof DemoStartApiRequestRoute
@@ -252,6 +260,7 @@ export interface FileRoutesById {
   '/otomo-schedule': typeof OtomoScheduleRoute
   '/otomo-reviews': typeof OtomoReviewsRoute
   '/admin/login': typeof AdminLoginRoute
+  '/admin/users': typeof AdminUsersRoute
   '/demo/api/names': typeof DemoApiNamesRoute
   '/demo/api/tq-todos': typeof DemoApiTqTodosRoute
   '/demo/start/api-request': typeof DemoStartApiRequestRoute
@@ -283,6 +292,7 @@ export interface FileRouteTypes {
     | '/otomo-schedule'
     | '/otomo-reviews'
     | '/admin/login'
+    | '/admin/users'
     | '/demo/api/names'
     | '/demo/api/tq-todos'
     | '/demo/start/api-request'
@@ -320,6 +330,7 @@ export interface FileRouteTypes {
     | '/otomo-schedule'
     | '/otomo-reviews'
     | '/admin/login'
+    | '/admin/users'
     | '/demo/api/names'
     | '/demo/api/tq-todos'
     | '/demo/start/api-request'
@@ -349,6 +360,7 @@ export interface FileRouteTypes {
     | '/otomo-schedule'
     | '/otomo-reviews'
     | '/admin/login'
+    | '/admin/users'
     | '/demo/api/names'
     | '/demo/api/tq-todos'
     | '/demo/start/api-request'
@@ -385,6 +397,7 @@ export interface RootRouteChildren {
   OtomoScheduleRoute: typeof OtomoScheduleRoute
   OtomoReviewsRoute: typeof OtomoReviewsRoute
   AdminLoginRoute: typeof AdminLoginRoute
+  AdminUsersRoute: typeof AdminUsersRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -578,6 +591,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminLoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/users': {
+      id: '/admin/users'
+      path: '/admin/users'
+      fullPath: '/admin/users'
+      preLoaderRoute: typeof AdminUsersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -630,6 +650,7 @@ const rootRouteChildren: RootRouteChildren = {
   OtomoScheduleRoute: OtomoScheduleRoute,
   OtomoReviewsRoute: OtomoReviewsRoute,
   AdminLoginRoute: AdminLoginRoute,
+  AdminUsersRoute: AdminUsersRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

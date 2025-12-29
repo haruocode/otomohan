@@ -981,3 +981,473 @@ export async function verifyAdminMfaCode(
     mfaRequired: false,
   }
 }
+
+export type AdminUserStatus = 'active' | 'suspended' | 'retired'
+
+export type AdminReportFilter = 'none' | 'onePlus' | 'many'
+
+export interface AdminUserSummary {
+  id: string
+  name: string
+  email: string
+  registeredAt: string
+  status: AdminUserStatus
+  reportCount: number
+  points: number
+  lastLoginAt: string
+}
+
+export interface AdminUserPointSummary {
+  balance: number
+  purchased: number
+  used: number
+}
+
+export interface AdminUserCallHistoryEntry {
+  callId: string
+  durationMinutes: number
+  otomoName: string
+  occurredAt: string
+}
+
+export interface AdminUserReviewEntry {
+  id: string
+  rating: number
+  comment: string
+  createdAt: string
+}
+
+export interface AdminUserReportEntry {
+  id: string
+  otomoId: string
+  message: string
+  createdAt: string
+}
+
+export interface AdminUserDetail {
+  id: string
+  name: string
+  email: string
+  status: AdminUserStatus
+  registeredAt: string
+  lastLoginAt: string
+  phone?: string
+  device?: string
+  reportCount: number
+  pointSummary: AdminUserPointSummary
+  callHistory: Array<AdminUserCallHistoryEntry>
+  reviewHistory: Array<AdminUserReviewEntry>
+  reportHistory: Array<AdminUserReportEntry>
+}
+
+export interface AdminUserListFilters {
+  userId?: string
+  email?: string
+  name?: string
+  status?: AdminUserStatus
+  registeredFrom?: string
+  registeredTo?: string
+  reportFilter?: AdminReportFilter
+  sortBy?: 'registeredAt' | 'lastLoginAt' | 'points'
+  sortOrder?: 'asc' | 'desc'
+}
+
+const ADMIN_USERS_DELAY_MS = 420
+
+const initialAdminUsers: Array<AdminUserDetail> = [
+  {
+    id: 'user_001',
+    name: '佐藤 太郎',
+    email: 'taro@example.com',
+    phone: '080-1234-5678',
+    device: 'iOS / Safari',
+    status: 'active',
+    registeredAt: '2024-12-10T03:00:00Z',
+    lastLoginAt: '2025-01-29T10:45:00Z',
+    reportCount: 0,
+    pointSummary: {
+      balance: 720,
+      purchased: 4800,
+      used: 4100,
+    },
+    callHistory: [
+      {
+        callId: 'call_123',
+        durationMinutes: 12,
+        otomoName: 'さくら',
+        occurredAt: '2025-01-30T12:00:00Z',
+      },
+      {
+        callId: 'call_118',
+        durationMinutes: 7,
+        otomoName: 'あやか',
+        occurredAt: '2025-01-28T09:00:00Z',
+      },
+    ],
+    reviewHistory: [
+      {
+        id: 'rev_901',
+        rating: 5,
+        comment: 'とても話しやすかったです！',
+        createdAt: '2025-01-20T08:00:00Z',
+      },
+    ],
+    reportHistory: [],
+  },
+  {
+    id: 'user_002',
+    name: '山田 花子',
+    email: 'hanako@example.com',
+    phone: '080-2345-6789',
+    device: 'Android / Chrome',
+    status: 'suspended',
+    registeredAt: '2024-11-01T05:00:00Z',
+    lastLoginAt: '2025-01-15T15:20:00Z',
+    reportCount: 3,
+    pointSummary: {
+      balance: 120,
+      purchased: 5200,
+      used: 5080,
+    },
+    callHistory: [
+      {
+        callId: 'call_099',
+        durationMinutes: 20,
+        otomoName: 'ミホ',
+        occurredAt: '2025-01-10T14:00:00Z',
+      },
+    ],
+    reviewHistory: [
+      {
+        id: 'rev_845',
+        rating: 3,
+        comment: '普通でした',
+        createdAt: '2025-01-08T05:00:00Z',
+      },
+    ],
+    reportHistory: [
+      {
+        id: 'rep_500',
+        otomoId: 'otomo_05',
+        message: '不適切な言動',
+        createdAt: '2025-01-12T09:30:00Z',
+      },
+      {
+        id: 'rep_501',
+        otomoId: 'otomo_08',
+        message: '無断通話終了',
+        createdAt: '2025-01-18T11:45:00Z',
+      },
+    ],
+  },
+  {
+    id: 'user_003',
+    name: '李 美咲',
+    email: 'misaki@example.com',
+    phone: '070-1111-9999',
+    device: 'iOS / App',
+    status: 'active',
+    registeredAt: '2025-01-05T01:00:00Z',
+    lastLoginAt: '2025-01-30T02:15:00Z',
+    reportCount: 1,
+    pointSummary: {
+      balance: 1650,
+      purchased: 6000,
+      used: 4350,
+    },
+    callHistory: [
+      {
+        callId: 'call_130',
+        durationMinutes: 30,
+        otomoName: 'レン',
+        occurredAt: '2025-01-29T13:00:00Z',
+      },
+      {
+        callId: 'call_125',
+        durationMinutes: 18,
+        otomoName: 'きよみ',
+        occurredAt: '2025-01-27T21:00:00Z',
+      },
+    ],
+    reviewHistory: [
+      {
+        id: 'rev_870',
+        rating: 4,
+        comment: '丁寧で安心しました',
+        createdAt: '2025-01-25T07:30:00Z',
+      },
+      {
+        id: 'rev_871',
+        rating: 5,
+        comment: 'また指名したいです',
+        createdAt: '2025-01-27T08:40:00Z',
+      },
+    ],
+    reportHistory: [
+      {
+        id: 'rep_600',
+        otomoId: 'otomo_02',
+        message: '態度が冷たい',
+        createdAt: '2025-01-26T18:00:00Z',
+      },
+    ],
+  },
+  {
+    id: 'user_004',
+    name: '田中 聡',
+    email: 'satoshi@example.com',
+    phone: '090-8888-7777',
+    device: 'Desktop / Chrome',
+    status: 'retired',
+    registeredAt: '2024-09-18T04:00:00Z',
+    lastLoginAt: '2024-12-30T19:00:00Z',
+    reportCount: 0,
+    pointSummary: {
+      balance: 0,
+      purchased: 3000,
+      used: 3000,
+    },
+    callHistory: [
+      {
+        callId: 'call_080',
+        durationMinutes: 9,
+        otomoName: 'ルリ',
+        occurredAt: '2024-12-25T20:00:00Z',
+      },
+    ],
+    reviewHistory: [],
+    reportHistory: [],
+  },
+  {
+    id: 'user_005',
+    name: 'Alex Chen',
+    email: 'alex@example.com',
+    phone: '080-7654-2222',
+    device: 'Android / Chrome',
+    status: 'active',
+    registeredAt: '2025-01-15T06:00:00Z',
+    lastLoginAt: '2025-01-30T05:30:00Z',
+    reportCount: 2,
+    pointSummary: {
+      balance: 540,
+      purchased: 4200,
+      used: 3660,
+    },
+    callHistory: [
+      {
+        callId: 'call_140',
+        durationMinutes: 14,
+        otomoName: 'なぎさ',
+        occurredAt: '2025-01-29T16:30:00Z',
+      },
+    ],
+    reviewHistory: [
+      {
+        id: 'rev_900',
+        rating: 2,
+        comment: 'もう少し盛り上げてほしかった',
+        createdAt: '2025-01-28T10:00:00Z',
+      },
+    ],
+    reportHistory: [
+      {
+        id: 'rep_610',
+        otomoId: 'otomo_07',
+        message: '過度な個人情報の要求',
+        createdAt: '2025-01-28T19:10:00Z',
+      },
+      {
+        id: 'rep_611',
+        otomoId: 'otomo_09',
+        message: '録音の疑いあり',
+        createdAt: '2025-01-29T11:05:00Z',
+      },
+    ],
+  },
+]
+const cloneAdminUserDetail = (detail: AdminUserDetail): AdminUserDetail => ({
+  ...detail,
+  pointSummary: { ...detail.pointSummary },
+  callHistory: detail.callHistory.map((entry) => ({ ...entry })),
+  reviewHistory: detail.reviewHistory.map((entry) => ({ ...entry })),
+  reportHistory: detail.reportHistory.map((entry) => ({ ...entry })),
+})
+
+const adminUsersDatabase: Array<AdminUserDetail> = initialAdminUsers.map(
+  (user) => cloneAdminUserDetail(user),
+)
+
+const toAdminUserSummary = (user: AdminUserDetail): AdminUserSummary => ({
+  id: user.id,
+  name: user.name,
+  email: user.email,
+  registeredAt: user.registeredAt,
+  status: user.status,
+  reportCount: user.reportCount,
+  points: user.pointSummary.balance,
+  lastLoginAt: user.lastLoginAt,
+})
+
+const parseDate = (value: string) => new Date(value).getTime()
+
+const matchesDateRange = (dateValue: string, from?: string, to?: string) => {
+  const target = parseDate(dateValue)
+  if (from) {
+    const fromTime = parseDate(from)
+    if (target < fromTime) return false
+  }
+  if (to) {
+    const toDate = new Date(to)
+    toDate.setHours(23, 59, 59, 999)
+    if (target > toDate.getTime()) return false
+  }
+  return true
+}
+
+const applyReportFilter = (count: number, filter?: AdminReportFilter) => {
+  if (!filter) return true
+  if (filter === 'none') return count === 0
+  if (filter === 'onePlus') return count >= 1
+  return count >= 3
+}
+
+export async function fetchAdminUsers(
+  filters: AdminUserListFilters = {},
+): Promise<Array<AdminUserSummary>> {
+  await waitForMock(ADMIN_USERS_DELAY_MS)
+
+  let items = adminUsersDatabase.slice()
+
+  if (filters.userId) {
+    const keyword = filters.userId.toLowerCase()
+    items = items.filter((user) => user.id.toLowerCase().includes(keyword))
+  }
+  if (filters.email) {
+    const keyword = filters.email.toLowerCase()
+    items = items.filter((user) => user.email.toLowerCase().includes(keyword))
+  }
+  if (filters.name) {
+    const keyword = filters.name.toLowerCase()
+    items = items.filter((user) => user.name.toLowerCase().includes(keyword))
+  }
+  if (filters.status) {
+    items = items.filter((user) => user.status === filters.status)
+  }
+  if (filters.reportFilter) {
+    items = items.filter((user) =>
+      applyReportFilter(user.reportCount, filters.reportFilter),
+    )
+  }
+  if (filters.registeredFrom || filters.registeredTo) {
+    items = items.filter((user) =>
+      matchesDateRange(
+        user.registeredAt,
+        filters.registeredFrom,
+        filters.registeredTo,
+      ),
+    )
+  }
+
+  const sortBy = filters.sortBy ?? 'registeredAt'
+  const sortOrder = filters.sortOrder ?? 'desc'
+
+  items.sort((a, b) => {
+    let valueA: number
+    let valueB: number
+    if (sortBy === 'points') {
+      valueA = a.pointSummary.balance
+      valueB = b.pointSummary.balance
+    } else if (sortBy === 'lastLoginAt') {
+      valueA = parseDate(a.lastLoginAt)
+      valueB = parseDate(b.lastLoginAt)
+    } else {
+      valueA = parseDate(a.registeredAt)
+      valueB = parseDate(b.registeredAt)
+    }
+    return sortOrder === 'desc' ? valueB - valueA : valueA - valueB
+  })
+
+  return items.map(toAdminUserSummary)
+}
+
+export async function fetchAdminUserDetail(
+  userId: string,
+): Promise<AdminUserDetail> {
+  await waitForMock(ADMIN_USERS_DELAY_MS)
+  const user = adminUsersDatabase.find((candidate) => candidate.id === userId)
+  if (!user) {
+    throw new Error('ユーザーが見つかりません')
+  }
+  return cloneAdminUserDetail(user)
+}
+
+const findAdminUserOrThrow = (userId: string) => {
+  const user = adminUsersDatabase.find((candidate) => candidate.id === userId)
+  if (!user) {
+    throw new Error('ユーザーが見つかりません')
+  }
+  return user
+}
+
+export async function suspendAdminUser(
+  userId: string,
+  reason: string,
+): Promise<AdminUserDetail> {
+  await waitForMock(ADMIN_USERS_DELAY_MS)
+  const trimmedReason = reason.trim()
+  if (!trimmedReason) {
+    throw new Error('凍結理由を入力してください')
+  }
+  const user = findAdminUserOrThrow(userId)
+  if (user.status === 'retired') {
+    throw new Error('退会済みユーザーには操作できません')
+  }
+  user.status = 'suspended'
+  user.reportHistory = [
+    {
+      id: `ops_${Date.now()}`,
+      otomoId: 'ops-team',
+      message: `【運営】${trimmedReason}`,
+      createdAt: new Date().toISOString(),
+    },
+    ...user.reportHistory,
+  ]
+  return cloneAdminUserDetail(user)
+}
+
+export async function unsuspendAdminUser(
+  userId: string,
+): Promise<AdminUserDetail> {
+  await waitForMock(ADMIN_USERS_DELAY_MS)
+  const user = findAdminUserOrThrow(userId)
+  if (user.status !== 'suspended') {
+    return cloneAdminUserDetail(user)
+  }
+  user.status = 'active'
+  return cloneAdminUserDetail(user)
+}
+
+export async function retireAdminUser(
+  userId: string,
+  note?: string,
+): Promise<AdminUserDetail> {
+  await waitForMock(ADMIN_USERS_DELAY_MS)
+  const user = findAdminUserOrThrow(userId)
+  user.status = 'retired'
+  user.pointSummary = {
+    ...user.pointSummary,
+    balance: 0,
+  }
+  if (note && note.trim().length > 0) {
+    user.reportHistory = [
+      {
+        id: `retire_${Date.now()}`,
+        otomoId: 'ops-team',
+        message: `【退会処理】${note.trim()}`,
+        createdAt: new Date().toISOString(),
+      },
+      ...user.reportHistory,
+    ]
+  }
+  return cloneAdminUserDetail(user)
+}
