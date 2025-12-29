@@ -908,3 +908,76 @@ export async function fetchOtomoReviewAlerts(): Promise<
   const response = await http<OtomoAlertsResponse>('/otomo/alerts')
   return response.items
 }
+
+export interface AdminLoginPayload {
+  email: string
+  password: string
+}
+
+export interface AdminLoginResponse {
+  token: string
+  mfaRequired: boolean
+  mfaSessionId?: string
+}
+
+export interface VerifyAdminMfaPayload {
+  sessionId: string
+  code: string
+}
+
+const ADMIN_LOGIN_DELAY_MS = 750
+const ADMIN_MFA_DELAY_MS = 550
+const ADMIN_DEMO_PASSWORD = 'otomohan-admin'
+const ADMIN_DEMO_TOKEN = 'mock-admin-token'
+const ADMIN_DEMO_MFA_CODE = '123456'
+
+const waitForMock = (ms: number) =>
+  new Promise<void>((resolve) => {
+    setTimeout(resolve, ms)
+  })
+
+export async function adminLogin(
+  payload: AdminLoginPayload,
+): Promise<AdminLoginResponse> {
+  await waitForMock(ADMIN_LOGIN_DELAY_MS)
+
+  const email = payload.email.trim().toLowerCase()
+  const password = payload.password.trim()
+
+  if (!email || !password || !email.includes('@')) {
+    throw new Error('メールアドレスまたはパスワードが違います')
+  }
+
+  if (password !== ADMIN_DEMO_PASSWORD) {
+    throw new Error('メールアドレスまたはパスワードが違います')
+  }
+
+  const requiresMfa = email.includes('+mfa')
+
+  return {
+    token: ADMIN_DEMO_TOKEN,
+    mfaRequired: requiresMfa,
+    mfaSessionId: requiresMfa
+      ? `mfa_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+      : undefined,
+  }
+}
+
+export async function verifyAdminMfaCode(
+  payload: VerifyAdminMfaPayload,
+): Promise<AdminLoginResponse> {
+  await waitForMock(ADMIN_MFA_DELAY_MS)
+
+  if (!payload.sessionId) {
+    throw new Error('MFAセッションが無効です。再度ログインしてください')
+  }
+
+  if (payload.code.trim() !== ADMIN_DEMO_MFA_CODE) {
+    throw new Error('認証コードが違います')
+  }
+
+  return {
+    token: ADMIN_DEMO_TOKEN,
+    mfaRequired: false,
+  }
+}
