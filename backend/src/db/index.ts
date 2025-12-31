@@ -10,6 +10,20 @@ type UserRecord = {
   is_deleted: boolean;
 };
 
+type OtomoRecord = {
+  otomoId: string;
+  displayName: string;
+  profileImageUrl: string;
+  age: number;
+  gender: "female" | "male" | "other";
+  genres: string[];
+  isOnline: boolean;
+  isAvailable: boolean;
+  pricePerMinute: number;
+  rating: number;
+  reviewCount: number;
+};
+
 const usersTable: Record<string, UserRecord> = {
   "user-123": {
     id: "user-123",
@@ -24,6 +38,48 @@ const usersTable: Record<string, UserRecord> = {
     is_deleted: false,
   },
 };
+
+const otomoTable: OtomoRecord[] = [
+  {
+    otomoId: "otomo_001",
+    displayName: "みさき",
+    profileImageUrl: "https://cdn.otomohan.local/otomo/001.jpg",
+    age: 25,
+    gender: "female",
+    genres: ["healing", "talk", "consult"],
+    isOnline: true,
+    isAvailable: true,
+    pricePerMinute: 120,
+    rating: 4.8,
+    reviewCount: 54,
+  },
+  {
+    otomoId: "otomo_002",
+    displayName: "ゆうと",
+    profileImageUrl: "https://cdn.otomohan.local/otomo/002.jpg",
+    age: 28,
+    gender: "male",
+    genres: ["consult", "advice"],
+    isOnline: false,
+    isAvailable: false,
+    pricePerMinute: 100,
+    rating: 4.5,
+    reviewCount: 30,
+  },
+  {
+    otomoId: "otomo_003",
+    displayName: "さくら",
+    profileImageUrl: "https://cdn.otomohan.local/otomo/003.jpg",
+    age: 32,
+    gender: "female",
+    genres: ["talk", "support"],
+    isOnline: true,
+    isAvailable: false,
+    pricePerMinute: 140,
+    rating: 4.9,
+    reviewCount: 120,
+  },
+];
 
 const userSettingsTable: Record<
   string,
@@ -120,4 +176,47 @@ export async function softDeleteUserRecord(
 
 export async function deleteUserSettingsRecord(id: string): Promise<void> {
   delete userSettingsTable[id];
+}
+
+export type OtomoListFilters = {
+  isOnline?: boolean;
+  genre?: string;
+  minAge?: number;
+  maxAge?: number;
+  limit: number;
+  offset: number;
+};
+
+export async function fetchOtomoList(filters: OtomoListFilters) {
+  let filtered = otomoTable;
+
+  if (typeof filters.isOnline === "boolean") {
+    filtered = filtered.filter(
+      (record) => record.isOnline === filters.isOnline
+    );
+  }
+
+  if (filters.genre) {
+    filtered = filtered.filter((record) =>
+      record.genres.includes(filters.genre as string)
+    );
+  }
+
+  if (typeof filters.minAge === "number") {
+    filtered = filtered.filter((record) => record.age >= filters.minAge!);
+  }
+
+  if (typeof filters.maxAge === "number") {
+    filtered = filtered.filter((record) => record.age <= filters.maxAge!);
+  }
+
+  const total = filtered.length;
+  const start = Math.max(filters.offset, 0);
+  const end = start + Math.max(filters.limit, 0);
+  const items = filtered.slice(start, end);
+
+  return {
+    items,
+    total,
+  };
 }
