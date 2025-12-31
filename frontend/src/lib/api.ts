@@ -1021,6 +1021,7 @@ const AUTH_ERROR_MESSAGES: Record<AppLoginErrorCode, string> = {
 }
 
 const APP_LOGIN_DELAY_MS = 640
+const APP_SIGNUP_DELAY_MS = 820
 
 type MockAppAccount = {
   email: string
@@ -1115,6 +1116,103 @@ export async function loginWithEmail(
       role: account.role,
       name: account.name,
       avatarUrl: account.avatarUrl,
+    },
+  }
+}
+
+export interface AppSignupPayload {
+  name: string
+  email: string
+  password: string
+}
+
+export type AppSignupErrorCode =
+  | 'EMAIL_ALREADY_USED'
+  | 'INVALID_EMAIL'
+  | 'WEAK_PASSWORD'
+  | 'PASSWORD_NOT_MATCH'
+  | 'SERVER_ERROR'
+  | 'NETWORK_ERROR'
+
+export interface AppSignupError extends Error {
+  code: AppSignupErrorCode
+}
+
+const SIGNUP_ERROR_MESSAGES: Record<AppSignupErrorCode, string> = {
+  EMAIL_ALREADY_USED: 'このメールアドレスはすでに登録されています',
+  INVALID_EMAIL: '正しいメールアドレスを入力してください',
+  WEAK_PASSWORD: 'パスワードが条件を満たしていません',
+  PASSWORD_NOT_MATCH: 'パスワードが一致しません',
+  SERVER_ERROR: 'サーバーで問題が発生しました',
+  NETWORK_ERROR: 'ネットワークエラーが発生しました',
+}
+
+const createSignupError = (code: AppSignupErrorCode): AppSignupError => {
+  const error = new Error(SIGNUP_ERROR_MESSAGES[code]) as AppSignupError
+  error.code = code
+  return error
+}
+
+export const isAppSignupError = (error: unknown): error is AppSignupError => {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    typeof (error as { code?: unknown }).code === 'string'
+  )
+}
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+const generateMockUserId = (role: AppUserRole) =>
+  `${role}_${Math.random().toString(36).slice(2, 8)}`
+
+export async function signUpWithEmail(
+  payload: AppSignupPayload,
+): Promise<AppLoginResponse> {
+  await waitForMock(APP_SIGNUP_DELAY_MS)
+
+  const name = payload.name.trim()
+  const email = payload.email.trim().toLowerCase()
+  const password = payload.password.trim()
+
+  if (!name || name.length > 32) {
+    throw createSignupError('SERVER_ERROR')
+  }
+  if (!EMAIL_REGEX.test(email)) {
+    throw createSignupError('INVALID_EMAIL')
+  }
+  if (password.length < 8 || password.length > 64) {
+    throw createSignupError('WEAK_PASSWORD')
+  }
+  if (email.includes('+network')) {
+    throw createSignupError('NETWORK_ERROR')
+  }
+  if (email.includes('+server')) {
+    throw createSignupError('SERVER_ERROR')
+  }
+  if (mockAppAccounts.some((entry) => entry.email === email)) {
+    throw createSignupError('EMAIL_ALREADY_USED')
+  }
+
+  const role: AppUserRole = email.includes('+otomo') ? 'otomo' : 'user'
+  const newAccount: MockAppAccount = {
+    email,
+    password,
+    id: generateMockUserId(role),
+    role,
+    name,
+    status: 'active',
+  }
+  mockAppAccounts.push(newAccount)
+
+  return {
+    token: `mock-user-token-${newAccount.id}`,
+    user: {
+      id: newAccount.id,
+      role: newAccount.role,
+      name: newAccount.name,
+      avatarUrl: newAccount.avatarUrl,
     },
   }
 }
