@@ -561,6 +561,59 @@ const mapRawOtomo = (item: RawOtomoResponseItem): OtomoProfile => ({
   pricePerMinute: normalizePrice(item),
 })
 
+const extractFriendlyError = (rawBody?: string | null) => {
+  if (!rawBody) return null
+  const trimmed = rawBody.trim()
+  if (!trimmed) return null
+
+  try {
+    const parsed = JSON.parse(trimmed) as
+      | string
+      | { error?: unknown; message?: unknown }
+    if (typeof parsed === 'string') {
+      const normalized = parsed.trim()
+      return normalized.length > 0 ? normalized : null
+    }
+    if (typeof parsed === 'object') {
+      const errorMessage = (parsed as { error?: unknown }).error
+      if (typeof errorMessage === 'string') {
+        const normalized = errorMessage.trim()
+        if (normalized.length > 0) {
+          return normalized
+        }
+      }
+      const message = (parsed as { message?: unknown }).message
+      if (typeof message === 'string') {
+        const normalized = message.trim()
+        if (normalized.length > 0) {
+          return normalized
+        }
+      }
+    }
+  } catch {
+    // Ignore JSON parse failures and fall back to raw text
+  }
+
+  if (trimmed.startsWith('<')) {
+    return null
+  }
+
+  return trimmed
+}
+
+const buildApiErrorMessage = (
+  status: number,
+  statusText: string,
+  responseBody: string,
+) => {
+  const friendly = extractFriendlyError(responseBody)
+  if (friendly) {
+    return friendly
+  }
+  const suffix = responseBody.length > 0 ? ` - ${responseBody}` : ''
+  return `API error ${status}: ${statusText}${suffix}`
+}
+
 async function http<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     cache: 'no-store',
@@ -575,7 +628,7 @@ async function http<T>(path: string, init?: RequestInit): Promise<T> {
   if (!response.ok) {
     const errorBody = await response.text()
     throw new Error(
-      `API error ${response.status}: ${response.statusText} - ${errorBody}`,
+      buildApiErrorMessage(response.status, response.statusText, errorBody),
     )
   }
 
@@ -702,7 +755,7 @@ export async function uploadUserAvatar(file: File): Promise<string> {
   if (!response.ok) {
     const body = await response.text()
     throw new Error(
-      `Avatar upload failed ${response.status}: ${response.statusText} - ${body}`,
+      buildApiErrorMessage(response.status, response.statusText, body),
     )
   }
 

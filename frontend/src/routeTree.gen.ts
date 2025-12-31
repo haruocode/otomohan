@@ -15,6 +15,7 @@ import { Route as HistoryCallIdRouteImport } from './routes/history.$callId'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as MypageRouteImport } from './routes/mypage'
 import { Route as MypageEditRouteImport } from './routes/mypage.edit'
+import { Route as MypagePasswordRouteImport } from './routes/mypage.password'
 import { Route as WalletChargeRouteImport } from './routes/wallet.charge'
 import { Route as OtomoOtomoIdRouteImport } from './routes/otomo.$otomoId'
 import { Route as DemoTanstackQueryRouteImport } from './routes/demo/tanstack-query'
@@ -66,6 +67,11 @@ const MypageRoute = MypageRouteImport.update({
 const MypageEditRoute = MypageEditRouteImport.update({
   id: '/mypage/edit',
   path: '/mypage/edit',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MypagePasswordRoute = MypagePasswordRouteImport.update({
+  id: '/mypage/password',
+  path: '/mypage/password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const WalletChargeRoute = WalletChargeRouteImport.update({
@@ -183,6 +189,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/mypage': typeof MypageRoute
   '/mypage/edit': typeof MypageEditRoute
+  '/mypage/password': typeof MypagePasswordRoute
   '/history': typeof HistoryRoute
   '/history/$callId': typeof HistoryCallIdRoute
   '/wallet': typeof WalletRouteWithChildren
@@ -213,6 +220,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/mypage': typeof MypageRoute
   '/mypage/edit': typeof MypageEditRoute
+  '/mypage/password': typeof MypagePasswordRoute
   '/history': typeof HistoryRoute
   '/history/$callId': typeof HistoryCallIdRoute
   '/wallet': typeof WalletRouteWithChildren
@@ -244,6 +252,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/mypage': typeof MypageRoute
   '/mypage/edit': typeof MypageEditRoute
+  '/mypage/password': typeof MypagePasswordRoute
   '/history': typeof HistoryRoute
   '/history/$callId': typeof HistoryCallIdRoute
   '/wallet': typeof WalletRouteWithChildren
@@ -276,6 +285,7 @@ export interface FileRouteTypes {
     | '/'
     | '/mypage'
     | '/mypage/edit'
+    | '/mypage/password'
     | '/history'
     | '/history/$callId'
     | '/wallet'
@@ -314,6 +324,7 @@ export interface FileRouteTypes {
     | '/'
     | '/mypage'
     | '/mypage/edit'
+    | '/mypage/password'
     | '/history'
     | '/history/$callId'
     | '/wallet'
@@ -344,6 +355,7 @@ export interface FileRouteTypes {
     | '/'
     | '/mypage'
     | '/mypage/edit'
+    | '/mypage/password'
     | '/history'
     | '/history/$callId'
     | '/wallet'
@@ -375,6 +387,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   MypageRoute: typeof MypageRoute
   MypageEditRoute: typeof MypageEditRoute
+  MypagePasswordRoute: typeof MypagePasswordRoute
   HistoryRoute: typeof HistoryRoute
   HistoryCallIdRoute: typeof HistoryCallIdRoute
   WalletRoute: typeof WalletRouteWithChildren

@@ -34,13 +34,16 @@ import {
 const app = express()
 const PORT = process.env.PORT || 5050
 const artificialDelayMs = Number(process.env.MOCK_DELAY_MS || 0)
+const MAX_AVATAR_BYTES = 5 * 1024 * 1024
+const ACCEPTED_AVATAR_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp'])
+const MAX_NAME_LENGTH = 20
+const MAX_INTRO_LENGTH = 300
+const NAME_PROHIBITED_PATTERN = /[<>@#%{}\[\]\\|^~]/u
+const STATS_RANGES = ['today', 'week', 'month', 'all']
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 5 * 1024 * 1024 },
+  limits: { fileSize: MAX_AVATAR_BYTES },
 })
-const MAX_NAME_LENGTH = 32
-const MAX_INTRO_LENGTH = 300
-const STATS_RANGES = ['today', 'week', 'month', 'all']
 const TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/
 const WEEKDAY_LOOKUP = new Map(
@@ -383,24 +386,47 @@ app.get('/user/me', (_req, res) => {
 app.put('/user/profile', (req, res) => {
   const { name, intro } = req.body || {}
   if (typeof name !== 'string' || name.trim().length === 0) {
-    return res.status(400).json({ error: '名前を入力してください。' })
+    return res.status(400).json({ error: '名前を入力してください' })
   }
 
-  const trimmedName = name.trim().slice(0, MAX_NAME_LENGTH)
-  userProfile.name = trimmedName
+  const trimmedName = name.trim()
+  if (trimmedName.length > MAX_NAME_LENGTH) {
+    return res.status(400).json({
+      error: `名前は${MAX_NAME_LENGTH}文字以内で入力してください`,
+    })
+  }
+  if (NAME_PROHIBITED_PATTERN.test(trimmedName)) {
+    return res.status(400).json({
+      error: '使用できない文字が含まれています',
+    })
+  }
 
   if (typeof intro === 'string') {
-    userProfile.intro = intro.slice(0, MAX_INTRO_LENGTH)
+    const normalizedIntro = intro.trim()
+    if (normalizedIntro.length > MAX_INTRO_LENGTH) {
+      return res.status(400).json({ error: '300文字以内で入力してください' })
+    }
+    userProfile.intro = normalizedIntro
   } else if (intro === null) {
     userProfile.intro = ''
   }
+
+  userProfile.name = trimmedName
 
   res.json({ status: 'success', user: buildUserPayload() })
 })
 
 app.put('/user/avatar', upload.single('avatar'), (req, res) => {
   if (!req.file) {
-    return res.status(400).json({ error: '画像ファイルが必要です。' })
+    return res.status(400).json({ error: '画像ファイルが必要です' })
+  }
+
+  if (!ACCEPTED_AVATAR_TYPES.has(req.file.mimetype)) {
+    return res.status(400).json({ error: '対応していない画像形式です' })
+  }
+
+  if (req.file.size > MAX_AVATAR_BYTES) {
+    return res.status(400).json({ error: '画像サイズは5MB以内にしてください' })
   }
 
   const base64 = req.file.buffer.toString('base64')
@@ -688,7 +714,7 @@ app.use((err, _req, res, _next) => {
   if (err instanceof multer.MulterError) {
     const message =
       err.code === 'LIMIT_FILE_SIZE'
-        ? '画像サイズは5MB以下にしてください。'
+        ? '画像サイズは5MB以内にしてください'
         : err.message
     return res.status(400).json({ error: message })
   }

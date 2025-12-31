@@ -4,11 +4,13 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   AlertCircle,
   ArrowLeft,
+  CheckCircle2,
   Loader2,
   Save,
   Shield,
   Undo2,
   Upload,
+  X,
 } from 'lucide-react'
 
 import type { FormEvent } from 'react'
@@ -29,10 +31,13 @@ import {
 } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 
-const MAX_NAME_LENGTH = 32
+const MAX_NAME_LENGTH = 20
 const MAX_INTRO_LENGTH = 300
 const MAX_AVATAR_BYTES = 5 * 1024 * 1024
 const ACCEPTED_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp']
+// eslint-disable-next-line no-useless-escape
+const NAME_PROHIBITED_PATTERN = /[<>@#%{}\[\]\\|^~]/u
+const INTRO_PLACEHOLDER = '趣味・得意分野・話せるテーマなどをご記入ください'
 
 export const Route = createFileRoute('/mypage/edit')({
   component: ProfileEditScreen,
@@ -48,13 +53,33 @@ function ProfileEditScreen() {
     avatarUrl: '',
   })
   const hasInitializedRef = useRef(false)
+  const pendingNavigationRef = useRef<number | null>(null)
 
   const [name, setName] = useState('')
   const [intro, setIntro] = useState('')
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
-  const [formError, setFormError] = useState<string | null>(null)
+  const [toast, setToast] = useState<{
+    type: 'success' | 'error'
+    message: string
+  } | null>(null)
   const [avatarError, setAvatarError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!toast) return
+    const timeout = window.setTimeout(() => setToast(null), 4000)
+    return () => window.clearTimeout(timeout)
+  }, [toast])
+
+  useEffect(
+    () => () => {
+      if (pendingNavigationRef.current) {
+        window.clearTimeout(pendingNavigationRef.current)
+        pendingNavigationRef.current = null
+      }
+    },
+    [],
+  )
 
   const userQuery = useQuery({
     queryKey: ['current-user'],
@@ -64,6 +89,9 @@ function ProfileEditScreen() {
   useEffect(() => {
     if (!userQuery.data || hasInitializedRef.current) {
       return
+    }
+    {
+      toast && <ToastBanner toast={toast} onDismiss={() => setToast(null)} />
     }
 
     const normalizedName = userQuery.data.name
@@ -88,6 +116,9 @@ function ProfileEditScreen() {
     }
     if (trimmedName.length > MAX_NAME_LENGTH) {
       return `${MAX_NAME_LENGTH}文字以内で入力してください。`
+    }
+    if (NAME_PROHIBITED_PATTERN.test(trimmedName)) {
+      return '一部の記号（< > @ # など）は使用できません。'
     }
     return null
   }, [trimmedName])
@@ -136,18 +167,22 @@ function ProfileEditScreen() {
       }
       setAvatarFile(null)
       setAvatarPreview(updatedUser.avatarUrl)
-      setFormError(null)
       queryClient.setQueryData(['current-user'], updatedUser)
       queryClient.invalidateQueries({ queryKey: ['current-user'] })
-      window.alert('プロフィールを更新しました')
-      router.navigate({ to: '/mypage' })
+      setToast({ type: 'success', message: 'プロフィールを更新しました。' })
+      pendingNavigationRef.current = window.setTimeout(() => {
+        router.navigate({ to: '/mypage' })
+        pendingNavigationRef.current = null
+      }, 900)
     },
     onError: (error: unknown) => {
-      setFormError(
-        error instanceof Error
-          ? error.message
-          : 'プロフィールの更新に失敗しました。',
-      )
+      setToast({
+        type: 'error',
+        message:
+          error instanceof Error
+            ? error.message
+            : 'プロフィールの更新に失敗しました。',
+      })
     },
   })
 
@@ -181,7 +216,7 @@ function ProfileEditScreen() {
     if (disableSave || mutation.isPending) {
       return
     }
-    setFormError(null)
+    setToast(null)
     mutation.mutate()
   }
 
@@ -376,6 +411,7 @@ function ProfileEditScreen() {
                   maxLength={MAX_INTRO_LENGTH}
                   rows={5}
                   onChange={(event) => setIntro(event.target.value)}
+                  placeholder={INTRO_PLACEHOLDER}
                   className="w-full rounded-2xl border border-white/15 bg-white/5 px-4 py-3 text-base text-white placeholder:text-white/50 focus:border-white focus:outline-none focus:ring-2 focus:ring-blue-300/50"
                   aria-invalid={Boolean(introError)}
                   aria-describedby="profile-intro-error"
@@ -393,33 +429,29 @@ function ProfileEditScreen() {
             <CardHeader>
               <CardTitle>アカウントセキュリティ</CardTitle>
               <CardDescription className="text-white/70">
-                パスワードの変更は次回リリースで対応予定です
+                パスワード変更や2段階認証の設定ができます
               </CardDescription>
             </CardHeader>
             <CardContent>
               <Button
+                asChild
                 type="button"
                 variant="outline"
                 className="w-full justify-between rounded-2xl border-white/30 text-white"
-                disabled
               >
-                <span className="flex items-center gap-2">
-                  <Shield className="h-4 w-4" />
-                  パスワードを変更（準備中）
-                </span>
+                <Link
+                  to="/mypage/password"
+                  className="flex w-full items-center justify-between"
+                >
+                  <span className="flex items-center gap-2">
+                    <Shield className="h-4 w-4" />
+                    パスワードを変更
+                  </span>
+                  <span className="text-sm text-white/70">設定画面へ</span>
+                </Link>
               </Button>
             </CardContent>
           </Card>
-
-          {formError && (
-            <div className="rounded-2xl border border-rose-500/40 bg-rose-500/10 p-4 text-sm text-rose-100">
-              <div className="flex items-center gap-2 font-medium">
-                <AlertCircle className="h-4 w-4" />
-                エラー
-              </div>
-              <p className="mt-2 text-rose-100">{formError}</p>
-            </div>
-          )}
         </form>
       </main>
     </div>
@@ -430,6 +462,39 @@ function deriveInitials(value: string) {
   const target = value.trim()
   if (!target) return 'YOU'
   return target.slice(0, 2).toUpperCase()
+}
+
+function ToastBanner({
+  toast,
+  onDismiss,
+}: {
+  toast: { type: 'success' | 'error'; message: string }
+  onDismiss: () => void
+}) {
+  const isSuccess = toast.type === 'success'
+  const toneClass = isSuccess
+    ? 'border-emerald-300/60 bg-emerald-400/20 text-emerald-50'
+    : 'border-rose-400/60 bg-rose-500/25 text-rose-50'
+  const Icon = isSuccess ? CheckCircle2 : AlertCircle
+
+  return (
+    <div className="pointer-events-none fixed inset-x-0 top-4 z-50 flex justify-center px-4">
+      <div
+        className={`pointer-events-auto flex w-full max-w-md items-center gap-3 rounded-2xl border px-4 py-3 shadow-2xl backdrop-blur ${toneClass}`}
+      >
+        <Icon className="h-5 w-5 flex-shrink-0" />
+        <p className="flex-1 text-sm">{toast.message}</p>
+        <button
+          type="button"
+          aria-label="通知を閉じる"
+          className="rounded-full p-1 text-white/80 transition hover:bg-white/10"
+          onClick={onDismiss}
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+    </div>
+  )
 }
 
 function EditSkeleton() {
