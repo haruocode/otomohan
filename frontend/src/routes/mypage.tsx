@@ -2,12 +2,11 @@ import { Link, createFileRoute } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import {
   ArrowLeft,
+  ChevronRight,
   Edit,
   History,
-  LogOut,
   RefreshCw,
   Settings,
-  Trash2,
   Wallet as WalletIcon,
 } from 'lucide-react'
 
@@ -201,40 +200,28 @@ function AccountSection() {
       <CardHeader>
         <CardTitle>アカウント設定</CardTitle>
         <CardDescription className="text-white/70">
-          サービス利用に関する操作
+          詳細設定やアカウント操作はこちらから
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
         <Button
-          variant="outline"
-          className="w-full justify-between rounded-2xl border-white/30 text-white"
-          disabled
+          asChild
+          className="w-full justify-between rounded-2xl bg-white text-slate-950 hover:bg-white/90"
         >
-          <span className="flex items-center gap-2">
-            <Settings className="h-4 w-4" />
-            設定（準備中）
-          </span>
+          <Link
+            to="/mypage/settings"
+            className="flex w-full items-center justify-between"
+          >
+            <span className="flex items-center gap-2">
+              <Settings className="h-4 w-4" />
+              設定を開く
+            </span>
+            <ChevronRight className="h-4 w-4" />
+          </Link>
         </Button>
-        <Button
-          variant="ghost"
-          className="w-full justify-between rounded-2xl border border-white/10 text-white"
-          onClick={() => console.info('mock logout')}
-        >
-          <span className="flex items-center gap-2">
-            <LogOut className="h-4 w-4" />
-            ログアウト
-          </span>
-        </Button>
-        <Button
-          variant="destructive"
-          className="w-full justify-between rounded-2xl"
-          onClick={() => console.info('mock withdrawal')}
-        >
-          <span className="flex items-center gap-2">
-            <Trash2 className="h-4 w-4" />
-            退会手続き
-          </span>
-        </Button>
+        <p className="text-sm text-white/70">
+          プロフィール編集・通知設定・ログアウト・退会などの操作は設定ページ（C-04）に集約されています。
+        </p>
       </CardContent>
     </Card>
   )

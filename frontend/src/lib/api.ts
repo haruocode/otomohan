@@ -386,6 +386,33 @@ interface UpdateUserProfileResponse {
   user: CurrentUserProfile
 }
 
+export interface UserNotificationSettings {
+  push: boolean
+  email: boolean
+}
+
+export interface UserAppSettings {
+  theme: 'dark' | 'light'
+  beepTone: boolean
+}
+
+export interface UserSettings {
+  notifications: UserNotificationSettings
+  app: UserAppSettings
+}
+
+export interface SupportLinks {
+  termsUrl: string
+  privacyUrl: string
+  contactUrl: string
+  faqUrl?: string
+}
+
+export interface UpdateUserSettingsPayload {
+  notifications?: Partial<UserNotificationSettings>
+  app?: Partial<UserAppSettings>
+}
+
 interface UpdateUserAvatarResponse {
   status: string
   avatarUrl: string
@@ -761,6 +788,40 @@ export async function uploadUserAvatar(file: File): Promise<string> {
 
   const data = (await response.json()) as UpdateUserAvatarResponse
   return data.avatarUrl
+}
+
+export async function fetchUserSettings(): Promise<UserSettings> {
+  const response = await http<{ settings: UserSettings }>('/user/settings')
+  return response.settings
+}
+
+export async function updateUserSettings(
+  payload: UpdateUserSettingsPayload,
+): Promise<UserSettings> {
+  const response = await http<{ status: string; settings: UserSettings }>(
+    '/user/settings',
+    {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    },
+  )
+  return response.settings
+}
+
+export async function fetchSupportResources(): Promise<SupportLinks> {
+  const response = await http<{ links: SupportLinks }>('/settings')
+  return response.links
+}
+
+export async function logoutUser(): Promise<void> {
+  await http<{ status: string }>('/auth/logout', { method: 'POST' })
+}
+
+export async function deleteUserAccount(reason?: string): Promise<void> {
+  await http<{ status: string }>('/user/delete', {
+    method: 'DELETE',
+    body: JSON.stringify({ reason: reason ?? null }),
+  })
 }
 
 export async function fetchOtomoSelf(): Promise<OtomoDashboardProfile> {

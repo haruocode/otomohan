@@ -299,6 +299,24 @@ export const userProfile = {
     '深夜の雑談と作業通話が好きなエンジニアです。コーヒー片手に話せる方を探しています。',
 }
 
+export const userSettings = {
+  notifications: {
+    push: true,
+    email: true,
+  },
+  app: {
+    theme: 'dark',
+    beepTone: true,
+  },
+}
+
+export const supportResources = {
+  termsUrl: 'https://otomohan.example.com/terms',
+  privacyUrl: 'https://otomohan.example.com/privacy',
+  contactUrl: 'https://forms.gle/otomohan-support',
+  faqUrl: 'https://help.otomohan.example.com/faq',
+}
+
 export const otomoRewardSummary = {
   todayPoints: 1250,
   totalPoints: 43200,

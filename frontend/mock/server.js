@@ -13,6 +13,8 @@ import {
   calls,
   callHistory,
   userProfile,
+  userSettings,
+  supportResources,
   otomoSelf,
   otomoRewardSummary,
   otomoCallFeed,
@@ -39,6 +41,7 @@ const ACCEPTED_AVATAR_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp'])
 const MAX_NAME_LENGTH = 20
 const MAX_INTRO_LENGTH = 300
 const NAME_PROHIBITED_PATTERN = /[<>@#%{}\[\]\\|^~]/u
+const ALLOWED_THEMES = new Set(['dark', 'light'])
 const STATS_RANGES = ['today', 'week', 'month', 'all']
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -433,6 +436,92 @@ app.put('/user/avatar', upload.single('avatar'), (req, res) => {
   userProfile.avatarUrl = `data:${req.file.mimetype};base64,${base64}`
 
   res.json({ status: 'success', avatarUrl: userProfile.avatarUrl })
+})
+
+app.get('/user/settings', (_req, res) => {
+  res.json({ settings: userSettings })
+})
+
+app.put('/user/settings', (req, res) => {
+  const { notifications, app: appSettings } = req.body || {}
+
+  if (
+    notifications !== undefined &&
+    (notifications === null || typeof notifications !== 'object')
+  ) {
+    return res.status(400).json({ error: '通知設定の形式が不正です。' })
+  }
+  if (
+    appSettings !== undefined &&
+    (appSettings === null || typeof appSettings !== 'object')
+  ) {
+    return res.status(400).json({ error: 'アプリ設定の形式が不正です。' })
+  }
+
+  const nextNotifications = { ...userSettings.notifications }
+  if (notifications) {
+    if ('push' in notifications) {
+      if (typeof notifications.push !== 'boolean') {
+        return res
+          .status(400)
+          .json({ error: 'プッシュ通知は true / false で指定してください。' })
+      }
+      nextNotifications.push = notifications.push
+    }
+    if ('email' in notifications) {
+      if (typeof notifications.email !== 'boolean') {
+        return res
+          .status(400)
+          .json({ error: 'メール通知は true / false で指定してください。' })
+      }
+      nextNotifications.email = notifications.email
+    }
+  }
+
+  const nextApp = { ...userSettings.app }
+  if (appSettings) {
+    if ('theme' in appSettings) {
+      if (
+        typeof appSettings.theme !== 'string' ||
+        !ALLOWED_THEMES.has(appSettings.theme)
+      ) {
+        return res
+          .status(400)
+          .json({ error: 'サポートされていないテーマです。' })
+      }
+      nextApp.theme = appSettings.theme
+    }
+    if ('beepTone' in appSettings) {
+      if (typeof appSettings.beepTone !== 'boolean') {
+        return res
+          .status(400)
+          .json({ error: 'ビープ音の設定は true / false で指定してください。' })
+      }
+      nextApp.beepTone = appSettings.beepTone
+    }
+  }
+
+  userSettings.notifications = nextNotifications
+  userSettings.app = nextApp
+
+  res.json({ status: 'saved', settings: userSettings })
+})
+
+app.get('/settings', (_req, res) => {
+  res.json({
+    links: supportResources,
+    app: userSettings.app,
+    version: '2025.02.0',
+  })
+})
+
+app.post('/auth/logout', (_req, res) => {
+  res.json({ status: 'logged_out', loggedOutAt: now() })
+})
+
+app.delete('/user/delete', (req, res) => {
+  const { reason } = req.body || {}
+  res.json({ status: 'deleted', deletedAt: now(), reason: reason ?? null })
 })
 
 app.get('/otomo/me', (_req, res) => {

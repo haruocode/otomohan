@@ -16,6 +16,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as MypageRouteImport } from './routes/mypage'
 import { Route as MypageEditRouteImport } from './routes/mypage.edit'
 import { Route as MypagePasswordRouteImport } from './routes/mypage.password'
+import { Route as MypageSettingsRouteImport } from './routes/mypage.settings'
 import { Route as WalletChargeRouteImport } from './routes/wallet.charge'
 import { Route as OtomoOtomoIdRouteImport } from './routes/otomo.$otomoId'
 import { Route as DemoTanstackQueryRouteImport } from './routes/demo/tanstack-query'
@@ -72,6 +73,11 @@ const MypageEditRoute = MypageEditRouteImport.update({
 const MypagePasswordRoute = MypagePasswordRouteImport.update({
   id: '/mypage/password',
   path: '/mypage/password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MypageSettingsRoute = MypageSettingsRouteImport.update({
+  id: '/mypage/settings',
+  path: '/mypage/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
 const WalletChargeRoute = WalletChargeRouteImport.update({
@@ -189,6 +195,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/mypage': typeof MypageRoute
   '/mypage/edit': typeof MypageEditRoute
+  '/mypage/settings': typeof MypageSettingsRoute
   '/mypage/password': typeof MypagePasswordRoute
   '/history': typeof HistoryRoute
   '/history/$callId': typeof HistoryCallIdRoute
@@ -220,6 +227,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/mypage': typeof MypageRoute
   '/mypage/edit': typeof MypageEditRoute
+  '/mypage/settings': typeof MypageSettingsRoute
   '/mypage/password': typeof MypagePasswordRoute
   '/history': typeof HistoryRoute
   '/history/$callId': typeof HistoryCallIdRoute
@@ -252,6 +260,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/mypage': typeof MypageRoute
   '/mypage/edit': typeof MypageEditRoute
+  '/mypage/settings': typeof MypageSettingsRoute
   '/mypage/password': typeof MypagePasswordRoute
   '/history': typeof HistoryRoute
   '/history/$callId': typeof HistoryCallIdRoute
@@ -285,6 +294,7 @@ export interface FileRouteTypes {
     | '/'
     | '/mypage'
     | '/mypage/edit'
+    | '/mypage/settings'
     | '/mypage/password'
     | '/history'
     | '/history/$callId'
@@ -324,6 +334,7 @@ export interface FileRouteTypes {
     | '/'
     | '/mypage'
     | '/mypage/edit'
+    | '/mypage/settings'
     | '/mypage/password'
     | '/history'
     | '/history/$callId'
@@ -355,6 +366,7 @@ export interface FileRouteTypes {
     | '/'
     | '/mypage'
     | '/mypage/edit'
+    | '/mypage/settings'
     | '/mypage/password'
     | '/history'
     | '/history/$callId'
@@ -387,6 +399,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   MypageRoute: typeof MypageRoute
   MypageEditRoute: typeof MypageEditRoute
+  MypageSettingsRoute: typeof MypageSettingsRoute
   MypagePasswordRoute: typeof MypagePasswordRoute
   HistoryRoute: typeof HistoryRoute
   HistoryCallIdRoute: typeof HistoryCallIdRoute
@@ -441,6 +454,13 @@ declare module '@tanstack/react-router' {
       path: '/mypage/edit'
       fullPath: '/mypage/edit'
       preLoaderRoute: typeof MypageEditRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mypage/settings': {
+      id: '/mypage/settings'
+      path: '/mypage/settings'
+      fullPath: '/mypage/settings'
+      preLoaderRoute: typeof MypageSettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/history': {
@@ -641,6 +661,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   MypageRoute: MypageRoute,
   MypageEditRoute: MypageEditRoute,
+  MypageSettingsRoute: MypageSettingsRoute,
   HistoryRoute: HistoryRoute,
   HistoryCallIdRoute: HistoryCallIdRoute,
   WalletRoute: WalletRouteWithChildren,
