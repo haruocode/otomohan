@@ -8,6 +8,7 @@ This directory hosts a Fastify + TypeScript backend that will gradually replace 
 - `USER-04 PUT /user/password` (change password)
 - `USER-05 DELETE /user/delete` (account soft delete)
 - `OTOMO-01 GET /otomo/list` (fetch otomo directory)
+- `OTOMO-02 GET /otomo/{id}` (fetch otomo detail)
 
 ## Scripts
 

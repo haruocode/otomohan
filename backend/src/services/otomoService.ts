@@ -1,4 +1,4 @@
-import { listOtomo } from "../repositories/otomoRepository.js";
+import { listOtomo, findOtomoById } from "../repositories/otomoRepository.js";
 
 export type OtomoListQuery = {
   isOnline?: boolean;
@@ -26,6 +26,34 @@ export type OtomoListItem = {
 export type OtomoListResult = {
   items: OtomoListItem[];
   total: number;
+};
+
+export type OtomoReview = {
+  reviewId: string;
+  userDisplayName: string;
+  score: number;
+  comment: string;
+  createdAt: string;
+};
+
+export type OtomoScheduleSlot = {
+  dayOfWeek:
+    | "monday"
+    | "tuesday"
+    | "wednesday"
+    | "thursday"
+    | "friday"
+    | "saturday"
+    | "sunday";
+  start: string;
+  end: string;
+};
+
+export type OtomoDetail = OtomoListItem & {
+  introduction: string;
+  tags: string[];
+  reviews: OtomoReview[];
+  schedule: OtomoScheduleSlot[];
 };
 
 const DEFAULT_LIMIT = 20;
@@ -61,6 +89,45 @@ export async function getOtomoList(
       reviewCount: item.reviewCount,
     })),
     total,
+  };
+}
+
+const MAX_REVIEWS_RETURNED = 5;
+
+export async function getOtomoDetail(
+  otomoId: string
+): Promise<OtomoDetail | null> {
+  const record = await findOtomoById(otomoId);
+  if (!record) {
+    return null;
+  }
+
+  return {
+    otomoId: record.otomoId,
+    displayName: record.displayName,
+    profileImageUrl: record.profileImageUrl,
+    age: record.age,
+    gender: record.gender,
+    genres: record.genres,
+    introduction: record.introduction,
+    tags: record.tags,
+    isOnline: record.isOnline,
+    isAvailable: record.isAvailable,
+    pricePerMinute: record.pricePerMinute,
+    rating: record.rating,
+    reviewCount: record.reviewCount,
+    reviews: record.reviews.slice(0, MAX_REVIEWS_RETURNED).map((review) => ({
+      reviewId: review.reviewId,
+      userDisplayName: review.userDisplayName,
+      score: review.score,
+      comment: review.comment,
+      createdAt: review.createdAt,
+    })),
+    schedule: record.schedule.map((slot) => ({
+      dayOfWeek: slot.dayOfWeek,
+      start: slot.start,
+      end: slot.end,
+    })),
   };
 }
 

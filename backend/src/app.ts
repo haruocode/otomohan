@@ -8,6 +8,7 @@ import { userPasswordRoutes } from "./routes/user/password.js";
 import { userAvatarRoutes } from "./routes/user/avatar.js";
 import { userDeleteRoutes } from "./routes/user/delete.js";
 import { otomoListRoutes } from "./routes/otomo/list.js";
+import { otomoDetailRoutes } from "./routes/otomo/detail.js";
 
 export function buildApp() {
   const app = Fastify({
@@ -27,6 +28,7 @@ export function buildApp() {
   app.register(userPasswordRoutes);
   app.register(userDeleteRoutes);
   app.register(otomoListRoutes);
+  app.register(otomoDetailRoutes);
 
   app.get("/health", async () => ({ status: "ok" }));
 

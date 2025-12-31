@@ -1,5 +1,5 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
-import { getOtomoList } from "../services/otomoService.js";
+import { getOtomoList, getOtomoDetail } from "../services/otomoService.js";
 
 type OtomoListQuerystring = {
   isOnline?: boolean;
@@ -8,6 +8,10 @@ type OtomoListQuerystring = {
   maxAge?: number;
   limit?: number;
   offset?: number;
+};
+
+type OtomoDetailParams = {
+  id?: string;
 };
 
 export async function handleGetOtomoList(
@@ -42,5 +46,44 @@ export async function handleGetOtomoList(
     status: "success",
     items: result.items,
     total: result.total,
+  });
+}
+
+export async function handleGetOtomoDetail(
+  request: FastifyRequest,
+  reply: FastifyReply
+) {
+  const authUser = request.user;
+  if (!authUser) {
+    return reply.status(401).send({
+      status: "error",
+      error: "UNAUTHORIZED",
+      message: "Authentication required.",
+    });
+  }
+
+  const params = (request.params ?? {}) as OtomoDetailParams;
+  const otomoId = params.id;
+
+  if (!otomoId) {
+    return reply.status(400).send({
+      status: "error",
+      error: "INVALID_OTOMO_ID",
+      message: "Otomo ID is required.",
+    });
+  }
+
+  const detail = await getOtomoDetail(otomoId);
+  if (!detail) {
+    return reply.status(404).send({
+      status: "error",
+      error: "OTOMO_NOT_FOUND",
+      message: "指定されたおともはんは存在しません。",
+    });
+  }
+
+  return reply.send({
+    status: "success",
+    otomo: detail,
   });
 }

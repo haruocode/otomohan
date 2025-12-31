@@ -10,6 +10,27 @@ type UserRecord = {
   is_deleted: boolean;
 };
 
+type OtomoReviewRecord = {
+  reviewId: string;
+  userDisplayName: string;
+  score: number;
+  comment: string;
+  createdAt: string;
+};
+
+type OtomoScheduleRecord = {
+  dayOfWeek:
+    | "monday"
+    | "tuesday"
+    | "wednesday"
+    | "thursday"
+    | "friday"
+    | "saturday"
+    | "sunday";
+  start: string;
+  end: string;
+};
+
 type OtomoRecord = {
   otomoId: string;
   displayName: string;
@@ -17,11 +38,15 @@ type OtomoRecord = {
   age: number;
   gender: "female" | "male" | "other";
   genres: string[];
+  introduction: string;
+  tags: string[];
   isOnline: boolean;
   isAvailable: boolean;
   pricePerMinute: number;
   rating: number;
   reviewCount: number;
+  reviews: OtomoReviewRecord[];
+  schedule: OtomoScheduleRecord[];
 };
 
 const usersTable: Record<string, UserRecord> = {
@@ -47,11 +72,34 @@ const otomoTable: OtomoRecord[] = [
     age: 25,
     gender: "female",
     genres: ["healing", "talk", "consult"],
+    introduction: "はじめまして、みさきです。のんびりお話ししましょう。",
+    tags: ["癒し系", "傾聴", "お姉さんタイプ"],
     isOnline: true,
     isAvailable: true,
     pricePerMinute: 120,
     rating: 4.8,
     reviewCount: 54,
+    reviews: [
+      {
+        reviewId: "rev_001",
+        userDisplayName: "たかはるさん",
+        score: 5,
+        comment: "優しく話を聞いてくれました！",
+        createdAt: "2025-01-10T12:00:00Z",
+      },
+      {
+        reviewId: "rev_002",
+        userDisplayName: "まゆさん",
+        score: 4,
+        comment: "癒やされました。またお願いしたいです。",
+        createdAt: "2025-01-05T15:00:00Z",
+      },
+    ],
+    schedule: [
+      { dayOfWeek: "monday", start: "20:00", end: "23:00" },
+      { dayOfWeek: "tuesday", start: "21:00", end: "22:00" },
+      { dayOfWeek: "thursday", start: "20:00", end: "23:00" },
+    ],
   },
   {
     otomoId: "otomo_002",
@@ -60,11 +108,26 @@ const otomoTable: OtomoRecord[] = [
     age: 28,
     gender: "male",
     genres: ["consult", "advice"],
+    introduction: "キャリア相談や愚痴聞きもお任せください。",
+    tags: ["論理的", "相談役"],
     isOnline: false,
     isAvailable: false,
     pricePerMinute: 100,
     rating: 4.5,
     reviewCount: 30,
+    reviews: [
+      {
+        reviewId: "rev_010",
+        userDisplayName: "しゅん",
+        score: 5,
+        comment: "的確なアドバイスで助かりました。",
+        createdAt: "2025-02-12T10:00:00Z",
+      },
+    ],
+    schedule: [
+      { dayOfWeek: "wednesday", start: "19:00", end: "22:00" },
+      { dayOfWeek: "saturday", start: "10:00", end: "15:00" },
+    ],
   },
   {
     otomoId: "otomo_003",
@@ -73,11 +136,26 @@ const otomoTable: OtomoRecord[] = [
     age: 32,
     gender: "female",
     genres: ["talk", "support"],
+    introduction: "聞き上手とよく言われます。安心してお話ください。",
+    tags: ["サポート", "落ち着き"],
     isOnline: true,
     isAvailable: false,
     pricePerMinute: 140,
     rating: 4.9,
     reviewCount: 120,
+    reviews: [
+      {
+        reviewId: "rev_020",
+        userDisplayName: "みか",
+        score: 5,
+        comment: "落ち着いた雰囲気で癒やされました。",
+        createdAt: "2025-03-01T08:30:00Z",
+      },
+    ],
+    schedule: [
+      { dayOfWeek: "friday", start: "21:00", end: "24:00" },
+      { dayOfWeek: "sunday", start: "18:00", end: "21:00" },
+    ],
   },
 ];
 
@@ -219,4 +297,10 @@ export async function fetchOtomoList(filters: OtomoListFilters) {
     items,
     total,
   };
+}
+
+export async function fetchOtomoById(
+  otomoId: string
+): Promise<OtomoRecord | null> {
+  return otomoTable.find((record) => record.otomoId === otomoId) ?? null;
 }
