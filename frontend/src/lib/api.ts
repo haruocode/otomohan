@@ -2800,6 +2800,435 @@ export async function sendAdminNotification(
   return cloneAdminNotification(notification)
 }
 
+export type AdminReportCategory =
+  | 'abuse'
+  | 'sexual'
+  | 'neglect'
+  | 'spam'
+  | 'fraud'
+  | 'other'
+
+export type AdminReportStatus = 'unprocessed' | 'reviewing' | 'resolved'
+
+export type AdminReportPriority = 'high' | 'medium' | 'low'
+
+export type AdminReportTargetType = 'user' | 'otomo'
+
+export type AdminReportAction = 'warn' | 'temporarySuspend' | 'ban' | 'invalid'
+
+export interface AdminReportSummary {
+  id: string
+  callId: string
+  reporterId: string
+  reporterType: AdminReportTargetType
+  targetId: string
+  targetType: AdminReportTargetType
+  category: AdminReportCategory
+  status: AdminReportStatus
+  priority: AdminReportPriority
+  reportedAt: string
+  lastUpdatedAt: string
+}
+
+export interface AdminReportEvidence {
+  callLogUrl: string
+  recordingAvailable: boolean
+  recordingUrl?: string
+  recordingNote?: string
+}
+
+export interface AdminReportCallSummary {
+  startedAt: string
+  endedAt: string
+  durationSeconds: number
+}
+
+export interface AdminReportTargetMetric {
+  label: string
+  value: string
+  tone?: 'neutral' | 'warning' | 'danger'
+}
+
+export interface AdminReportTargetProfile {
+  type: AdminReportTargetType
+  headline: string
+  metrics: Array<AdminReportTargetMetric>
+}
+
+export interface AdminReportHistoryEntry {
+  id: string
+  occurredAt: string
+  operator: string
+  status: AdminReportStatus
+  note?: string
+  resolutionAction?: AdminReportAction
+}
+
+export interface AdminReportResolution {
+  action: AdminReportAction
+  reason: string
+  resolvedAt: string
+  operator: string
+}
+
+export interface AdminReportDetail extends AdminReportSummary {
+  message: string
+  evidence: AdminReportEvidence
+  callSummary: AdminReportCallSummary
+  targetProfile: AdminReportTargetProfile
+  history: Array<AdminReportHistoryEntry>
+  resolution?: AdminReportResolution
+}
+
+export interface AdminReportFilters {
+  reportId?: string
+  callId?: string
+  reporterId?: string
+  targetId?: string
+  category?: AdminReportCategory
+  status?: AdminReportStatus
+  reportedFrom?: string
+  reportedTo?: string
+}
+
+export interface UpdateAdminReportStatusPayload {
+  reportId: string
+  status: AdminReportStatus
+  operator: string
+  note?: string
+}
+
+export interface ResolveAdminReportPayload {
+  reportId: string
+  action: AdminReportAction
+  reason: string
+  operator: string
+}
+
+const ADMIN_REPORT_DELAY_MS = 460
+
+const adminReportStatusOrder: Record<AdminReportStatus, number> = {
+  unprocessed: 0,
+  reviewing: 1,
+  resolved: 2,
+}
+
+const initialAdminReports: Array<AdminReportDetail> = [
+  {
+    id: 'report_102',
+    callId: 'call_220',
+    reporterId: 'user_112',
+    reporterType: 'user',
+    targetId: 'otomo_03',
+    targetType: 'otomo',
+    category: 'abuse',
+    status: 'unprocessed',
+    priority: 'high',
+    reportedAt: '2025-02-01T12:20:00Z',
+    lastUpdatedAt: '2025-02-01T12:20:00Z',
+    message:
+      '会話中に人格否定のような発言があり、不快でした。録音で該当箇所を確認してください。',
+    evidence: {
+      callLogUrl: '/history/call_220',
+      recordingAvailable: true,
+      recordingUrl: '#',
+      recordingNote: 'ハラスメント対応チームのみ再生可能',
+    },
+    callSummary: {
+      startedAt: '2025-02-01T12:05:00Z',
+      endedAt: '2025-02-01T12:18:00Z',
+      durationSeconds: 780,
+    },
+    targetProfile: {
+      type: 'otomo',
+      headline: '平均評価 4.2 / 過去通報 2 件',
+      metrics: [
+        { label: '平均評価', value: '4.2 / 5' },
+        { label: '最近の低評価', value: '3件 / 30日', tone: 'warning' },
+        { label: '過去の通報', value: '2件', tone: 'warning' },
+        { label: '無応答率', value: '12%' },
+      ],
+    },
+    history: [
+      {
+        id: 'hist_700',
+        occurredAt: '2025-02-01T12:20:00Z',
+        operator: 'system',
+        status: 'unprocessed',
+        note: 'ユーザーから自動受付',
+      },
+    ],
+  },
+  {
+    id: 'report_099',
+    callId: 'call_210',
+    reporterId: 'otomo_04',
+    reporterType: 'otomo',
+    targetId: 'user_08',
+    targetType: 'user',
+    category: 'neglect',
+    status: 'reviewing',
+    priority: 'medium',
+    reportedAt: '2025-01-31T22:10:00Z',
+    lastUpdatedAt: '2025-02-01T01:00:00Z',
+    message:
+      '通話中に長時間無言状態が続き、複数回の呼びかけに応答がありませんでした。',
+    evidence: {
+      callLogUrl: '/history/call_210',
+      recordingAvailable: false,
+      recordingNote: '録音は未設定',
+    },
+    callSummary: {
+      startedAt: '2025-01-31T21:40:00Z',
+      endedAt: '2025-01-31T21:58:00Z',
+      durationSeconds: 1080,
+    },
+    targetProfile: {
+      type: 'user',
+      headline: '課金状況: 正常 / 過去通報 1 件',
+      metrics: [
+        { label: '過去の通報', value: '1件' },
+        { label: '課金状況', value: '正常' },
+        { label: '迷惑行為', value: 'なし' },
+      ],
+    },
+    history: [
+      {
+        id: 'hist_640',
+        occurredAt: '2025-01-31T22:10:00Z',
+        operator: 'system',
+        status: 'unprocessed',
+        note: 'おともはんからの通報を受付',
+      },
+      {
+        id: 'hist_641',
+        occurredAt: '2025-02-01T01:00:00Z',
+        operator: 'admin_yoko',
+        status: 'reviewing',
+        note: 'ログ確認のため審査中に更新',
+      },
+    ],
+  },
+  {
+    id: 'report_088',
+    callId: 'call_115',
+    reporterId: 'user_055',
+    reporterType: 'user',
+    targetId: 'otomo_01',
+    targetType: 'otomo',
+    category: 'spam',
+    status: 'resolved',
+    priority: 'low',
+    reportedAt: '2025-01-28T09:05:00Z',
+    lastUpdatedAt: '2025-01-28T12:45:00Z',
+    message:
+      '通話冒頭で外部サービスへの誘導があり、規約に抵触していると思われます。',
+    evidence: {
+      callLogUrl: '/history/call_115',
+      recordingAvailable: true,
+      recordingUrl: '#',
+      recordingNote: '再生には監査ロールが必要',
+    },
+    callSummary: {
+      startedAt: '2025-01-28T08:55:00Z',
+      endedAt: '2025-01-28T09:10:00Z',
+      durationSeconds: 900,
+    },
+    targetProfile: {
+      type: 'otomo',
+      headline: '平均評価 4.6 / 通報 0 件 (過去90日)',
+      metrics: [
+        { label: '平均評価', value: '4.6 / 5' },
+        { label: 'キャンセル率', value: '3%' },
+        { label: '過去通報', value: '0件' },
+      ],
+    },
+    history: [
+      {
+        id: 'hist_600',
+        occurredAt: '2025-01-28T09:05:00Z',
+        operator: 'system',
+        status: 'unprocessed',
+      },
+      {
+        id: 'hist_601',
+        occurredAt: '2025-01-28T10:00:00Z',
+        operator: 'admin_mori',
+        status: 'reviewing',
+        note: '録音確認中',
+      },
+      {
+        id: 'hist_602',
+        occurredAt: '2025-01-28T12:45:00Z',
+        operator: 'admin_mori',
+        status: 'resolved',
+        note: '警告でクローズ',
+        resolutionAction: 'warn',
+      },
+    ],
+    resolution: {
+      action: 'warn',
+      reason: '外部誘導を確認したため口頭警告',
+      operator: 'admin_mori',
+      resolvedAt: '2025-01-28T12:45:00Z',
+    },
+  },
+]
+
+const cloneAdminReport = (detail: AdminReportDetail): AdminReportDetail => ({
+  ...detail,
+  evidence: { ...detail.evidence },
+  callSummary: { ...detail.callSummary },
+  targetProfile: {
+    ...detail.targetProfile,
+    metrics: detail.targetProfile.metrics.map((metric) => ({ ...metric })),
+  },
+  history: detail.history.map((entry) => ({ ...entry })),
+  resolution: detail.resolution ? { ...detail.resolution } : undefined,
+})
+
+const adminReportStore: Array<AdminReportDetail> = initialAdminReports.map(
+  (report) => cloneAdminReport(report),
+)
+
+const toAdminReportSummary = (
+  detail: AdminReportDetail,
+): AdminReportSummary => ({
+  id: detail.id,
+  callId: detail.callId,
+  reporterId: detail.reporterId,
+  reporterType: detail.reporterType,
+  targetId: detail.targetId,
+  targetType: detail.targetType,
+  category: detail.category,
+  status: detail.status,
+  priority: detail.priority,
+  reportedAt: detail.reportedAt,
+  lastUpdatedAt: detail.lastUpdatedAt,
+})
+
+const findAdminReportOrThrow = (reportId: string) => {
+  const report = adminReportStore.find((entry) => entry.id === reportId)
+  if (!report) {
+    throw new Error('通報が見つかりません')
+  }
+  return report
+}
+
+const applyReportFilters = (
+  reports: Array<AdminReportDetail>,
+  filters: AdminReportFilters,
+) => {
+  let list = reports.slice()
+  if (filters.reportId) {
+    const keyword = filters.reportId.toLowerCase()
+    list = list.filter((item) => item.id.toLowerCase().includes(keyword))
+  }
+  if (filters.callId) {
+    const keyword = filters.callId.toLowerCase()
+    list = list.filter((item) => item.callId.toLowerCase().includes(keyword))
+  }
+  if (filters.reporterId) {
+    const keyword = filters.reporterId.toLowerCase()
+    list = list.filter((item) =>
+      item.reporterId.toLowerCase().includes(keyword),
+    )
+  }
+  if (filters.targetId) {
+    const keyword = filters.targetId.toLowerCase()
+    list = list.filter((item) => item.targetId.toLowerCase().includes(keyword))
+  }
+  if (filters.category) {
+    list = list.filter((item) => item.category === filters.category)
+  }
+  if (filters.status) {
+    list = list.filter((item) => item.status === filters.status)
+  }
+  if (filters.reportedFrom) {
+    const from = Date.parse(filters.reportedFrom)
+    list = list.filter((item) => Date.parse(item.reportedAt) >= from)
+  }
+  if (filters.reportedTo) {
+    const to = Date.parse(filters.reportedTo)
+    list = list.filter((item) => Date.parse(item.reportedAt) <= to)
+  }
+  return list
+}
+
+export async function fetchAdminReports(
+  filters: AdminReportFilters = {},
+): Promise<Array<AdminReportSummary>> {
+  await waitForMock(ADMIN_REPORT_DELAY_MS)
+  return applyReportFilters(adminReportStore, filters)
+    .sort((a, b) => {
+      const statusDiff =
+        adminReportStatusOrder[a.status] - adminReportStatusOrder[b.status]
+      if (statusDiff !== 0) {
+        return statusDiff
+      }
+      return Date.parse(b.reportedAt) - Date.parse(a.reportedAt)
+    })
+    .map(toAdminReportSummary)
+}
+
+export async function fetchAdminReportDetail(
+  reportId: string,
+): Promise<AdminReportDetail> {
+  await waitForMock(ADMIN_REPORT_DELAY_MS)
+  return cloneAdminReport(findAdminReportOrThrow(reportId))
+}
+
+export async function updateAdminReportStatus(
+  payload: UpdateAdminReportStatusPayload,
+): Promise<AdminReportDetail> {
+  await waitForMock(ADMIN_REPORT_DELAY_MS)
+  const report = findAdminReportOrThrow(payload.reportId)
+  report.status = payload.status
+  report.lastUpdatedAt = new Date().toISOString()
+  report.history = [
+    {
+      id: `hist_${Date.now()}`,
+      occurredAt: report.lastUpdatedAt,
+      operator: payload.operator,
+      status: payload.status,
+      note: payload.note,
+    },
+    ...report.history,
+  ]
+  if (payload.status !== 'resolved') {
+    report.resolution = undefined
+  }
+  return cloneAdminReport(report)
+}
+
+export async function resolveAdminReport(
+  payload: ResolveAdminReportPayload,
+): Promise<AdminReportDetail> {
+  await waitForMock(ADMIN_REPORT_DELAY_MS)
+  const report = findAdminReportOrThrow(payload.reportId)
+  const now = new Date().toISOString()
+  report.status = 'resolved'
+  report.lastUpdatedAt = now
+  report.resolution = {
+    action: payload.action,
+    reason: payload.reason,
+    operator: payload.operator,
+    resolvedAt: now,
+  }
+  report.history = [
+    {
+      id: `hist_${Date.now() + 1}`,
+      occurredAt: now,
+      operator: payload.operator,
+      status: 'resolved',
+      note: payload.reason,
+      resolutionAction: payload.action,
+    },
+    ...report.history,
+  ]
+  return cloneAdminReport(report)
+}
+
 const adminTrafficSfuMetrics: Array<AdminTrafficSfuNodeMetrics> = [
   {
     nodeId: 'sfu-tokyo-1',
