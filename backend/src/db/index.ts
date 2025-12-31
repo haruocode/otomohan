@@ -65,3 +65,13 @@ export async function updateUserProfileRecord(
 
   return { id: record.id, name: record.name, bio: record.bio };
 }
+
+export async function updateUserAvatarUrl(
+  id: string,
+  avatarUrl: string
+): Promise<{ id: string; avatar_url: string } | null> {
+  const record = usersTable[id];
+  if (!record) return null;
+  record.avatar_url = avatarUrl;
+  return { id: record.id, avatar_url: record.avatar_url };
+}

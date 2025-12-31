@@ -1,7 +1,9 @@
 import {
   getUserById,
   updateUserProfile as updateUserProfileRecord,
+  saveUserAvatar,
 } from "../repositories/userRepository.js";
+import { randomUUID } from "node:crypto";
 import { getUserNotifications } from "../repositories/userSettingsRepository.js";
 
 export type UserProfile = {
@@ -26,6 +28,8 @@ export type UserProfileUpdateResult = {
   name: string;
   bio: string | null;
 };
+
+const CDN_BASE_URL = "https://cdn.otomohan.local/avatars";
 
 export async function getUserProfile(
   userId: string
@@ -62,4 +66,23 @@ export async function updateUserProfile(
     return null;
   }
   return updated;
+}
+
+export type AvatarUploadPayload = {
+  mimetype: string;
+  buffer: Buffer;
+  assetKey: string;
+};
+
+export async function updateUserAvatar(
+  userId: string,
+  payload: AvatarUploadPayload
+): Promise<{ avatar: string } | null> {
+  const fileName = payload.assetKey || `${userId}/${randomUUID()}.webp`;
+  const avatarUrl = `${CDN_BASE_URL}/${fileName}`;
+  const result = await saveUserAvatar(userId, avatarUrl);
+  if (!result) {
+    return null;
+  }
+  return { avatar: result.avatar_url };
 }

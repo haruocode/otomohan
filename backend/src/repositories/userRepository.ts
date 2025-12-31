@@ -1,4 +1,8 @@
-import { fetchUserById, updateUserProfileRecord } from "../db/index.js";
+import {
+  fetchUserById,
+  updateUserProfileRecord,
+  updateUserAvatarUrl,
+} from "../db/index.js";
 
 export type UserEntity = {
   id: string;
@@ -19,4 +23,11 @@ export async function updateUserProfile(
   payload: { name?: string; bio?: string | null }
 ) {
   return updateUserProfileRecord(userId, payload);
+}
+
+export async function saveUserAvatar(
+  userId: string,
+  avatarUrl: string
+): Promise<{ id: string; avatar_url: string } | null> {
+  return updateUserAvatarUrl(userId, avatarUrl);
 }
