@@ -2129,3 +2129,473 @@ export async function updateAdminOtomoStatus(
   ]
   return cloneAdminOtomoDetail(detail)
 }
+
+export type AdminCallStatus =
+  | 'normal'
+  | 'abnormal'
+  | 'notConnected'
+  | 'suspected'
+
+export type AdminCallDurationBucket = 'under1' | 'oneToFive' | 'overFive'
+
+export type AdminCallBillingBucket =
+  | 'under100'
+  | 'oneToFiveHundred'
+  | 'overFiveHundred'
+
+export interface AdminCallSummary {
+  callId: string
+  userId: string
+  otomoId: string
+  startedAt: string
+  endedAt: string
+  durationSeconds: number
+  billedPoints: number
+  status: AdminCallStatus
+  endReason: string
+  anomalyNote?: string
+}
+
+export interface AdminCallListFilters {
+  callId?: string
+  userId?: string
+  otomoId?: string
+  startedFrom?: string
+  startedTo?: string
+  status?: AdminCallStatus
+  durationBucket?: AdminCallDurationBucket
+  billingBucket?: AdminCallBillingBucket
+}
+
+export interface AdminCallStateEvent {
+  id: string
+  at: string
+  state: string
+  note?: string
+  level?: 'info' | 'warning' | 'danger'
+}
+
+export interface AdminCallRtpSummary {
+  userIngress: string
+  otomoIngress: string
+  userLatencyMs: number
+  otomoLatencyMs: number
+  packetLossPct: number
+  jitterMs: number
+  note?: string
+}
+
+export interface AdminCallBillingTick {
+  id: string
+  at: string
+  points: number
+  missing?: boolean
+}
+
+export interface AdminCallQualityLog {
+  avgRttMs: number
+  disconnectCount: number
+  userDevice: string
+  otomoDevice: string
+  networkNotes?: string
+}
+
+export interface AdminCallRecordingInfo {
+  available: boolean
+  url?: string
+  note?: string
+}
+
+export interface AdminCallAlertEntry {
+  id: string
+  severity: 'info' | 'warning' | 'danger'
+  message: string
+}
+
+export interface AdminCallDetail extends AdminCallSummary {
+  pricingPerMinute: number
+  stateEvents: Array<AdminCallStateEvent>
+  rtpSummary: AdminCallRtpSummary
+  billingTicks: Array<AdminCallBillingTick>
+  qualityLog: AdminCallQualityLog
+  recording: AdminCallRecordingInfo
+  alerts: Array<AdminCallAlertEntry>
+}
+
+export interface AdminActiveCall {
+  callId: string
+  userId: string
+  otomoId: string
+  startedAt: string
+  elapsedSeconds: number
+  health: 'normal' | 'warning' | 'critical'
+  rtpStatus: string
+  note?: string
+}
+
+const ADMIN_CALLS_DELAY_MS = 480
+
+const initialAdminCallDetails: Array<AdminCallDetail> = [
+  {
+    callId: 'call_3001',
+    userId: 'user_001',
+    otomoId: 'otomo_005',
+    startedAt: '2025-02-01T03:01:00Z',
+    endedAt: '2025-02-01T03:14:00Z',
+    durationSeconds: 780,
+    billedPoints: 300,
+    status: 'normal',
+    endReason: '正常終了',
+    pricingPerMinute: 25,
+    stateEvents: [
+      { id: 'evt_1', at: '2025-02-01T03:01:05Z', state: 'REQUESTING' },
+      { id: 'evt_2', at: '2025-02-01T03:01:07Z', state: 'RINGING' },
+      { id: 'evt_3', at: '2025-02-01T03:01:14Z', state: 'CONNECTING' },
+      { id: 'evt_4', at: '2025-02-01T03:01:15Z', state: 'CONNECTED' },
+      { id: 'evt_5', at: '2025-02-01T03:14:22Z', state: 'ENDING' },
+      { id: 'evt_6', at: '2025-02-01T03:14:23Z', state: 'ENDED' },
+    ],
+    rtpSummary: {
+      userIngress: '正常（平均32ms）',
+      otomoIngress: '正常（平均28ms）',
+      userLatencyMs: 32,
+      otomoLatencyMs: 28,
+      packetLossPct: 1.2,
+      jitterMs: 10,
+    },
+    billingTicks: Array.from({ length: 13 }).map((_, index) => ({
+      id: `tick_${index + 1}`,
+      at: new Date(2025, 1, 1, 12, 2 + index).toISOString(),
+      points: 25,
+    })),
+    qualityLog: {
+      avgRttMs: 88,
+      disconnectCount: 0,
+      userDevice: 'iOS / Safari 17',
+      otomoDevice: 'Android / Chrome 121',
+      networkNotes: '問題なし',
+    },
+    recording: {
+      available: false,
+      note: '録音は無効です',
+    },
+    alerts: [],
+  },
+  {
+    callId: 'call_3002',
+    userId: 'user_088',
+    otomoId: 'otomo_001',
+    startedAt: '2025-02-01T03:07:00Z',
+    endedAt: '2025-02-01T03:08:10Z',
+    durationSeconds: 70,
+    billedPoints: 25,
+    status: 'abnormal',
+    endReason: '異常切断（おともはん側）',
+    anomalyNote: 'RTP 停止を検知',
+    pricingPerMinute: 25,
+    stateEvents: [
+      { id: 'evt_7', at: '2025-02-01T03:07:02Z', state: 'REQUESTING' },
+      { id: 'evt_8', at: '2025-02-01T03:07:04Z', state: 'RINGING' },
+      { id: 'evt_9', at: '2025-02-01T03:07:09Z', state: 'CONNECTING' },
+      {
+        id: 'evt_10',
+        at: '2025-02-01T03:07:10Z',
+        state: 'CONNECTED',
+      },
+      {
+        id: 'evt_11',
+        at: '2025-02-01T03:08:05Z',
+        state: 'RTP_STOP',
+        note: 'おともはん→SFU 0秒以降パケットなし',
+        level: 'danger',
+      },
+      {
+        id: 'evt_12',
+        at: '2025-02-01T03:08:08Z',
+        state: 'FORCE_ENDING',
+        level: 'warning',
+      },
+      { id: 'evt_13', at: '2025-02-01T03:08:10Z', state: 'ENDED' },
+    ],
+    rtpSummary: {
+      userIngress: '正常（平均40ms）',
+      otomoIngress: '停止 60秒以降',
+      userLatencyMs: 40,
+      otomoLatencyMs: 0,
+      packetLossPct: 12,
+      jitterMs: 35,
+      note: 'おともはん側の送信停止',
+    },
+    billingTicks: [
+      { id: 'tick_200', at: '2025-02-01T03:07:30Z', points: 25 },
+      { id: 'tick_201', at: '2025-02-01T03:08:00Z', points: 0, missing: true },
+    ],
+    qualityLog: {
+      avgRttMs: 220,
+      disconnectCount: 1,
+      userDevice: 'iOS / App',
+      otomoDevice: 'Desktop / Chrome',
+      networkNotes: 'おともはん Wi-Fi 切断の疑い',
+    },
+    recording: {
+      available: true,
+      url: '#',
+      note: '権限を持つ管理者のみ再生可能',
+    },
+    alerts: [
+      {
+        id: 'alert_1',
+        severity: 'danger',
+        message: 'おともはん RTP が 60 秒間停止しました',
+      },
+      {
+        id: 'alert_2',
+        severity: 'warning',
+        message: '課金 tick が欠損しています',
+      },
+    ],
+  },
+  {
+    callId: 'call_3003',
+    userId: 'user_099',
+    otomoId: 'otomo_022',
+    startedAt: '2025-01-31T14:21:00Z',
+    endedAt: '2025-01-31T14:25:30Z',
+    durationSeconds: 270,
+    billedPoints: 125,
+    status: 'suspected',
+    endReason: 'ポイント異常消費（疑い）',
+    anomalyNote: '開始直後に大量課金',
+    pricingPerMinute: 25,
+    stateEvents: [
+      { id: 'evt_14', at: '2025-01-31T14:21:03Z', state: 'REQUESTING' },
+      { id: 'evt_15', at: '2025-01-31T14:21:05Z', state: 'RINGING' },
+      { id: 'evt_16', at: '2025-01-31T14:21:08Z', state: 'CONNECTING' },
+      { id: 'evt_17', at: '2025-01-31T14:21:10Z', state: 'CONNECTED' },
+      {
+        id: 'evt_18',
+        at: '2025-01-31T14:21:40Z',
+        state: 'BILLING_SPIKE',
+        note: 'Tick で 50pt×2 を検知',
+        level: 'warning',
+      },
+      { id: 'evt_19', at: '2025-01-31T14:25:20Z', state: 'ENDING' },
+      { id: 'evt_20', at: '2025-01-31T14:25:30Z', state: 'ENDED' },
+    ],
+    rtpSummary: {
+      userIngress: '安定（平均38ms）',
+      otomoIngress: '安定（平均35ms）',
+      userLatencyMs: 38,
+      otomoLatencyMs: 35,
+      packetLossPct: 0.8,
+      jitterMs: 8,
+      note: '通信面の問題なし',
+    },
+    billingTicks: [
+      { id: 'tick_300', at: '2025-01-31T14:21:40Z', points: 50 },
+      { id: 'tick_301', at: '2025-01-31T14:22:10Z', points: 50 },
+      { id: 'tick_302', at: '2025-01-31T14:23:10Z', points: 25 },
+    ],
+    qualityLog: {
+      avgRttMs: 92,
+      disconnectCount: 0,
+      userDevice: 'Android / Chrome',
+      otomoDevice: 'Mac / Chrome',
+      networkNotes: '課金ロジックのみ確認対象',
+    },
+    recording: {
+      available: false,
+    },
+    alerts: [
+      {
+        id: 'alert_3',
+        severity: 'warning',
+        message: '通話開始 30 秒で 100pt 消費',
+      },
+    ],
+  },
+  {
+    callId: 'call_3004',
+    userId: 'user_120',
+    otomoId: 'otomo_017',
+    startedAt: '2025-01-30T11:10:00Z',
+    endedAt: '2025-01-30T11:10:40Z',
+    durationSeconds: 40,
+    billedPoints: 0,
+    status: 'notConnected',
+    endReason: '未接続 (ユーザー応答なし)',
+    pricingPerMinute: 25,
+    stateEvents: [
+      { id: 'evt_30', at: '2025-01-30T11:10:01Z', state: 'REQUESTING' },
+      {
+        id: 'evt_31',
+        at: '2025-01-30T11:10:40Z',
+        state: 'TIMEOUT',
+        note: 'ユーザー無応答',
+        level: 'info',
+      },
+    ],
+    rtpSummary: {
+      userIngress: '未接続',
+      otomoIngress: '待機',
+      userLatencyMs: 0,
+      otomoLatencyMs: 0,
+      packetLossPct: 0,
+      jitterMs: 0,
+      note: 'RTP通信なし',
+    },
+    billingTicks: [],
+    qualityLog: {
+      avgRttMs: 0,
+      disconnectCount: 0,
+      userDevice: '不明',
+      otomoDevice: 'iOS / App',
+      networkNotes: '応答なし',
+    },
+    recording: {
+      available: false,
+    },
+    alerts: [],
+  },
+]
+
+const cloneAdminCallDetail = (detail: AdminCallDetail): AdminCallDetail => ({
+  ...detail,
+  stateEvents: detail.stateEvents.map((event) => ({ ...event })),
+  rtpSummary: { ...detail.rtpSummary },
+  billingTicks: detail.billingTicks.map((tick) => ({ ...tick })),
+  qualityLog: { ...detail.qualityLog },
+  recording: { ...detail.recording },
+  alerts: detail.alerts.map((alert) => ({ ...alert })),
+})
+
+const adminCallDatabase: Array<AdminCallDetail> = initialAdminCallDetails.map(
+  (detail) => cloneAdminCallDetail(detail),
+)
+
+const toAdminCallSummary = (detail: AdminCallDetail): AdminCallSummary => ({
+  callId: detail.callId,
+  userId: detail.userId,
+  otomoId: detail.otomoId,
+  startedAt: detail.startedAt,
+  endedAt: detail.endedAt,
+  durationSeconds: detail.durationSeconds,
+  billedPoints: detail.billedPoints,
+  status: detail.status,
+  endReason: detail.endReason,
+  anomalyNote: detail.anomalyNote,
+})
+
+const matchesDurationBucket = (
+  seconds: number,
+  bucket?: AdminCallDurationBucket,
+) => {
+  if (!bucket) return true
+  const minutes = seconds / 60
+  if (bucket === 'under1') return minutes < 1
+  if (bucket === 'oneToFive') return minutes >= 1 && minutes < 5
+  return minutes >= 5
+}
+
+const matchesBillingBucket = (
+  points: number,
+  bucket?: AdminCallBillingBucket,
+) => {
+  if (!bucket) return true
+  if (bucket === 'under100') return points < 100
+  if (bucket === 'oneToFiveHundred') return points >= 100 && points < 500
+  return points >= 500
+}
+
+export async function fetchAdminCallLogs(
+  filters: AdminCallListFilters = {},
+): Promise<Array<AdminCallSummary>> {
+  await waitForMock(ADMIN_CALLS_DELAY_MS)
+
+  let items = adminCallDatabase.slice()
+
+  if (filters.callId) {
+    const keyword = filters.callId.toLowerCase()
+    items = items.filter((item) => item.callId.toLowerCase().includes(keyword))
+  }
+  if (filters.userId) {
+    const keyword = filters.userId.toLowerCase()
+    items = items.filter((item) => item.userId.toLowerCase().includes(keyword))
+  }
+  if (filters.otomoId) {
+    const keyword = filters.otomoId.toLowerCase()
+    items = items.filter((item) => item.otomoId.toLowerCase().includes(keyword))
+  }
+  if (filters.status) {
+    items = items.filter((item) => item.status === filters.status)
+  }
+  if (filters.startedFrom || filters.startedTo) {
+    items = items.filter((item) =>
+      matchesDateRange(item.startedAt, filters.startedFrom, filters.startedTo),
+    )
+  }
+  if (filters.durationBucket) {
+    items = items.filter((item) =>
+      matchesDurationBucket(item.durationSeconds, filters.durationBucket),
+    )
+  }
+  if (filters.billingBucket) {
+    items = items.filter((item) =>
+      matchesBillingBucket(item.billedPoints, filters.billingBucket),
+    )
+  }
+
+  items.sort((a, b) => parseDate(b.startedAt) - parseDate(a.startedAt))
+
+  return items.map(toAdminCallSummary)
+}
+
+export async function fetchAdminCallDetail(
+  callId: string,
+): Promise<AdminCallDetail> {
+  await waitForMock(ADMIN_CALLS_DELAY_MS)
+  const detail = adminCallDatabase.find(
+    (candidate) => candidate.callId === callId,
+  )
+  if (!detail) {
+    throw new Error('通話ログが見つかりません')
+  }
+  return cloneAdminCallDetail(detail)
+}
+
+const adminActiveCalls: Array<AdminActiveCall> = [
+  {
+    callId: 'call_live_900',
+    userId: 'user_218',
+    otomoId: 'otomo_012',
+    startedAt: new Date(Date.now() - 3 * 60 * 1000).toISOString(),
+    elapsedSeconds: 180,
+    health: 'normal',
+    rtpStatus: '正常（平均30ms）',
+  },
+  {
+    callId: 'call_live_901',
+    userId: 'user_088',
+    otomoId: 'otomo_001',
+    startedAt: new Date(Date.now() - 60 * 1000).toISOString(),
+    elapsedSeconds: 60,
+    health: 'warning',
+    rtpStatus: 'パケットロス 8%',
+    note: 'RTP が低下中',
+  },
+  {
+    callId: 'call_live_902',
+    userId: 'user_300',
+    otomoId: 'otomo_050',
+    startedAt: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
+    elapsedSeconds: 300,
+    health: 'critical',
+    rtpStatus: 'おともはん側無音検知',
+    note: '調査中',
+  },
+]
+
+export async function fetchAdminActiveCalls(): Promise<Array<AdminActiveCall>> {
+  await waitForMock(ADMIN_CALLS_DELAY_MS)
+  return adminActiveCalls.map((call) => ({ ...call }))
+}
