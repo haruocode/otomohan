@@ -172,6 +172,9 @@ export const otomoList = [
 const minutesFromNow = (minutes) =>
   new Date(Date.now() + minutes * 60_000).toISOString()
 
+const daysAgoIso = (days) =>
+  new Date(Date.now() - days * 86_400_000).toISOString()
+
 const unixMinutesFromNow = (minutes) =>
   Math.floor((Date.now() + minutes * 60_000) / 1000)
 
@@ -316,6 +319,32 @@ export const supportResources = {
   contactUrl: 'https://forms.gle/otomohan-support',
   faqUrl: 'https://help.otomohan.example.com/faq',
 }
+
+export const blockedUsers = [
+  {
+    userId: 'otomo-201',
+    name: 'さくら',
+    avatarUrl: '/static/avatar/hana.png',
+    role: 'otomo',
+    blockedAt: daysAgoIso(2),
+    reason: '迷惑行為の報告',
+  },
+  {
+    userId: 'user-890',
+    name: 'たろう',
+    avatarUrl: '/static/avatar/user-default.png',
+    role: 'user',
+    blockedAt: daysAgoIso(15),
+  },
+  {
+    userId: 'otomo-309',
+    name: 'みゆき',
+    avatarUrl: '/static/avatar/mika.png',
+    role: 'otomo',
+    blockedAt: '2024-12-10T12:00:00+09:00',
+    reason: '無断録音の疑い',
+  },
+]
 
 export const legalDocuments = {
   terms: {

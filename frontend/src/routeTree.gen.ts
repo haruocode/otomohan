@@ -17,6 +17,7 @@ import { Route as MypageRouteImport } from './routes/mypage'
 import { Route as MypageEditRouteImport } from './routes/mypage.edit'
 import { Route as MypagePasswordRouteImport } from './routes/mypage.password'
 import { Route as MypageSettingsRouteImport } from './routes/mypage.settings'
+import { Route as MypageBlockListRouteImport } from './routes/mypage.block-list'
 import { Route as WalletChargeRouteImport } from './routes/wallet.charge'
 import { Route as OtomoOtomoIdRouteImport } from './routes/otomo.$otomoId'
 import { Route as DemoTanstackQueryRouteImport } from './routes/demo/tanstack-query'
@@ -78,6 +79,11 @@ const MypagePasswordRoute = MypagePasswordRouteImport.update({
 const MypageSettingsRoute = MypageSettingsRouteImport.update({
   id: '/mypage/settings',
   path: '/mypage/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MypageBlockListRoute = MypageBlockListRouteImport.update({
+  id: '/mypage/block-list',
+  path: '/mypage/block-list',
   getParentRoute: () => rootRouteImport,
 } as any)
 const WalletChargeRoute = WalletChargeRouteImport.update({
@@ -197,6 +203,7 @@ export interface FileRoutesByFullPath {
   '/mypage/edit': typeof MypageEditRoute
   '/mypage/settings': typeof MypageSettingsRoute
   '/mypage/password': typeof MypagePasswordRoute
+  '/mypage/block-list': typeof MypageBlockListRoute
   '/history': typeof HistoryRoute
   '/history/$callId': typeof HistoryCallIdRoute
   '/wallet': typeof WalletRouteWithChildren
@@ -229,6 +236,7 @@ export interface FileRoutesByTo {
   '/mypage/edit': typeof MypageEditRoute
   '/mypage/settings': typeof MypageSettingsRoute
   '/mypage/password': typeof MypagePasswordRoute
+  '/mypage/block-list': typeof MypageBlockListRoute
   '/history': typeof HistoryRoute
   '/history/$callId': typeof HistoryCallIdRoute
   '/wallet': typeof WalletRouteWithChildren
@@ -262,6 +270,7 @@ export interface FileRoutesById {
   '/mypage/edit': typeof MypageEditRoute
   '/mypage/settings': typeof MypageSettingsRoute
   '/mypage/password': typeof MypagePasswordRoute
+  '/mypage/block-list': typeof MypageBlockListRoute
   '/history': typeof HistoryRoute
   '/history/$callId': typeof HistoryCallIdRoute
   '/wallet': typeof WalletRouteWithChildren
@@ -296,6 +305,7 @@ export interface FileRouteTypes {
     | '/mypage/edit'
     | '/mypage/settings'
     | '/mypage/password'
+    | '/mypage/block-list'
     | '/history'
     | '/history/$callId'
     | '/wallet'
@@ -336,6 +346,7 @@ export interface FileRouteTypes {
     | '/mypage/edit'
     | '/mypage/settings'
     | '/mypage/password'
+    | '/mypage/block-list'
     | '/history'
     | '/history/$callId'
     | '/wallet'
@@ -368,6 +379,7 @@ export interface FileRouteTypes {
     | '/mypage/edit'
     | '/mypage/settings'
     | '/mypage/password'
+    | '/mypage/block-list'
     | '/history'
     | '/history/$callId'
     | '/wallet'
@@ -401,6 +413,7 @@ export interface RootRouteChildren {
   MypageEditRoute: typeof MypageEditRoute
   MypageSettingsRoute: typeof MypageSettingsRoute
   MypagePasswordRoute: typeof MypagePasswordRoute
+  MypageBlockListRoute: typeof MypageBlockListRoute
   HistoryRoute: typeof HistoryRoute
   HistoryCallIdRoute: typeof HistoryCallIdRoute
   WalletRoute: typeof WalletRouteWithChildren
@@ -461,6 +474,13 @@ declare module '@tanstack/react-router' {
       path: '/mypage/settings'
       fullPath: '/mypage/settings'
       preLoaderRoute: typeof MypageSettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mypage/block-list': {
+      id: '/mypage/block-list'
+      path: '/mypage/block-list'
+      fullPath: '/mypage/block-list'
+      preLoaderRoute: typeof MypageBlockListRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/history': {
@@ -662,6 +682,7 @@ const rootRouteChildren: RootRouteChildren = {
   MypageRoute: MypageRoute,
   MypageEditRoute: MypageEditRoute,
   MypageSettingsRoute: MypageSettingsRoute,
+  MypageBlockListRoute: MypageBlockListRoute,
   HistoryRoute: HistoryRoute,
   HistoryCallIdRoute: HistoryCallIdRoute,
   WalletRoute: WalletRouteWithChildren,

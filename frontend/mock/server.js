@@ -32,6 +32,7 @@ import {
   otomoReviews,
   otomoReviewAlerts,
   legalDocuments,
+  blockedUsers,
 } from './data/mockData.js'
 
 const app = express()
@@ -506,6 +507,23 @@ app.put('/user/settings', (req, res) => {
   userSettings.app = nextApp
 
   res.json({ status: 'saved', settings: userSettings })
+})
+
+app.get('/user/block-list', (_req, res) => {
+  res.json({ items: blockedUsers })
+})
+
+app.delete('/user/block/:userId', (req, res) => {
+  const userId = String(req.params.userId || '').trim()
+  if (!userId) {
+    return res.status(400).json({ error: 'userId_required' })
+  }
+  const index = blockedUsers.findIndex((entry) => entry.userId === userId)
+  if (index === -1) {
+    return res.status(404).json({ error: 'block_not_found' })
+  }
+  const [removed] = blockedUsers.splice(index, 1)
+  res.json({ status: 'unblocked', userId: removed.userId })
 })
 
 app.get('/settings', (_req, res) => {

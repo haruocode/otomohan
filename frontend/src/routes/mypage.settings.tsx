@@ -261,6 +261,10 @@ function SettingsScreen() {
               title="サポート"
               description="各種ドキュメント・お問い合わせ"
             >
+              <SupportLinkRow
+                label="ブロックリスト管理"
+                to="/mypage/block-list"
+              />
               <SupportLinkRow label="利用規約" to="/mypage/legal/terms" />
               <SupportLinkRow
                 label="プライバシーポリシー"

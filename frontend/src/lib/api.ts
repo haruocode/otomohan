@@ -427,6 +427,17 @@ export interface LegalDocument {
   sections: Array<LegalDocumentSection>
 }
 
+export type BlockedUserRole = 'otomo' | 'user'
+
+export interface BlockedUser {
+  userId: string
+  name: string
+  avatarUrl: string
+  blockedAt: string
+  reason?: string | null
+  role?: BlockedUserRole
+}
+
 export interface UpdateUserSettingsPayload {
   notifications?: Partial<UserNotificationSettings>
   app?: Partial<UserAppSettings>
@@ -844,6 +855,17 @@ export async function trackLegalDocumentView(
   await http<{ status: string }>('/analytics/legal-view', {
     method: 'POST',
     body: JSON.stringify({ slug }),
+  })
+}
+
+export async function fetchBlockedUsers(): Promise<Array<BlockedUser>> {
+  const response = await http<{ items: Array<BlockedUser> }>('/user/block-list')
+  return response.items
+}
+
+export async function unblockUser(targetUserId: string): Promise<void> {
+  await http<{ status: string }>(`/user/block/${targetUserId}`, {
+    method: 'DELETE',
   })
 }
 
