@@ -1,4 +1,8 @@
-import { listOtomo, findOtomoById } from "../repositories/otomoRepository.js";
+import {
+  listOtomo,
+  findOtomoById,
+  listOtomoReviews,
+} from "../repositories/otomoRepository.js";
 
 export type OtomoListQuery = {
   isOnline?: boolean;
@@ -35,6 +39,14 @@ export type OtomoReview = {
   comment: string;
   createdAt: string;
 };
+
+export type OtomoReviewListQuery = {
+  limit?: number;
+  offset?: number;
+  sort?: OtomoReviewSort;
+};
+
+export type OtomoReviewSort = "newest" | "highest" | "lowest";
 
 export type OtomoScheduleSlot = {
   dayOfWeek:
@@ -131,6 +143,31 @@ export async function getOtomoDetail(
   };
 }
 
+export async function getOtomoReviews(
+  otomoId: string,
+  query: OtomoReviewListQuery
+): Promise<{ items: OtomoReview[]; total: number } | null> {
+  const limit = normalizeLimit(query.limit);
+  const offset = normalizeOffset(query.offset);
+  const sort = normalizeReviewSort(query.sort);
+
+  const result = await listOtomoReviews(otomoId, { limit, offset, sort });
+  if (!result) {
+    return null;
+  }
+
+  return {
+    items: result.items.map((review) => ({
+      reviewId: review.reviewId,
+      userDisplayName: review.userDisplayName,
+      score: review.score,
+      comment: review.comment,
+      createdAt: review.createdAt,
+    })),
+    total: result.total,
+  };
+}
+
 function normalizeLimit(limit?: number) {
   if (typeof limit !== "number" || Number.isNaN(limit)) {
     return DEFAULT_LIMIT;
@@ -143,4 +180,11 @@ function normalizeOffset(offset?: number) {
     return 0;
   }
   return Math.max(Math.trunc(offset), 0);
+}
+
+function normalizeReviewSort(sort?: OtomoReviewSort): OtomoReviewSort {
+  if (sort === "highest" || sort === "lowest") {
+    return sort;
+  }
+  return "newest";
 }

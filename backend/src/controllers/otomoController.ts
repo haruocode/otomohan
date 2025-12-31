@@ -1,5 +1,9 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
-import { getOtomoList, getOtomoDetail } from "../services/otomoService.js";
+import {
+  getOtomoList,
+  getOtomoDetail,
+  getOtomoReviews,
+} from "../services/otomoService.js";
 
 type OtomoListQuerystring = {
   isOnline?: boolean;
@@ -12,6 +16,12 @@ type OtomoListQuerystring = {
 
 type OtomoDetailParams = {
   id?: string;
+};
+
+type OtomoReviewQuerystring = {
+  limit?: number;
+  offset?: number;
+  sort?: "newest" | "highest" | "lowest";
 };
 
 export async function handleGetOtomoList(
@@ -85,5 +95,58 @@ export async function handleGetOtomoDetail(
   return reply.send({
     status: "success",
     otomo: detail,
+  });
+}
+
+export async function handleGetOtomoReviews(
+  request: FastifyRequest,
+  reply: FastifyReply
+) {
+  const authUser = request.user;
+  if (!authUser) {
+    return reply.status(401).send({
+      status: "error",
+      error: "UNAUTHORIZED",
+      message: "Authentication required.",
+    });
+  }
+
+  const params = (request.params ?? {}) as OtomoDetailParams;
+  const otomoId = params.id;
+  if (!otomoId) {
+    return reply.status(400).send({
+      status: "error",
+      error: "INVALID_OTOMO_ID",
+      message: "Otomo ID is required.",
+    });
+  }
+
+  const query = (request.query ?? {}) as OtomoReviewQuerystring;
+  if (
+    query.sort !== undefined &&
+    query.sort !== "newest" &&
+    query.sort !== "highest" &&
+    query.sort !== "lowest"
+  ) {
+    return reply.status(400).send({
+      status: "error",
+      error: "INVALID_SORT",
+      message: "sort must be newest, highest, or lowest.",
+    });
+  }
+
+  const reviews = await getOtomoReviews(otomoId, query);
+  if (!reviews) {
+    return reply.status(404).send({
+      status: "error",
+      error: "OTOMO_NOT_FOUND",
+      message: "指定されたおともはんは存在しません。",
+    });
+  }
+
+  return reply.send({
+    status: "success",
+    items: reviews.items,
+    total: reviews.total,
   });
 }

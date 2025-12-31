@@ -265,6 +265,12 @@ export type OtomoListFilters = {
   offset: number;
 };
 
+export type OtomoReviewFilters = {
+  limit: number;
+  offset: number;
+  sort: "newest" | "highest" | "lowest";
+};
+
 export async function fetchOtomoList(filters: OtomoListFilters) {
   let filtered = otomoTable;
 
@@ -303,4 +309,54 @@ export async function fetchOtomoById(
   otomoId: string
 ): Promise<OtomoRecord | null> {
   return otomoTable.find((record) => record.otomoId === otomoId) ?? null;
+}
+
+export async function fetchOtomoReviews(
+  otomoId: string,
+  filters: OtomoReviewFilters
+): Promise<{ items: OtomoReviewRecord[]; total: number } | null> {
+  const record = otomoTable.find((entry) => entry.otomoId === otomoId);
+  if (!record) {
+    return null;
+  }
+
+  let reviews = [...record.reviews];
+  reviews = sortReviews(reviews, filters.sort);
+
+  const total = reviews.length;
+  const start = Math.max(filters.offset, 0);
+  const end = start + Math.max(filters.limit, 0);
+  const items = reviews.slice(start, end);
+
+  return { items, total };
+}
+
+function sortReviews(
+  reviews: OtomoReviewRecord[],
+  sort: "newest" | "highest" | "lowest"
+) {
+  if (sort === "highest") {
+    return reviews.sort((a, b) => {
+      if (b.score === a.score) {
+        return (
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+      }
+      return b.score - a.score;
+    });
+  }
+  if (sort === "lowest") {
+    return reviews.sort((a, b) => {
+      if (a.score === b.score) {
+        return (
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+      }
+      return a.score - b.score;
+    });
+  }
+
+  return reviews.sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
 }
