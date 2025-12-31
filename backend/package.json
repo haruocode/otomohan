@@ -1,0 +1,28 @@
+{
+  "name": "otomohan-backend",
+  "version": "0.1.0",
+  "description": "Fastify backend for Otomohan mock APIs",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "lint": "eslint \"src/**/*.ts\""
+  },
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "fastify": "^4.27.2",
+    "fastify-plugin": "^4.5.1",
+    "fastify-sensible": "^3.1.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.30",
+    "@typescript-eslint/eslint-plugin": "^6.21.0",
+    "@typescript-eslint/parser": "^6.21.0",
+    "eslint": "^8.57.0",
+    "eslint-config-prettier": "^9.1.0",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.4.3"
+  }
+}
