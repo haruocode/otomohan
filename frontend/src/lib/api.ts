@@ -3229,6 +3229,381 @@ export async function resolveAdminReport(
   return cloneAdminReport(report)
 }
 
+export type AdminReviewFlag = 'normal' | 'ai' | 'reported'
+
+export type AdminReviewStatus = 'active' | 'deleted'
+
+export interface AdminReviewHistoryEntry {
+  id: string
+  occurredAt: string
+  operator: string
+  action: string
+  note?: string
+}
+
+export interface AdminReviewAnalytics {
+  lowRatingCount7d: number
+  avgRating7d: number
+  recentFlags: number
+  weeklyDelta: number
+  notes: Array<string>
+}
+
+export interface AdminReviewSummary {
+  id: string
+  otomoId: string
+  otomoName: string
+  userId: string
+  reviewerAlias: string
+  callId: string
+  rating: number
+  hasComment: boolean
+  commentSnippet: string
+  flagged: AdminReviewFlag
+  status: AdminReviewStatus
+  createdAt: string
+  updatedAt: string
+}
+
+export interface AdminReviewDetail extends AdminReviewSummary {
+  comment: string
+  flaggedKeywords: Array<string>
+  aiLabels: Array<string>
+  callStartedAt: string
+  callDurationSeconds: number
+  ratingTrend: Array<{ label: string; value: number }>
+  analytics: AdminReviewAnalytics
+  history: Array<AdminReviewHistoryEntry>
+}
+
+export interface AdminReviewFilters {
+  otomoId?: string
+  userId?: string
+  rating?: number
+  ratingMin?: number
+  ratingMax?: number
+  commentState?: 'with' | 'without'
+  keyword?: string
+  flagged?: AdminReviewFlag
+  createdFrom?: string
+  createdTo?: string
+}
+
+export interface DeleteAdminReviewPayload {
+  reviewId: string
+  reason: string
+  operator: string
+}
+
+export interface FlagAdminReviewPayload {
+  reviewId: string
+  flag: AdminReviewFlag
+  operator: string
+  note?: string
+}
+
+const ADMIN_REVIEW_DELAY_MS = 380
+
+const adminReviewFlagOrder: Record<AdminReviewFlag, number> = {
+  reported: 0,
+  ai: 1,
+  normal: 2,
+}
+
+const buildReviewSnippet = (comment: string) =>
+  comment.length <= 36 ? comment : `${comment.slice(0, 33)}…`
+
+const maskUserId = (userId: string) => userId.replace(/(\d{2,})$/, '***')
+
+const initialAdminReviews: Array<AdminReviewDetail> = [
+  {
+    id: 'rev_1021',
+    otomoId: 'otomo_03',
+    otomoName: 'すずか',
+    userId: 'user_112',
+    reviewerAlias: maskUserId('user_112'),
+    callId: 'call_220',
+    rating: 2,
+    hasComment: true,
+    comment:
+      '途中で黙ってしまって気まずかったです。人格否定のような発言もあり、不快に感じました。',
+    commentSnippet: buildReviewSnippet(
+      '途中で黙ってしまって気まずかったです。人格否定のような発言もあり、不快に感じました。',
+    ),
+    flagged: 'reported',
+    status: 'active',
+    flaggedKeywords: ['人格否定'],
+    aiLabels: ['暴言検知'],
+    createdAt: '2025-02-01T12:22:00Z',
+    updatedAt: '2025-02-01T12:25:00Z',
+    callStartedAt: '2025-02-01T12:05:00Z',
+    callDurationSeconds: 420,
+    ratingTrend: [
+      { label: '7D', value: 4.2 },
+      { label: '30D', value: 4.4 },
+      { label: '90D', value: 4.6 },
+    ],
+    analytics: {
+      lowRatingCount7d: 3,
+      avgRating7d: 4.2,
+      recentFlags: 1,
+      weeklyDelta: -0.4,
+      notes: ['低評価が 48 時間で 2 件増加', '暴言タグ付きレビューあり'],
+    },
+    history: [
+      {
+        id: 'rev_hist_900',
+        occurredAt: '2025-02-01T12:22:10Z',
+        operator: 'system',
+        action: 'received',
+        note: 'ユーザー投稿を受付',
+      },
+    ],
+  },
+  {
+    id: 'rev_1010',
+    otomoId: 'otomo_01',
+    otomoName: 'はるか',
+    userId: 'user_038',
+    reviewerAlias: maskUserId('user_038'),
+    callId: 'call_210',
+    rating: 5,
+    hasComment: true,
+    comment: '丁寧に話を聞いてくれて安心できました。またお願いしたいです。',
+    commentSnippet: buildReviewSnippet(
+      '丁寧に話を聞いてくれて安心できました。またお願いしたいです。',
+    ),
+    flagged: 'normal',
+    status: 'active',
+    flaggedKeywords: [],
+    aiLabels: [],
+    createdAt: '2025-01-31T09:05:00Z',
+    updatedAt: '2025-01-31T09:05:00Z',
+    callStartedAt: '2025-01-31T08:40:00Z',
+    callDurationSeconds: 780,
+    ratingTrend: [
+      { label: '7D', value: 4.8 },
+      { label: '30D', value: 4.7 },
+      { label: '90D', value: 4.6 },
+    ],
+    analytics: {
+      lowRatingCount7d: 0,
+      avgRating7d: 4.8,
+      recentFlags: 0,
+      weeklyDelta: 0.1,
+      notes: ['レビューの 82% が星4以上', '低評価は 30 日間で 0 件'],
+    },
+    history: [
+      {
+        id: 'rev_hist_850',
+        occurredAt: '2025-01-31T09:05:05Z',
+        operator: 'system',
+        action: 'received',
+      },
+    ],
+  },
+  {
+    id: 'rev_0999',
+    otomoId: 'otomo_03',
+    otomoName: 'すずか',
+    userId: 'user_055',
+    reviewerAlias: maskUserId('user_055'),
+    callId: 'call_190',
+    rating: 1,
+    hasComment: true,
+    comment: '急に広告リンクを送ってきて会話が成立しませんでした。',
+    commentSnippet: buildReviewSnippet(
+      '急に広告リンクを送ってきて会話が成立しませんでした。',
+    ),
+    flagged: 'ai',
+    status: 'active',
+    flaggedKeywords: ['広告リンク'],
+    aiLabels: ['スパム疑い'],
+    createdAt: '2025-01-29T18:40:00Z',
+    updatedAt: '2025-01-29T18:45:00Z',
+    callStartedAt: '2025-01-29T18:30:00Z',
+    callDurationSeconds: 360,
+    ratingTrend: [
+      { label: '7D', value: 4.1 },
+      { label: '30D', value: 4.3 },
+      { label: '90D', value: 4.5 },
+    ],
+    analytics: {
+      lowRatingCount7d: 2,
+      avgRating7d: 4.1,
+      recentFlags: 1,
+      weeklyDelta: -0.2,
+      notes: ['AI によりスパムの可能性を検知', '過去 7 日で低評価 2 件'],
+    },
+    history: [
+      {
+        id: 'rev_hist_810',
+        occurredAt: '2025-01-29T18:40:05Z',
+        operator: 'system',
+        action: 'received',
+      },
+      {
+        id: 'rev_hist_811',
+        occurredAt: '2025-01-29T18:45:00Z',
+        operator: 'ai_moderation',
+        action: 'flagged',
+        note: '広告リンクの検知',
+      },
+    ],
+  },
+]
+
+const cloneAdminReview = (detail: AdminReviewDetail): AdminReviewDetail => ({
+  ...detail,
+  flaggedKeywords: detail.flaggedKeywords.slice(),
+  aiLabels: detail.aiLabels.slice(),
+  ratingTrend: detail.ratingTrend.map((point) => ({ ...point })),
+  analytics: { ...detail.analytics, notes: detail.analytics.notes.slice() },
+  history: detail.history.map((entry) => ({ ...entry })),
+})
+
+const adminReviewStore: Array<AdminReviewDetail> = initialAdminReviews.map(
+  (detail) => cloneAdminReview(detail),
+)
+
+const toAdminReviewSummary = (
+  detail: AdminReviewDetail,
+): AdminReviewSummary => ({
+  id: detail.id,
+  otomoId: detail.otomoId,
+  otomoName: detail.otomoName,
+  userId: detail.userId,
+  reviewerAlias: detail.reviewerAlias,
+  callId: detail.callId,
+  rating: detail.rating,
+  hasComment: detail.hasComment,
+  commentSnippet: detail.commentSnippet,
+  flagged: detail.flagged,
+  status: detail.status,
+  createdAt: detail.createdAt,
+  updatedAt: detail.updatedAt,
+})
+
+const findAdminReviewOrThrow = (reviewId: string) => {
+  const review = adminReviewStore.find((entry) => entry.id === reviewId)
+  if (!review) {
+    throw new Error('レビューが見つかりません')
+  }
+  return review
+}
+
+const applyReviewFilters = (
+  reviews: Array<AdminReviewDetail>,
+  filters: AdminReviewFilters,
+) => {
+  let list = reviews.filter((item) => item.status === 'active')
+  if (filters.otomoId) {
+    const keyword = filters.otomoId.toLowerCase()
+    list = list.filter((item) => item.otomoId.toLowerCase().includes(keyword))
+  }
+  if (filters.userId) {
+    const keyword = filters.userId.toLowerCase()
+    list = list.filter((item) => item.userId.toLowerCase().includes(keyword))
+  }
+  if (filters.rating !== undefined) {
+    list = list.filter((item) => item.rating === filters.rating)
+  }
+  if (filters.ratingMin !== undefined) {
+    list = list.filter((item) => item.rating >= filters.ratingMin)
+  }
+  if (filters.ratingMax !== undefined) {
+    list = list.filter((item) => item.rating <= filters.ratingMax)
+  }
+  if (filters.commentState === 'with') {
+    list = list.filter((item) => item.hasComment)
+  }
+  if (filters.commentState === 'without') {
+    list = list.filter((item) => !item.hasComment)
+  }
+  if (filters.keyword) {
+    const keyword = filters.keyword.toLowerCase()
+    list = list.filter((item) => item.comment.toLowerCase().includes(keyword))
+  }
+  if (filters.flagged) {
+    list = list.filter((item) => item.flagged === filters.flagged)
+  }
+  if (filters.createdFrom) {
+    const from = Date.parse(filters.createdFrom)
+    list = list.filter((item) => Date.parse(item.createdAt) >= from)
+  }
+  if (filters.createdTo) {
+    const to = Date.parse(filters.createdTo)
+    list = list.filter((item) => Date.parse(item.createdAt) <= to)
+  }
+  return list
+}
+
+export async function fetchAdminReviews(
+  filters: AdminReviewFilters = {},
+): Promise<Array<AdminReviewSummary>> {
+  await waitForMock(ADMIN_REVIEW_DELAY_MS)
+  return applyReviewFilters(adminReviewStore, filters)
+    .sort((a, b) => {
+      const flagDiff =
+        adminReviewFlagOrder[a.flagged] - adminReviewFlagOrder[b.flagged]
+      if (flagDiff !== 0) {
+        return flagDiff
+      }
+      if (a.rating !== b.rating) {
+        return a.rating - b.rating
+      }
+      return Date.parse(b.createdAt) - Date.parse(a.createdAt)
+    })
+    .map(toAdminReviewSummary)
+}
+
+export async function fetchAdminReviewDetail(
+  reviewId: string,
+): Promise<AdminReviewDetail> {
+  await waitForMock(ADMIN_REVIEW_DELAY_MS)
+  return cloneAdminReview(findAdminReviewOrThrow(reviewId))
+}
+
+export async function deleteAdminReview(
+  payload: DeleteAdminReviewPayload,
+): Promise<AdminReviewDetail> {
+  await waitForMock(ADMIN_REVIEW_DELAY_MS)
+  const review = findAdminReviewOrThrow(payload.reviewId)
+  review.status = 'deleted'
+  review.updatedAt = new Date().toISOString()
+  review.history = [
+    {
+      id: `rev_hist_${Date.now()}`,
+      occurredAt: review.updatedAt,
+      operator: payload.operator,
+      action: 'deleted',
+      note: payload.reason,
+    },
+    ...review.history,
+  ]
+  return cloneAdminReview(review)
+}
+
+export async function flagAdminReview(
+  payload: FlagAdminReviewPayload,
+): Promise<AdminReviewDetail> {
+  await waitForMock(ADMIN_REVIEW_DELAY_MS)
+  const review = findAdminReviewOrThrow(payload.reviewId)
+  review.flagged = payload.flag
+  review.updatedAt = new Date().toISOString()
+  review.history = [
+    {
+      id: `rev_hist_${Date.now() + 1}`,
+      occurredAt: review.updatedAt,
+      operator: payload.operator,
+      action: 'flagged',
+      note: payload.note ?? `フラグ: ${payload.flag}`,
+    },
+    ...review.history,
+  ]
+  return cloneAdminReview(review)
+}
+
 const adminTrafficSfuMetrics: Array<AdminTrafficSfuNodeMetrics> = [
   {
     nodeId: 'sfu-tokyo-1',
