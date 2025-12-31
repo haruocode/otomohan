@@ -982,6 +982,143 @@ export async function verifyAdminMfaCode(
   }
 }
 
+export type AppUserRole = 'user' | 'otomo'
+
+export interface AppLoginUser {
+  id: string
+  role: AppUserRole
+  name: string
+  avatarUrl?: string
+}
+
+export interface AppLoginPayload {
+  email: string
+  password: string
+}
+
+export interface AppLoginResponse {
+  token: string
+  user: AppLoginUser
+}
+
+export type AppLoginErrorCode =
+  | 'INVALID_CREDENTIALS'
+  | 'USER_NOT_FOUND'
+  | 'DEACTIVATED'
+  | 'NETWORK_ERROR'
+  | 'SERVER_ERROR'
+
+export interface AppLoginError extends Error {
+  code: AppLoginErrorCode
+}
+
+const AUTH_ERROR_MESSAGES: Record<AppLoginErrorCode, string> = {
+  INVALID_CREDENTIALS: 'メールアドレスまたはパスワードが正しくありません',
+  USER_NOT_FOUND: 'アカウントが存在しません',
+  DEACTIVATED: 'このアカウントは利用停止されています',
+  NETWORK_ERROR: 'ネットワークに問題が発生しました',
+  SERVER_ERROR: 'サーバーで問題が発生しました',
+}
+
+const APP_LOGIN_DELAY_MS = 640
+
+type MockAppAccount = {
+  email: string
+  password: string
+  id: string
+  role: AppUserRole
+  name: string
+  avatarUrl?: string
+  status: 'active' | 'deactivated'
+}
+
+const mockAppAccounts: Array<MockAppAccount> = [
+  {
+    email: 'user@example.com',
+    password: 'userpass123',
+    id: 'user_001',
+    role: 'user',
+    name: 'たろう',
+    avatarUrl:
+      'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=facearea&w=200&h=200&q=80',
+    status: 'active',
+  },
+  {
+    email: 'otomo@example.com',
+    password: 'otomopass123',
+    id: 'otomo_010',
+    role: 'otomo',
+    name: 'さくら',
+    avatarUrl:
+      'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=facearea&w=200&h=200&q=80',
+    status: 'active',
+  },
+  {
+    email: 'suspended@example.com',
+    password: 'suspended123',
+    id: 'user_404',
+    role: 'user',
+    name: '休眠ユーザー',
+    status: 'deactivated',
+  },
+]
+
+const createAppLoginError = (code: AppLoginErrorCode): AppLoginError => {
+  const error = new Error(AUTH_ERROR_MESSAGES[code]) as AppLoginError
+  error.code = code
+  return error
+}
+
+export const isAppLoginError = (error: unknown): error is AppLoginError => {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    typeof (error as { code?: unknown }).code === 'string'
+  )
+}
+
+export async function loginWithEmail(
+  payload: AppLoginPayload,
+): Promise<AppLoginResponse> {
+  await waitForMock(APP_LOGIN_DELAY_MS)
+
+  const email = payload.email.trim().toLowerCase()
+  const password = payload.password.trim()
+
+  if (!email || !password) {
+    throw createAppLoginError('INVALID_CREDENTIALS')
+  }
+
+  if (email.includes('+network')) {
+    throw createAppLoginError('NETWORK_ERROR')
+  }
+  if (email.includes('+server')) {
+    throw createAppLoginError('SERVER_ERROR')
+  }
+
+  const account = mockAppAccounts.find((entry) => entry.email === email)
+  if (!account) {
+    throw createAppLoginError('USER_NOT_FOUND')
+  }
+  if (account.status === 'deactivated') {
+    throw createAppLoginError('DEACTIVATED')
+  }
+  if (account.password !== password) {
+    throw createAppLoginError('INVALID_CREDENTIALS')
+  }
+
+  return {
+    token: `mock-user-token-${account.id}`,
+    user: {
+      id: account.id,
+      role: account.role,
+      name: account.name,
+      avatarUrl: account.avatarUrl,
+    },
+  }
+}
+
 export type AdminUserStatus = 'active' | 'suspended' | 'retired'
 
 export type AdminReportFilter = 'none' | 'onePlus' | 'many'
