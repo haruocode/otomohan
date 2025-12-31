@@ -2453,6 +2453,353 @@ const adminTrafficTrendPoints: Record<
   ],
 }
 
+export type AdminNotificationCategory =
+  | 'system'
+  | 'update'
+  | 'campaign'
+  | 'otomo'
+  | 'user'
+  | 'critical'
+
+export type AdminNotificationAudience = 'all' | 'users' | 'otomo' | 'custom'
+
+export type AdminNotificationStatus = 'draft' | 'scheduled' | 'sent' | 'failed'
+
+export type AdminNotificationChannel = 'inApp' | 'push' | 'email'
+
+export interface AdminNotificationSummary {
+  id: string
+  title: string
+  category: AdminNotificationCategory
+  audience: AdminNotificationAudience
+  status: AdminNotificationStatus
+  scheduleMode: 'immediate' | 'scheduled'
+  scheduledAt?: string
+  deliveredAt?: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface AdminNotificationListFilters {
+  title?: string
+  category?: AdminNotificationCategory
+  audience?: AdminNotificationAudience
+  status?: AdminNotificationStatus
+  scheduledFrom?: string
+  scheduledTo?: string
+}
+
+export interface AdminNotificationFailureReason {
+  code: string
+  count: number
+  description: string
+}
+
+export interface AdminNotificationDeliveryMetrics {
+  successCount: number
+  failureCount: number
+  failureReasons: Array<AdminNotificationFailureReason>
+}
+
+export interface AdminNotificationDetail extends AdminNotificationSummary {
+  body: string
+  channels: Array<AdminNotificationChannel>
+  previewSnippet: string
+  targetUserIds?: Array<string>
+  delivery: AdminNotificationDeliveryMetrics
+}
+
+export interface CreateAdminNotificationPayload {
+  title: string
+  body: string
+  category: AdminNotificationCategory
+  audience: AdminNotificationAudience
+  channels: Array<AdminNotificationChannel>
+  scheduleMode: 'immediate' | 'scheduled'
+  scheduledAt?: string
+  targetUserIds?: Array<string>
+}
+
+export interface UpdateAdminNotificationPayload extends Partial<CreateAdminNotificationPayload> {
+  id: string
+}
+
+export interface SendAdminNotificationPayload {
+  notificationId: string
+  mode: 'immediate' | 'scheduled'
+  scheduledAt?: string
+}
+
+const ADMIN_NOTIFICATION_DELAY_MS = 420
+
+const initialAdminNotifications: Array<AdminNotificationDetail> = [
+  {
+    id: 'notif_100',
+    title: '2/5 メンテナンスのお知らせ',
+    category: 'system',
+    audience: 'all',
+    status: 'sent',
+    scheduleMode: 'scheduled',
+    scheduledAt: '2025-02-05T02:00:00Z',
+    deliveredAt: '2025-02-05T02:00:05Z',
+    createdAt: '2025-01-25T10:00:00Z',
+    updatedAt: '2025-02-05T02:01:00Z',
+    body: '2/5 02:00-03:00 の間にシステムメンテナンスを実施します。期間中は通話および課金機能が停止します。',
+    channels: ['inApp', 'push'],
+    previewSnippet: 'メンテナンス中はアプリ全機能が一時停止します。',
+    delivery: {
+      successCount: 12311,
+      failureCount: 42,
+      failureReasons: [
+        {
+          code: 'token_invalid',
+          count: 18,
+          description: 'デバイストークン失効',
+        },
+        { code: 'user_optout', count: 24, description: '通知拒否設定' },
+      ],
+    },
+  },
+  {
+    id: 'notif_101',
+    title: 'ポイント増量キャンペーン',
+    category: 'campaign',
+    audience: 'users',
+    status: 'scheduled',
+    scheduleMode: 'scheduled',
+    scheduledAt: '2025-02-10T00:00:00Z',
+    createdAt: '2025-01-29T06:00:00Z',
+    updatedAt: '2025-01-29T06:00:00Z',
+    body: '2/10〜2/14 の期間中、ポイントチャージ額に応じてボーナスポイントを付与します。',
+    channels: ['inApp'],
+    previewSnippet: '今だけポイントチャージで最大20%増量！',
+    delivery: {
+      successCount: 0,
+      failureCount: 0,
+      failureReasons: [],
+    },
+  },
+  {
+    id: 'notif_102',
+    title: '収益レポート（1月度）',
+    category: 'otomo',
+    audience: 'otomo',
+    status: 'draft',
+    scheduleMode: 'scheduled',
+    createdAt: '2025-01-30T03:30:00Z',
+    updatedAt: '2025-01-30T03:30:00Z',
+    body: '1月度の収益レポートを配信予定です。審査状況・還元額をご確認ください。',
+    channels: ['inApp', 'email'],
+    previewSnippet: '還元率やキャンセル率をまとめた月次レポートを配信します。',
+    delivery: {
+      successCount: 0,
+      failureCount: 0,
+      failureReasons: [],
+    },
+  },
+  {
+    id: 'notif_103',
+    title: '利用規約違反による停止',
+    category: 'critical',
+    audience: 'custom',
+    status: 'failed',
+    scheduleMode: 'immediate',
+    deliveredAt: '2025-01-28T15:10:00Z',
+    createdAt: '2025-01-28T15:05:00Z',
+    updatedAt: '2025-01-28T15:10:00Z',
+    body: '規約違反が確認されたため、アカウントを一時停止しました。詳細はサポートまでお問い合わせください。',
+    channels: ['inApp', 'email'],
+    previewSnippet: '重要: アカウント停止のお知らせ',
+    targetUserIds: ['user_077'],
+    delivery: {
+      successCount: 0,
+      failureCount: 1,
+      failureReasons: [
+        { code: 'email_bounced', count: 1, description: 'メール送信に失敗' },
+      ],
+    },
+  },
+]
+
+const cloneAdminNotification = (
+  detail: AdminNotificationDetail,
+): AdminNotificationDetail => ({
+  ...detail,
+  channels: detail.channels.slice(),
+  targetUserIds: detail.targetUserIds?.slice(),
+  delivery: {
+    ...detail.delivery,
+    failureReasons: detail.delivery.failureReasons.map((reason) => ({
+      ...reason,
+    })),
+  },
+})
+
+const adminNotificationStore: Array<AdminNotificationDetail> =
+  initialAdminNotifications.map((detail) => cloneAdminNotification(detail))
+
+let adminNotificationSequence = 200
+
+const toAdminNotificationSummary = (
+  detail: AdminNotificationDetail,
+): AdminNotificationSummary => ({
+  id: detail.id,
+  title: detail.title,
+  category: detail.category,
+  audience: detail.audience,
+  status: detail.status,
+  scheduleMode: detail.scheduleMode,
+  scheduledAt: detail.scheduledAt,
+  deliveredAt: detail.deliveredAt,
+  createdAt: detail.createdAt,
+  updatedAt: detail.updatedAt,
+})
+
+const findAdminNotificationOrThrow = (id: string) => {
+  const notification = adminNotificationStore.find((item) => item.id === id)
+  if (!notification) {
+    throw new Error('通知が見つかりません')
+  }
+  return notification
+}
+
+const applyNotificationFilters = (
+  notifications: Array<AdminNotificationDetail>,
+  filters: AdminNotificationListFilters,
+) => {
+  let list = notifications.slice()
+  if (filters.title) {
+    const keyword = filters.title.toLowerCase()
+    list = list.filter((item) => item.title.toLowerCase().includes(keyword))
+  }
+  if (filters.category) {
+    list = list.filter((item) => item.category === filters.category)
+  }
+  if (filters.audience) {
+    list = list.filter((item) => item.audience === filters.audience)
+  }
+  if (filters.status) {
+    list = list.filter((item) => item.status === filters.status)
+  }
+  if (filters.scheduledFrom) {
+    const from = Date.parse(filters.scheduledFrom)
+    list = list.filter((item) => {
+      if (!item.scheduledAt) return false
+      return Date.parse(item.scheduledAt) >= from
+    })
+  }
+  if (filters.scheduledTo) {
+    const to = Date.parse(filters.scheduledTo)
+    list = list.filter((item) => {
+      if (!item.scheduledAt) return false
+      return Date.parse(item.scheduledAt) <= to
+    })
+  }
+  return list
+}
+
+export async function fetchAdminNotifications(
+  filters: AdminNotificationListFilters = {},
+): Promise<Array<AdminNotificationSummary>> {
+  await waitForMock(ADMIN_NOTIFICATION_DELAY_MS)
+  return applyNotificationFilters(adminNotificationStore, filters)
+    .sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt))
+    .map(toAdminNotificationSummary)
+}
+
+export async function fetchAdminNotificationDetail(
+  notificationId: string,
+): Promise<AdminNotificationDetail> {
+  await waitForMock(ADMIN_NOTIFICATION_DELAY_MS)
+  return cloneAdminNotification(findAdminNotificationOrThrow(notificationId))
+}
+
+export async function createAdminNotification(
+  payload: CreateAdminNotificationPayload,
+): Promise<AdminNotificationDetail> {
+  await waitForMock(ADMIN_NOTIFICATION_DELAY_MS)
+  const now = new Date().toISOString()
+  const newNotification: AdminNotificationDetail = {
+    id: `notif_${adminNotificationSequence++}`,
+    title: payload.title,
+    body: payload.body,
+    category: payload.category,
+    audience: payload.audience,
+    status: payload.scheduleMode === 'immediate' ? 'sent' : 'draft',
+    scheduleMode: payload.scheduleMode,
+    scheduledAt:
+      payload.scheduleMode === 'scheduled' ? payload.scheduledAt : now,
+    deliveredAt: payload.scheduleMode === 'immediate' ? now : undefined,
+    createdAt: now,
+    updatedAt: now,
+    channels: payload.channels.slice(),
+    targetUserIds: payload.targetUserIds?.slice(),
+    previewSnippet: payload.body.slice(0, 80),
+    delivery:
+      payload.scheduleMode === 'immediate'
+        ? {
+            successCount: 120,
+            failureCount: 0,
+            failureReasons: [],
+          }
+        : { successCount: 0, failureCount: 0, failureReasons: [] },
+  }
+  adminNotificationStore.unshift(newNotification)
+  return cloneAdminNotification(newNotification)
+}
+
+export async function updateAdminNotification(
+  payload: UpdateAdminNotificationPayload,
+): Promise<AdminNotificationDetail> {
+  await waitForMock(ADMIN_NOTIFICATION_DELAY_MS)
+  const notification = findAdminNotificationOrThrow(payload.id)
+  if (payload.title) notification.title = payload.title
+  if (payload.body) {
+    notification.body = payload.body
+    notification.previewSnippet = payload.body.slice(0, 80)
+  }
+  if (payload.category) notification.category = payload.category
+  if (payload.audience) notification.audience = payload.audience
+  if (payload.channels) notification.channels = payload.channels.slice()
+  if (payload.scheduleMode) notification.scheduleMode = payload.scheduleMode
+  if (payload.scheduledAt) notification.scheduledAt = payload.scheduledAt
+  if (payload.targetUserIds) {
+    notification.targetUserIds = payload.targetUserIds.slice()
+  }
+  notification.updatedAt = new Date().toISOString()
+  return cloneAdminNotification(notification)
+}
+
+export async function sendAdminNotification(
+  payload: SendAdminNotificationPayload,
+): Promise<AdminNotificationDetail> {
+  await waitForMock(ADMIN_NOTIFICATION_DELAY_MS)
+  const notification = findAdminNotificationOrThrow(payload.notificationId)
+  const now = new Date().toISOString()
+  notification.scheduleMode = payload.mode
+  if (payload.mode === 'immediate') {
+    notification.status = 'sent'
+    notification.deliveredAt = now
+    notification.scheduledAt = now
+    notification.delivery = {
+      successCount: Math.floor(Math.random() * 5000) + 2000,
+      failureCount: Math.floor(Math.random() * 50),
+      failureReasons: [],
+    }
+  } else {
+    notification.status = 'scheduled'
+    notification.scheduledAt = payload.scheduledAt ?? now
+    notification.deliveredAt = undefined
+    notification.delivery = {
+      successCount: 0,
+      failureCount: 0,
+      failureReasons: [],
+    }
+  }
+  notification.updatedAt = now
+  return cloneAdminNotification(notification)
+}
+
 const adminTrafficSfuMetrics: Array<AdminTrafficSfuNodeMetrics> = [
   {
     nodeId: 'sfu-tokyo-1',
