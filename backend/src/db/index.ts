@@ -59,6 +59,12 @@ type NotificationSettingsRecord = {
   marketing: boolean;
 };
 
+type WalletRecord = {
+  userId: string;
+  balance: number;
+  updatedAt: string;
+};
+
 const usersTable: Record<string, UserRecord> = {
   "user-123": {
     id: "user-123",
@@ -194,6 +200,14 @@ const userSettingsTable: Record<
   },
 };
 
+const walletTable: Record<string, WalletRecord> = {
+  "user-123": {
+    userId: "user-123",
+    balance: 1200,
+    updatedAt: "2025-01-15T12:00:00Z",
+  },
+};
+
 export async function fetchUserById(id: string): Promise<UserRecord | null> {
   const record = usersTable[id];
   if (!record || record.is_deleted) {
@@ -204,6 +218,12 @@ export async function fetchUserById(id: string): Promise<UserRecord | null> {
 
 export async function fetchUserNotifications(userId: string) {
   return userSettingsTable[userId]?.notifications ?? null;
+}
+
+export async function fetchWalletByUserId(
+  userId: string
+): Promise<WalletRecord | null> {
+  return walletTable[userId] ?? null;
 }
 
 export async function saveUserNotificationsRecord(

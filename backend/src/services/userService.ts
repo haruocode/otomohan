@@ -11,6 +11,7 @@ import {
   getUserNotifications,
   deleteUserNotifications,
 } from "../repositories/userSettingsRepository.js";
+import { getWalletByUserId } from "../repositories/walletRepository.js";
 import { compare as comparePassword, hash as hashPassword } from "bcryptjs";
 
 export type UserProfile = {
@@ -44,6 +45,8 @@ export async function getUserProfile(
   const user = await getUserById(userId);
   if (!user) return null;
 
+  const wallet = await getWalletByUserId(userId);
+
   const notifications = (await getUserNotifications(userId)) ?? {
     incomingCall: true,
     callSummary: true,
@@ -59,7 +62,7 @@ export async function getUserProfile(
     bio: user.bio,
     gender: user.gender,
     birthday: user.birthday,
-    balance: user.balance,
+    balance: wallet?.balance ?? user.balance,
     notifications,
   };
 }
