@@ -2,7 +2,7 @@ import fp from "fastify-plugin";
 import type { FastifyInstance } from "fastify";
 
 interface AuthOptions {
-  simulateRole?: "user" | "otomo";
+  simulateRole?: "user" | "otomo" | "admin";
 }
 
 export default fp(async function authPlugin(

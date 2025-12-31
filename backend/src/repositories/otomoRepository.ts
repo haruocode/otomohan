@@ -4,6 +4,7 @@ import {
   type OtomoListFilters,
   fetchOtomoReviews,
   type OtomoReviewFilters,
+  updateOtomoStatusRecord,
 } from "../db/index.js";
 
 export async function listOtomo(filters: OtomoListFilters) {
@@ -19,4 +20,16 @@ export async function listOtomoReviews(
   filters: OtomoReviewFilters
 ) {
   return fetchOtomoReviews(otomoId, filters);
+}
+
+export async function updateOtomoStatus(
+  otomoId: string,
+  payload: {
+    isOnline: boolean;
+    isAvailable: boolean;
+    statusMessage: string | null;
+    statusUpdatedAt: string;
+  }
+) {
+  return updateOtomoStatusRecord(otomoId, payload);
 }

@@ -10,6 +10,7 @@ This directory hosts a Fastify + TypeScript backend that will gradually replace 
 - `OTOMO-01 GET /otomo/list` (fetch otomo directory)
 - `OTOMO-02 GET /otomo/{id}` (fetch otomo detail)
 - `OTOMO-03 GET /otomo/{id}/reviews` (paginated reviews)
+- `OTOMO-04 PUT /otomo/status` (update otomo availability)
 
 ## Scripts
 

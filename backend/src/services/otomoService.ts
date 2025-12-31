@@ -2,6 +2,7 @@ import {
   listOtomo,
   findOtomoById,
   listOtomoReviews,
+  updateOtomoStatus,
 } from "../repositories/otomoRepository.js";
 
 export type OtomoListQuery = {
@@ -66,7 +67,32 @@ export type OtomoDetail = OtomoListItem & {
   tags: string[];
   reviews: OtomoReview[];
   schedule: OtomoScheduleSlot[];
+  statusMessage: string | null;
+  statusUpdatedAt: string;
 };
+
+export type OtomoStatusUpdate = {
+  otomoId: string;
+  isOnline: boolean;
+  isAvailable: boolean;
+  statusMessage?: string | null;
+};
+
+export type OtomoStatusUpdateResult =
+  | {
+      success: true;
+      otomo: {
+        otomoId: string;
+        isOnline: boolean;
+        isAvailable: boolean;
+        statusMessage: string | null;
+        statusUpdatedAt: string;
+      };
+    }
+  | {
+      success: false;
+      reason: "OTOMO_NOT_FOUND" | "FORBIDDEN" | "UPDATE_FAILED";
+    };
 
 const DEFAULT_LIMIT = 20;
 const MAX_LIMIT = 50;
@@ -125,6 +151,8 @@ export async function getOtomoDetail(
     tags: record.tags,
     isOnline: record.isOnline,
     isAvailable: record.isAvailable,
+    statusMessage: record.statusMessage,
+    statusUpdatedAt: record.statusUpdatedAt,
     pricePerMinute: record.pricePerMinute,
     rating: record.rating,
     reviewCount: record.reviewCount,
@@ -187,4 +215,38 @@ function normalizeReviewSort(sort?: OtomoReviewSort): OtomoReviewSort {
     return sort;
   }
   return "newest";
+}
+
+export async function updateOtomoStatusEntry(
+  payload: OtomoStatusUpdate,
+  actor: { id: string; role: "otomo" | "admin" }
+): Promise<OtomoStatusUpdateResult> {
+  const record = await findOtomoById(payload.otomoId);
+  if (!record) {
+    return { success: false, reason: "OTOMO_NOT_FOUND" };
+  }
+
+  const isActorAllowed =
+    actor.role === "admin" || record.ownerUserId === actor.id;
+
+  if (!isActorAllowed) {
+    return { success: false, reason: "FORBIDDEN" };
+  }
+
+  const statusUpdatedAt = new Date().toISOString();
+  const updated = await updateOtomoStatus(payload.otomoId, {
+    isOnline: payload.isOnline,
+    isAvailable: payload.isAvailable,
+    statusMessage: payload.statusMessage ?? null,
+    statusUpdatedAt,
+  });
+
+  if (!updated) {
+    return { success: false, reason: "UPDATE_FAILED" };
+  }
+
+  return {
+    success: true,
+    otomo: updated,
+  };
 }

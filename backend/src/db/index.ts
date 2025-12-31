@@ -33,6 +33,7 @@ type OtomoScheduleRecord = {
 
 type OtomoRecord = {
   otomoId: string;
+  ownerUserId: string;
   displayName: string;
   profileImageUrl: string;
   age: number;
@@ -42,6 +43,8 @@ type OtomoRecord = {
   tags: string[];
   isOnline: boolean;
   isAvailable: boolean;
+  statusMessage: string | null;
+  statusUpdatedAt: string;
   pricePerMinute: number;
   rating: number;
   reviewCount: number;
@@ -67,6 +70,7 @@ const usersTable: Record<string, UserRecord> = {
 const otomoTable: OtomoRecord[] = [
   {
     otomoId: "otomo_001",
+    ownerUserId: "otomo-user-001",
     displayName: "みさき",
     profileImageUrl: "https://cdn.otomohan.local/otomo/001.jpg",
     age: 25,
@@ -76,6 +80,8 @@ const otomoTable: OtomoRecord[] = [
     tags: ["癒し系", "傾聴", "お姉さんタイプ"],
     isOnline: true,
     isAvailable: true,
+    statusMessage: "待機中です！",
+    statusUpdatedAt: "2025-01-10T11:00:00Z",
     pricePerMinute: 120,
     rating: 4.8,
     reviewCount: 54,
@@ -103,6 +109,7 @@ const otomoTable: OtomoRecord[] = [
   },
   {
     otomoId: "otomo_002",
+    ownerUserId: "otomo-user-002",
     displayName: "ゆうと",
     profileImageUrl: "https://cdn.otomohan.local/otomo/002.jpg",
     age: 28,
@@ -112,6 +119,8 @@ const otomoTable: OtomoRecord[] = [
     tags: ["論理的", "相談役"],
     isOnline: false,
     isAvailable: false,
+    statusMessage: "休憩中です",
+    statusUpdatedAt: "2025-01-12T09:00:00Z",
     pricePerMinute: 100,
     rating: 4.5,
     reviewCount: 30,
@@ -131,6 +140,7 @@ const otomoTable: OtomoRecord[] = [
   },
   {
     otomoId: "otomo_003",
+    ownerUserId: "otomo-user-003",
     displayName: "さくら",
     profileImageUrl: "https://cdn.otomohan.local/otomo/003.jpg",
     age: 32,
@@ -140,6 +150,8 @@ const otomoTable: OtomoRecord[] = [
     tags: ["サポート", "落ち着き"],
     isOnline: true,
     isAvailable: false,
+    statusMessage: "通話中です",
+    statusUpdatedAt: "2025-01-13T20:30:00Z",
     pricePerMinute: 140,
     rating: 4.9,
     reviewCount: 120,
@@ -309,6 +321,40 @@ export async function fetchOtomoById(
   otomoId: string
 ): Promise<OtomoRecord | null> {
   return otomoTable.find((record) => record.otomoId === otomoId) ?? null;
+}
+
+export async function updateOtomoStatusRecord(
+  otomoId: string,
+  payload: {
+    isOnline: boolean;
+    isAvailable: boolean;
+    statusMessage: string | null;
+    statusUpdatedAt: string;
+  }
+): Promise<{
+  otomoId: string;
+  isOnline: boolean;
+  isAvailable: boolean;
+  statusMessage: string | null;
+  statusUpdatedAt: string;
+} | null> {
+  const record = otomoTable.find((entry) => entry.otomoId === otomoId);
+  if (!record) {
+    return null;
+  }
+
+  record.isOnline = payload.isOnline;
+  record.isAvailable = payload.isAvailable;
+  record.statusMessage = payload.statusMessage;
+  record.statusUpdatedAt = payload.statusUpdatedAt;
+
+  return {
+    otomoId: record.otomoId,
+    isOnline: record.isOnline,
+    isAvailable: record.isAvailable,
+    statusMessage: record.statusMessage,
+    statusUpdatedAt: record.statusUpdatedAt,
+  };
 }
 
 export async function fetchOtomoReviews(

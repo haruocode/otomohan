@@ -21,6 +21,8 @@ const otomoDetailResponseSchema = {
         pricePerMinute: { type: "number" },
         rating: { type: "number" },
         reviewCount: { type: "number" },
+        statusMessage: { type: ["string", "null"] },
+        statusUpdatedAt: { type: "string" },
         reviews: {
           type: "array",
           items: {
@@ -81,6 +83,8 @@ const otomoDetailResponseSchema = {
         "pricePerMinute",
         "rating",
         "reviewCount",
+        "statusMessage",
+        "statusUpdatedAt",
         "reviews",
         "schedule",
       ],

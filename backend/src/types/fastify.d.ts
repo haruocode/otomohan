@@ -10,7 +10,7 @@ declare module "fastify" {
   interface FastifyRequest {
     user?: {
       id: string;
-      role: "user" | "otomo";
+      role: "user" | "otomo" | "admin";
     };
   }
 }
