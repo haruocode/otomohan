@@ -3604,6 +3604,327 @@ export async function flagAdminReview(
   return cloneAdminReview(review)
 }
 
+export type AdminAuditResult = 'success' | 'failed'
+
+export type AdminAuditTargetType =
+  | 'user'
+  | 'otomo'
+  | 'call'
+  | 'review'
+  | 'notification'
+  | 'system'
+
+export const adminAuditActionCatalog = {
+  user_suspend: { label: 'ユーザー凍結', category: 'user' },
+  user_unsuspend: { label: 'ユーザー凍結解除', category: 'user' },
+  user_points_adjust: { label: 'ポイント調整', category: 'user' },
+  otomo_suspend: { label: 'おともはん停止', category: 'otomo' },
+  otomo_resume: { label: 'おともはん復帰', category: 'otomo' },
+  otomo_profile_edit: {
+    label: 'おともはんプロフィール編集',
+    category: 'otomo',
+  },
+  notification_send: { label: '通知配信', category: 'notification' },
+  notification_template_update: {
+    label: '通知テンプレ更新',
+    category: 'notification',
+  },
+  review_delete: { label: 'レビュー削除', category: 'review' },
+  review_flag: { label: 'レビューへのフラグ付与', category: 'review' },
+  call_recording_view: { label: '録音データ再生', category: 'call' },
+  call_log_view: { label: '通話ログ閲覧', category: 'call' },
+  system_login: { label: '管理画面ログイン', category: 'system' },
+  system_setting_change: { label: 'システム設定変更', category: 'system' },
+} as const
+
+export type AdminAuditActionType = keyof typeof adminAuditActionCatalog
+
+export type AdminAuditActionCategory =
+  (typeof adminAuditActionCatalog)[AdminAuditActionType]['category']
+
+export interface AdminAuditSummary {
+  id: string
+  adminId: string
+  action: AdminAuditActionType
+  actionLabel: string
+  actionCategory: AdminAuditActionCategory
+  targetId: string
+  targetType: AdminAuditTargetType
+  occurredAt: string
+  result: AdminAuditResult
+}
+
+export interface AdminAuditRelatedLink {
+  label: string
+  href: string
+  description?: string
+}
+
+export interface AdminAuditDetail extends AdminAuditSummary {
+  ip: string
+  detail: Record<string, unknown>
+  failureReason?: string
+  relatedLinks?: Array<AdminAuditRelatedLink>
+}
+
+export interface AdminAuditFilters {
+  adminId?: string
+  action?: AdminAuditActionType
+  actionCategory?: AdminAuditActionCategory
+  targetId?: string
+  targetType?: AdminAuditTargetType
+  result?: AdminAuditResult
+  ip?: string
+  keyword?: string
+  occurredFrom?: string
+  occurredTo?: string
+}
+
+type AdminAuditDetailInput = Omit<
+  AdminAuditDetail,
+  'actionLabel' | 'actionCategory'
+>
+
+const addAuditActionMeta = (
+  detail: AdminAuditDetailInput,
+): AdminAuditDetail => {
+  const meta = adminAuditActionCatalog[detail.action]
+  return {
+    ...detail,
+    actionLabel: meta.label,
+    actionCategory: meta.category,
+  }
+}
+
+const ADMIN_AUDIT_DELAY_MS = 420
+
+const initialAdminAuditLogs: Array<AdminAuditDetail> = [
+  addAuditActionMeta({
+    id: 'log_9331',
+    adminId: 'admin_02',
+    action: 'otomo_suspend',
+    targetId: 'otomo_03',
+    targetType: 'otomo',
+    occurredAt: '2025-02-01T12:40:22Z',
+    result: 'success',
+    ip: '192.168.1.40',
+    detail: {
+      reason: '暴言の疑い',
+      previousStatus: 'active',
+      newStatus: 'suspended',
+    },
+    relatedLinks: [
+      {
+        label: 'おともはん管理で確認',
+        href: '/otomo/otomo_03',
+        description: '対象のおともはん詳細へ',
+      },
+    ],
+  }),
+  addAuditActionMeta({
+    id: 'log_9330',
+    adminId: 'admin_01',
+    action: 'review_delete',
+    targetId: 'rev_1021',
+    targetType: 'review',
+    occurredAt: '2025-02-01T12:38:11Z',
+    result: 'success',
+    ip: '192.168.1.12',
+    detail: {
+      reason: '人格否定に該当',
+      reviewer: 'user_112',
+      otomoId: 'otomo_03',
+    },
+    relatedLinks: [
+      {
+        label: 'レビュー管理で確認',
+        href: '/admin/reviews',
+        description: '該当レビュースレッドへ',
+      },
+    ],
+  }),
+  addAuditActionMeta({
+    id: 'log_9328',
+    adminId: 'admin_03',
+    action: 'user_points_adjust',
+    targetId: 'user_022',
+    targetType: 'user',
+    occurredAt: '2025-02-01T12:22:02Z',
+    result: 'failed',
+    ip: '192.168.1.55',
+    detail: {
+      delta: -120,
+      reason: '不正購入の返還',
+      requestedBy: 'risk_bot',
+    },
+    failureReason: '権限不足 (need super-admin)',
+  }),
+  addAuditActionMeta({
+    id: 'log_9325',
+    adminId: 'admin_04',
+    action: 'notification_send',
+    targetId: 'notice_batch_210',
+    targetType: 'notification',
+    occurredAt: '2025-02-01T12:18:10Z',
+    result: 'success',
+    ip: '192.168.1.71',
+    detail: {
+      templateId: 'notice_low_rating_v2',
+      recipients: 36,
+      otomoIds: ['otomo_01', 'otomo_03'],
+    },
+    relatedLinks: [
+      {
+        label: '通知管理を開く',
+        href: '/admin/notifications',
+      },
+    ],
+  }),
+  addAuditActionMeta({
+    id: 'log_9322',
+    adminId: 'admin_02',
+    action: 'call_recording_view',
+    targetId: 'call_229',
+    targetType: 'call',
+    occurredAt: '2025-02-01T12:10:44Z',
+    result: 'success',
+    ip: '192.168.1.40',
+    detail: {
+      playbackDuration: 132,
+      caseId: 'report_882',
+      note: '暴言検証',
+    },
+    relatedLinks: [
+      {
+        label: '通話ログを見る',
+        href: '/call/call_229',
+      },
+    ],
+  }),
+  addAuditActionMeta({
+    id: 'log_9318',
+    adminId: 'admin_01',
+    action: 'system_login',
+    targetId: 'console',
+    targetType: 'system',
+    occurredAt: '2025-02-01T11:58:33Z',
+    result: 'success',
+    ip: '192.168.1.12',
+    detail: {
+      mfa: 'webauthn',
+      sessionId: 'sess_5571',
+    },
+  }),
+]
+
+type AdminAuditRecord = AdminAuditDetail & { searchBlob: string }
+
+const cloneAdminAuditDetail = (record: AdminAuditRecord): AdminAuditDetail => {
+  const { searchBlob, detail, relatedLinks, ...rest } = record
+  return {
+    ...rest,
+    detail: JSON.parse(JSON.stringify(detail)),
+    relatedLinks: relatedLinks?.map((link) => ({ ...link })),
+  }
+}
+
+const buildAuditSearchBlob = (detail: AdminAuditDetail) =>
+  [
+    detail.id,
+    detail.adminId,
+    detail.action,
+    detail.targetId,
+    detail.ip,
+    detail.failureReason ?? '',
+    JSON.stringify(detail.detail),
+  ]
+    .join(' ')
+    .toLowerCase()
+
+const adminAuditStore: Array<AdminAuditRecord> = initialAdminAuditLogs.map(
+  (entry) => ({
+    ...entry,
+    detail: JSON.parse(JSON.stringify(entry.detail)),
+    relatedLinks: entry.relatedLinks?.map((link) => ({ ...link })),
+    searchBlob: buildAuditSearchBlob(entry),
+  }),
+)
+
+const findAdminAuditOrThrow = (logId: string) => {
+  const log = adminAuditStore.find((entry) => entry.id === logId)
+  if (!log) {
+    throw new Error('操作ログが見つかりません')
+  }
+  return log
+}
+
+const applyAuditFilters = (
+  records: Array<AdminAuditRecord>,
+  filters: AdminAuditFilters,
+) => {
+  let list = records.slice()
+  if (filters.adminId) {
+    const keyword = filters.adminId.toLowerCase()
+    list = list.filter((entry) => entry.adminId.toLowerCase().includes(keyword))
+  }
+  if (filters.action) {
+    list = list.filter((entry) => entry.action === filters.action)
+  }
+  if (filters.actionCategory) {
+    list = list.filter(
+      (entry) => entry.actionCategory === filters.actionCategory,
+    )
+  }
+  if (filters.targetId) {
+    const keyword = filters.targetId.toLowerCase()
+    list = list.filter((entry) =>
+      entry.targetId.toLowerCase().includes(keyword),
+    )
+  }
+  if (filters.targetType) {
+    list = list.filter((entry) => entry.targetType === filters.targetType)
+  }
+  if (filters.result) {
+    list = list.filter((entry) => entry.result === filters.result)
+  }
+  if (filters.ip) {
+    const keyword = filters.ip.toLowerCase()
+    list = list.filter((entry) => entry.ip.toLowerCase().includes(keyword))
+  }
+  if (filters.keyword) {
+    const keyword = filters.keyword.toLowerCase()
+    list = list.filter((entry) => entry.searchBlob.includes(keyword))
+  }
+  if (filters.occurredFrom) {
+    const from = Date.parse(filters.occurredFrom)
+    list = list.filter((entry) => Date.parse(entry.occurredAt) >= from)
+  }
+  if (filters.occurredTo) {
+    const to = Date.parse(filters.occurredTo)
+    list = list.filter((entry) => Date.parse(entry.occurredAt) <= to)
+  }
+  return list
+}
+
+export async function fetchAdminAuditLogs(
+  filters: AdminAuditFilters = {},
+): Promise<Array<AdminAuditSummary>> {
+  await waitForMock(ADMIN_AUDIT_DELAY_MS)
+  return applyAuditFilters(adminAuditStore, filters)
+    .sort((a, b) => Date.parse(b.occurredAt) - Date.parse(a.occurredAt))
+    .map((entry) => {
+      const { searchBlob, detail, relatedLinks, ...rest } = entry
+      return { ...rest }
+    })
+}
+
+export async function fetchAdminAuditLogDetail(
+  logId: string,
+): Promise<AdminAuditDetail> {
+  await waitForMock(ADMIN_AUDIT_DELAY_MS)
+  return cloneAdminAuditDetail(findAdminAuditOrThrow(logId))
+}
+
 const adminTrafficSfuMetrics: Array<AdminTrafficSfuNodeMetrics> = [
   {
     nodeId: 'sfu-tokyo-1',
