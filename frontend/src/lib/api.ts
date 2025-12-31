@@ -2366,6 +2366,205 @@ export async function updateAdminUserPoints(
   return { ...snapshot }
 }
 
+export type AdminTrafficSeverity = 'normal' | 'warning' | 'critical'
+
+export interface AdminTrafficSummary {
+  concurrentCalls: number
+  sfuLoadPct: number
+  avgRttMs: number
+  packetLossPct: number
+  apiRequestsPerMin: number
+  updatedAt: string
+}
+
+export type AdminTrafficTrendRange = '15m' | '1h'
+
+export interface AdminTrafficTrendPoint {
+  timestamp: string
+  concurrentCalls: number
+}
+
+export interface AdminTrafficSfuNodeMetrics {
+  nodeId: string
+  cpuPct: number
+  memoryGb: number
+  memoryCapacityGb: number
+  upstreamMbps: number
+  downstreamMbps: number
+  status: AdminTrafficSeverity
+}
+
+export interface AdminTrafficRtpQuality {
+  avgRttMs: number
+  avgJitterMs: number
+  packetLossPct: number
+  abnormalCallCount: number
+  notes: Array<string>
+}
+
+export interface AdminTrafficHeatmapEntry {
+  hourLabel: string
+  calls: number
+}
+
+export interface AdminTrafficAlertEntry {
+  id: string
+  severity: AdminTrafficSeverity | 'info'
+  message: string
+  occurredAt: string
+  relatedCallId?: string
+  relatedNodeId?: string
+}
+
+const ADMIN_TRAFFIC_DELAY_MS = 420
+
+const adminTrafficSummarySnapshot: AdminTrafficSummary = {
+  concurrentCalls: 12,
+  sfuLoadPct: 41,
+  avgRttMs: 82,
+  packetLossPct: 1.4,
+  apiRequestsPerMin: 420,
+  updatedAt: new Date().toISOString(),
+}
+
+const adminTrafficTrendPoints: Record<
+  AdminTrafficTrendRange,
+  Array<AdminTrafficTrendPoint>
+> = {
+  '15m': [
+    { timestamp: '2025-02-01T03:00:00Z', concurrentCalls: 3 },
+    { timestamp: '2025-02-01T03:02:00Z', concurrentCalls: 5 },
+    { timestamp: '2025-02-01T03:04:00Z', concurrentCalls: 7 },
+    { timestamp: '2025-02-01T03:06:00Z', concurrentCalls: 9 },
+    { timestamp: '2025-02-01T03:08:00Z', concurrentCalls: 11 },
+    { timestamp: '2025-02-01T03:10:00Z', concurrentCalls: 12 },
+    { timestamp: '2025-02-01T03:12:00Z', concurrentCalls: 10 },
+    { timestamp: '2025-02-01T03:14:00Z', concurrentCalls: 8 },
+  ],
+  '1h': [
+    { timestamp: '2025-02-01T02:15:00Z', concurrentCalls: 2 },
+    { timestamp: '2025-02-01T02:25:00Z', concurrentCalls: 4 },
+    { timestamp: '2025-02-01T02:35:00Z', concurrentCalls: 6 },
+    { timestamp: '2025-02-01T02:45:00Z', concurrentCalls: 8 },
+    { timestamp: '2025-02-01T02:55:00Z', concurrentCalls: 9 },
+    { timestamp: '2025-02-01T03:05:00Z', concurrentCalls: 12 },
+    { timestamp: '2025-02-01T03:15:00Z', concurrentCalls: 11 },
+    { timestamp: '2025-02-01T03:25:00Z', concurrentCalls: 10 },
+  ],
+}
+
+const adminTrafficSfuMetrics: Array<AdminTrafficSfuNodeMetrics> = [
+  {
+    nodeId: 'sfu-tokyo-1',
+    cpuPct: 35,
+    memoryGb: 2.1,
+    memoryCapacityGb: 8,
+    upstreamMbps: 38,
+    downstreamMbps: 42,
+    status: 'normal',
+  },
+  {
+    nodeId: 'sfu-tokyo-2',
+    cpuPct: 72,
+    memoryGb: 3.8,
+    memoryCapacityGb: 8,
+    upstreamMbps: 55,
+    downstreamMbps: 58,
+    status: 'warning',
+  },
+  {
+    nodeId: 'sfu-osaka-1',
+    cpuPct: 58,
+    memoryGb: 2.7,
+    memoryCapacityGb: 8,
+    upstreamMbps: 29,
+    downstreamMbps: 31,
+    status: 'normal',
+  },
+]
+
+const adminTrafficRtpQuality: AdminTrafficRtpQuality = {
+  avgRttMs: 82,
+  avgJitterMs: 12,
+  packetLossPct: 1.4,
+  abnormalCallCount: 1,
+  notes: ['RTT 上昇中（threshold: 120ms）', 'SFU-2 で packet loss が上振れ'],
+}
+
+const adminTrafficHeatmap: Array<AdminTrafficHeatmapEntry> = [
+  { hourLabel: '06:00', calls: 2 },
+  { hourLabel: '09:00', calls: 6 },
+  { hourLabel: '12:00', calls: 12 },
+  { hourLabel: '15:00', calls: 8 },
+  { hourLabel: '18:00', calls: 16 },
+  { hourLabel: '21:00', calls: 22 },
+  { hourLabel: '24:00', calls: 10 },
+]
+
+const adminTrafficAlerts: Array<AdminTrafficAlertEntry> = [
+  {
+    id: 'traffic_alert_001',
+    severity: 'warning',
+    message: 'SFU-2 の CPU 使用率が 70% を超えました',
+    occurredAt: '2025-02-01T03:12:00Z',
+    relatedNodeId: 'sfu-tokyo-2',
+  },
+  {
+    id: 'traffic_alert_002',
+    severity: 'critical',
+    message: 'call_229 のパケットロスが 3% を超過しました',
+    occurredAt: '2025-02-01T03:11:30Z',
+    relatedCallId: 'call_229',
+  },
+  {
+    id: 'traffic_alert_003',
+    severity: 'info',
+    message: 'API リクエストが平常値に戻りました',
+    occurredAt: '2025-02-01T03:10:00Z',
+  },
+]
+
+export async function fetchAdminTrafficSummary(): Promise<AdminTrafficSummary> {
+  await waitForMock(ADMIN_TRAFFIC_DELAY_MS)
+  return { ...adminTrafficSummarySnapshot }
+}
+
+export async function fetchAdminTrafficTrend(
+  range: AdminTrafficTrendRange,
+): Promise<Array<AdminTrafficTrendPoint>> {
+  await waitForMock(ADMIN_TRAFFIC_DELAY_MS)
+  return adminTrafficTrendPoints[range].map((point) => ({ ...point }))
+}
+
+export async function fetchAdminTrafficSfuMetrics(): Promise<
+  Array<AdminTrafficSfuNodeMetrics>
+> {
+  await waitForMock(ADMIN_TRAFFIC_DELAY_MS)
+  return adminTrafficSfuMetrics.map((entry) => ({ ...entry }))
+}
+
+export async function fetchAdminTrafficRtpQuality(): Promise<AdminTrafficRtpQuality> {
+  await waitForMock(ADMIN_TRAFFIC_DELAY_MS)
+  return {
+    ...adminTrafficRtpQuality,
+    notes: adminTrafficRtpQuality.notes.slice(),
+  }
+}
+
+export async function fetchAdminTrafficHeatmap(): Promise<
+  Array<AdminTrafficHeatmapEntry>
+> {
+  await waitForMock(ADMIN_TRAFFIC_DELAY_MS)
+  return adminTrafficHeatmap.map((entry) => ({ ...entry }))
+}
+
+export async function fetchAdminTrafficAlerts(): Promise<
+  Array<AdminTrafficAlertEntry>
+> {
+  await waitForMock(ADMIN_TRAFFIC_DELAY_MS)
+  return adminTrafficAlerts.map((entry) => ({ ...entry }))
+}
+
 export type AdminCallStatus =
   | 'normal'
   | 'abnormal'
