@@ -12,6 +12,7 @@ This directory hosts a Fastify + TypeScript backend that will gradually replace 
 - `OTOMO-03 GET /otomo/{id}/reviews` (paginated reviews)
 - `OTOMO-04 PUT /otomo/status` (update otomo availability)
 - `SET-01 GET /settings` (fetch consolidated app settings)
+- `SET-02 PUT /settings/notifications` (update notification toggles)
 
 ## Scripts
 

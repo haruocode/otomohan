@@ -52,6 +52,13 @@ type OtomoRecord = {
   schedule: OtomoScheduleRecord[];
 };
 
+type NotificationSettingsRecord = {
+  incomingCall: boolean;
+  callSummary: boolean;
+  walletAlert: boolean;
+  marketing: boolean;
+};
+
 const usersTable: Record<string, UserRecord> = {
   "user-123": {
     id: "user-123",
@@ -174,12 +181,7 @@ const otomoTable: OtomoRecord[] = [
 const userSettingsTable: Record<
   string,
   {
-    notifications: {
-      incomingCall: boolean;
-      callSummary: boolean;
-      walletAlert: boolean;
-      marketing: boolean;
-    };
+    notifications: NotificationSettingsRecord;
   }
 > = {
   "user-123": {
@@ -202,6 +204,16 @@ export async function fetchUserById(id: string): Promise<UserRecord | null> {
 
 export async function fetchUserNotifications(userId: string) {
   return userSettingsTable[userId]?.notifications ?? null;
+}
+
+export async function saveUserNotificationsRecord(
+  userId: string,
+  notifications: NotificationSettingsRecord
+) {
+  userSettingsTable[userId] = {
+    notifications: { ...notifications },
+  };
+  return userSettingsTable[userId].notifications;
 }
 
 export async function updateUserProfileRecord(

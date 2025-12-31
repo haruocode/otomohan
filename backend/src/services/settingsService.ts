@@ -1,4 +1,9 @@
-import { getUserNotifications } from "../repositories/userSettingsRepository.js";
+import {
+  getDefaultNotificationSettings,
+  getUserNotifications,
+  upsertUserNotifications,
+  type UserNotificationSettings,
+} from "../repositories/userSettingsRepository.js";
 
 export type SettingsPayload = {
   notifications: {
@@ -17,13 +22,6 @@ export type SettingsPayload = {
   };
 };
 
-const DEFAULT_NOTIFICATIONS = {
-  incomingCall: true,
-  callSummary: true,
-  walletAlert: true,
-  marketing: false,
-} as const;
-
 const TERMS_URL = process.env.TERMS_URL ?? "https://otmhn.app/terms";
 const PRIVACY_URL = process.env.PRIVACY_URL ?? "https://otmhn.app/privacy";
 const APP_VERSION = process.env.APP_VERSION ?? "1.0.0";
@@ -33,7 +31,7 @@ export async function getSettingsForUser(
   userId: string
 ): Promise<SettingsPayload> {
   const notifications =
-    (await getUserNotifications(userId)) ?? DEFAULT_NOTIFICATIONS;
+    (await getUserNotifications(userId)) ?? getDefaultNotificationSettings();
 
   return {
     notifications,
@@ -46,4 +44,11 @@ export async function getSettingsForUser(
       minSupportedVersion: MIN_APP_VERSION,
     },
   };
+}
+
+export async function updateNotificationSettings(
+  userId: string,
+  updates: Partial<UserNotificationSettings>
+) {
+  return upsertUserNotifications(userId, updates);
 }

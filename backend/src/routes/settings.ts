@@ -1,5 +1,32 @@
 import type { FastifyPluginAsync } from "fastify";
-import { handleGetSettings } from "../controllers/settingsController.js";
+import {
+  handleGetSettings,
+  handleUpdateNotificationSettings,
+} from "../controllers/settingsController.js";
+
+const notificationSettingsSchema = {
+  type: "object",
+  properties: {
+    incomingCall: { type: "boolean" },
+    callSummary: { type: "boolean" },
+    walletAlert: { type: "boolean" },
+    marketing: { type: "boolean" },
+  },
+  required: ["incomingCall", "callSummary", "walletAlert", "marketing"],
+  additionalProperties: false,
+} as const;
+
+const notificationUpdateBodySchema = {
+  type: "object",
+  properties: {
+    incomingCall: { type: "boolean" },
+    callSummary: { type: "boolean" },
+    walletAlert: { type: "boolean" },
+    marketing: { type: "boolean" },
+  },
+  additionalProperties: false,
+  minProperties: 1,
+} as const;
 
 const settingsResponseSchema = {
   type: "object",
@@ -8,17 +35,7 @@ const settingsResponseSchema = {
     settings: {
       type: "object",
       properties: {
-        notifications: {
-          type: "object",
-          properties: {
-            incomingCall: { type: "boolean" },
-            callSummary: { type: "boolean" },
-            walletAlert: { type: "boolean" },
-            marketing: { type: "boolean" },
-          },
-          required: ["incomingCall", "callSummary", "walletAlert", "marketing"],
-          additionalProperties: false,
-        },
+        notifications: notificationSettingsSchema,
         links: {
           type: "object",
           properties: {
@@ -41,6 +58,16 @@ const settingsResponseSchema = {
       required: ["notifications", "links", "app"],
       additionalProperties: false,
     },
+  },
+  required: ["status", "settings"],
+  additionalProperties: false,
+} as const;
+
+const notificationUpdateResponseSchema = {
+  type: "object",
+  properties: {
+    status: { type: "string", const: "success" },
+    settings: notificationSettingsSchema,
   },
   required: ["status", "settings"],
   additionalProperties: false,
@@ -73,5 +100,24 @@ export const settingsRoutes: FastifyPluginAsync = async (app) => {
       },
     },
     handleGetSettings
+  );
+
+  app.put(
+    "/settings/notifications",
+    {
+      schema: {
+        body: notificationUpdateBodySchema,
+        response: {
+          200: notificationUpdateResponseSchema,
+          400: settingsErrorSchema,
+          401: settingsErrorSchema,
+          403: settingsErrorSchema,
+          500: settingsErrorSchema,
+        },
+        tags: ["settings"],
+        description: "SET-02: Update notification preferences for current user",
+      },
+    },
+    handleUpdateNotificationSettings
   );
 };
