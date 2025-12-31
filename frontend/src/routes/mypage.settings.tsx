@@ -261,10 +261,10 @@ function SettingsScreen() {
               title="サポート"
               description="各種ドキュメント・お問い合わせ"
             >
-              <SupportLinkRow label="利用規約" href={supportLinks?.termsUrl} />
+              <SupportLinkRow label="利用規約" to="/mypage/legal/terms" />
               <SupportLinkRow
                 label="プライバシーポリシー"
-                href={supportLinks?.privacyUrl}
+                to="/mypage/legal/privacy"
               />
               <SupportLinkRow
                 label="お問い合わせ"
@@ -514,18 +514,42 @@ function StaticSettingRow({
   )
 }
 
-function SupportLinkRow({ label, href }: { label: string; href?: string }) {
-  const disabled = !href
+function SupportLinkRow({
+  label,
+  href,
+  to,
+}: {
+  label: string
+  href?: string
+  to?: string
+}) {
   const commonClasses =
     'flex items-center justify-between rounded-2xl px-4 py-3 transition'
-  return disabled ? (
-    <div
-      className={`${commonClasses} border border-white/10 bg-white/5 text-white/40`}
-    >
-      <span>{label}</span>
-      <AlertCircle className="h-4 w-4" />
-    </div>
-  ) : (
+
+  if (!href && !to) {
+    return (
+      <div
+        className={`${commonClasses} border border-white/10 bg-white/5 text-white/40`}
+      >
+        <span>{label}</span>
+        <AlertCircle className="h-4 w-4" />
+      </div>
+    )
+  }
+
+  if (to) {
+    return (
+      <Link
+        to={to}
+        className={`${commonClasses} border border-white/15 bg-white/5 text-white hover:border-white/40`}
+      >
+        <span>{label}</span>
+        <ChevronRight className="h-4 w-4" />
+      </Link>
+    )
+  }
+
+  return (
     <a
       href={href}
       target="_blank"

@@ -31,6 +31,7 @@ import {
   otomoReviewSummary,
   otomoReviews,
   otomoReviewAlerts,
+  legalDocuments,
 } from './data/mockData.js'
 
 const app = express()
@@ -513,6 +514,20 @@ app.get('/settings', (_req, res) => {
     app: userSettings.app,
     version: '2025.02.0',
   })
+})
+
+app.get('/legal/:slug', (req, res) => {
+  const slug = String(req.params.slug || '').toLowerCase()
+  if (!['terms', 'privacy'].includes(slug)) {
+    return res.status(404).json({ error: 'document_not_found' })
+  }
+  res.json(legalDocuments[slug])
+})
+
+app.post('/analytics/legal-view', (req, res) => {
+  const { slug } = req.body || {}
+  const normalized = ['terms', 'privacy'].includes(slug) ? slug : 'unknown'
+  res.json({ status: 'recorded', slug: normalized, recordedAt: now() })
 })
 
 app.post('/auth/logout', (_req, res) => {

@@ -408,6 +408,25 @@ export interface SupportLinks {
   faqUrl?: string
 }
 
+export type LegalDocumentSlug = 'terms' | 'privacy'
+
+export interface LegalDocumentSection {
+  id: string
+  heading: string
+  description?: string
+  paragraphs: Array<string>
+  bullets?: Array<string>
+}
+
+export interface LegalDocument {
+  slug: LegalDocumentSlug
+  title: string
+  subtitle: string
+  summary: string
+  lastUpdated: string
+  sections: Array<LegalDocumentSection>
+}
+
 export interface UpdateUserSettingsPayload {
   notifications?: Partial<UserNotificationSettings>
   app?: Partial<UserAppSettings>
@@ -811,6 +830,21 @@ export async function updateUserSettings(
 export async function fetchSupportResources(): Promise<SupportLinks> {
   const response = await http<{ links: SupportLinks }>('/settings')
   return response.links
+}
+
+export async function fetchLegalDocument(
+  slug: LegalDocumentSlug,
+): Promise<LegalDocument> {
+  return http<LegalDocument>(`/legal/${slug}`)
+}
+
+export async function trackLegalDocumentView(
+  slug: LegalDocumentSlug,
+): Promise<void> {
+  await http<{ status: string }>('/analytics/legal-view', {
+    method: 'POST',
+    body: JSON.stringify({ slug }),
+  })
 }
 
 export async function logoutUser(): Promise<void> {
