@@ -1,36 +1,35 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   Activity,
   AlertCircle,
   AlertTriangle,
-  Calculator,
-  ChevronRight,
   ClipboardList,
   Coins,
-  CreditCard,
   History,
   Loader2,
+  Menu,
+  MinusCircle,
+  PlusCircle,
   RefreshCw,
   Search,
-  ShieldAlert,
-  Sparkles,
+  Shield,
+  TrendingUp,
 } from 'lucide-react'
 
-import type { ChangeEvent, FormEvent, ReactNode } from 'react'
 import type {
-  AdminUserPointAdminLogEntry,
-  AdminUserPointHistoryResponse,
-  AdminUserPointPurchaseEntry,
-  AdminUserPointSnapshots,
-  AdminUserPointUsageEntry,
-  UpdateAdminUserPointsPayload,
-} from '@/lib/api'
+  ChangeEvent,
+  Dispatch,
+  FormEvent,
+  ReactNode,
+  SetStateAction,
+} from 'react'
+import type { AdminPointDashboard, AdminPointSearchFilters } from '@/lib/api'
 import {
-  fetchAdminUserPointHistory,
-  fetchAdminUserPoints,
-  updateAdminUserPoints,
+  deductAdminPoints,
+  fetchAdminPointDashboard,
+  grantAdminPoints,
 } from '@/lib/api'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -42,664 +41,949 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
-type HistoryTab = 'purchases' | 'usage' | 'adminLogs'
+type AdjustmentMode = 'add' | 'subtract'
+
+type ConfirmState = {
+  mode: AdjustmentMode
+  amount: number
+  reason: string
+}
+
+type ToastState = {
+  type: 'success' | 'error'
+  message: string
+}
+
+const inputBaseClass =
+  'w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-white/40 focus:border-cyan-300 focus:outline-none'
+
+const adjustmentInputClass =
+  'w-full rounded-2xl border border-white/15 bg-white/5 px-4 py-2 text-base text-white placeholder:text-white/40 focus:border-emerald-300 focus:outline-none'
+
+const initialFilters = {
+  userId: '',
+  email: '',
+  otomoId: '',
+  name: '',
+}
+
+const dateFormatter = new Intl.DateTimeFormat('ja-JP', {
+  dateStyle: 'medium',
+  timeStyle: 'short',
+})
+
+const yenFormatter = new Intl.NumberFormat('ja-JP', {
+  style: 'currency',
+  currency: 'JPY',
+  maximumFractionDigits: 0,
+})
 
 export const Route = createFileRoute('/admin/points')({
   component: AdminPointsScreen,
 })
 
-const inputBaseClass =
-  'w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white placeholder:text-white/40 focus:border-rose-300 focus:outline-none'
-
-const presetUsers: Array<{ id: string; label: string }> = [
-  { id: 'user_001', label: '直近で入金あり' },
-  { id: 'user_002', label: '監査フラグあり' },
-  { id: 'user_003', label: '大量保有ユーザー' },
-]
-
 function AdminPointsScreen() {
-  const [searchInput, setSearchInput] = useState('user_001')
-  const [activeUserId, setActiveUserId] = useState('user_001')
-  const [searchNotice, setSearchNotice] = useState('')
-  const [historyTab, setHistoryTab] = useState<HistoryTab>('purchases')
-  const [adjustMode, setAdjustMode] = useState<'add' | 'subtract'>('add')
-  const [adjustPoints, setAdjustPoints] = useState('100')
-  const [adjustReason, setAdjustReason] = useState('問い合わせ補填')
-  const [adjustNotice, setAdjustNotice] = useState('')
-
   const queryClient = useQueryClient()
+  const [filters, setFilters] = useState(initialFilters)
+  const [searchError, setSearchError] = useState('')
+  const [submittedFilters, setSubmittedFilters] =
+    useState<AdminPointSearchFilters | null>(null)
+  const [toast, setToast] = useState<ToastState | null>(null)
+  const [confirmState, setConfirmState] = useState<ConfirmState | null>(null)
+  const [grantForm, setGrantForm] = useState({ amount: '', reason: '' })
+  const [deductForm, setDeductForm] = useState({ amount: '', reason: '' })
 
-  const snapshotQuery = useQuery<AdminUserPointSnapshots>({
-    queryKey: ['admin-user-points', activeUserId],
-    queryFn: () => fetchAdminUserPoints(activeUserId),
-    enabled: Boolean(activeUserId),
+  const searchKey = submittedFilters ? JSON.stringify(submittedFilters) : null
+  const queryKey = searchKey
+    ? (['admin-point-dashboard', searchKey] as const)
+    : null
+
+  const dashboardQuery = useQuery({
+    queryKey: ['admin-point-dashboard', searchKey],
+    queryFn: () => fetchAdminPointDashboard(submittedFilters!),
+    enabled: Boolean(submittedFilters),
+    staleTime: 30_000,
   })
 
-  const historyQuery = useQuery<AdminUserPointHistoryResponse>({
-    queryKey: ['admin-user-point-history', activeUserId],
-    queryFn: () => fetchAdminUserPointHistory(activeUserId),
-    enabled: Boolean(activeUserId),
-  })
+  useEffect(() => {
+    if (!toast) return
+    const handle = window.setTimeout(() => setToast(null), 4000)
+    return () => window.clearTimeout(handle)
+  }, [toast])
 
-  const adjustMutation = useMutation({
-    mutationFn: (payload: UpdateAdminUserPointsPayload) =>
-      updateAdminUserPoints(payload),
-    onSuccess: (_data, variables) => {
-      setAdjustNotice('ポイント残高を更新しました')
-      queryClient.invalidateQueries({
-        queryKey: ['admin-user-points', variables.userId],
-      })
-      queryClient.invalidateQueries({
-        queryKey: ['admin-user-point-history', variables.userId],
-      })
-      setAdjustPoints('100')
-    },
-    onError: (error: unknown) => {
-      setAdjustNotice(
-        error instanceof Error ? error.message : 'ポイント更新に失敗しました',
-      )
-    },
-  })
-
-  const snapshot = snapshotQuery.data
-  const history = historyQuery.data
-
-  const riskSignals = useMemo(() => {
-    if (!snapshot) {
-      return []
-    }
-    const signals: Array<string> = []
-    if (snapshot.suspicious) {
-      signals.push('システムによって不正検知フラグが設定されています')
-    }
-    if (snapshot.currentBalance < 200) {
-      signals.push('残ポイントが 200pt を下回っています')
-    }
-    if (history?.adminLogs.length) {
-      const latest = history.adminLogs[0]
-      signals.push(
-        `直近の手動調整: ${formatTimestamp(latest.occurredAt)} / ${latest.operator}`,
-      )
-    }
-    if (!signals.length && snapshot.notes) {
-      signals.push(snapshot.notes)
-    }
-    return signals
-  }, [snapshot, history])
-
-  const handleSearchSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSearch = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    setSearchNotice('')
-    const trimmed = searchInput.trim()
-    if (!trimmed) {
-      setSearchNotice('ユーザーIDを入力してください')
+    const normalized = buildSearchFilters(filters)
+    if (!normalized) {
+      setSearchError('検索条件を1つ以上入力してください')
       return
     }
-    setActiveUserId(trimmed)
-    setHistoryTab('purchases')
+    setSearchError('')
+    setSubmittedFilters(normalized)
   }
 
-  const handleQuickSelect = (userId: string) => {
-    setSearchInput(userId)
-    setActiveUserId(userId)
-    setHistoryTab('purchases')
-    setSearchNotice('')
+  const handleReset = () => {
+    setFilters(initialFilters)
+    setSearchError('')
   }
 
-  const handleAdjustSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    setAdjustNotice('')
-    const numeric = Number(adjustPoints)
-    if (!Number.isFinite(numeric) || numeric <= 0) {
-      setAdjustNotice('調整ポイントは 1 以上の数値で入力してください')
+  const handleInputChange =
+    (field: keyof typeof filters) => (event: ChangeEvent<HTMLInputElement>) => {
+      setFilters((prev) => ({ ...prev, [field]: event.target.value }))
+    }
+
+  const activeQuerySummary = useMemo(() => {
+    if (!submittedFilters) return ''
+    const chips: Array<string> = []
+    if (submittedFilters.userId) chips.push(`ID: ${submittedFilters.userId}`)
+    if (submittedFilters.email) chips.push(submittedFilters.email)
+    if (submittedFilters.otomoId)
+      chips.push(`otomo: ${submittedFilters.otomoId}`)
+    if (submittedFilters.name) chips.push(`名前: ${submittedFilters.name}`)
+    return chips.join(' / ')
+  }, [submittedFilters])
+
+  const grantMutation = useMutation({
+    mutationFn: (payload: { userId: string; amount: number; reason: string }) =>
+      grantAdminPoints(payload.userId, {
+        amount: payload.amount,
+        reason: payload.reason,
+        operator: 'admin_ops',
+      }),
+    onSuccess: (data) => {
+      if (queryKey) {
+        queryClient.setQueryData(queryKey, data)
+      }
+      setToast({ type: 'success', message: 'ポイントを付与しました' })
+      setGrantForm({ amount: '', reason: '' })
+    },
+    onError: (error) =>
+      setToast({
+        type: 'error',
+        message:
+          error instanceof Error ? error.message : 'ポイント付与に失敗しました',
+      }),
+    onSettled: () => setConfirmState(null),
+  })
+
+  const deductMutation = useMutation({
+    mutationFn: (payload: { userId: string; amount: number; reason: string }) =>
+      deductAdminPoints(payload.userId, {
+        amount: payload.amount,
+        reason: payload.reason,
+        operator: 'admin_ops',
+      }),
+    onSuccess: (data) => {
+      if (queryKey) {
+        queryClient.setQueryData(queryKey, data)
+      }
+      setToast({ type: 'success', message: 'ポイントを減算しました' })
+      setDeductForm({ amount: '', reason: '' })
+    },
+    onError: (error) =>
+      setToast({
+        type: 'error',
+        message:
+          error instanceof Error ? error.message : 'ポイント減算に失敗しました',
+      }),
+    onSettled: () => setConfirmState(null),
+  })
+
+  const isMutationRunning = grantMutation.isPending || deductMutation.isPending
+
+  const submitAdjustment = (mode: AdjustmentMode) => {
+    const form = mode === 'add' ? grantForm : deductForm
+    const parsed = Number(form.amount)
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+      setToast({
+        type: 'error',
+        message: 'ポイントは1以上の数値で入力してください',
+      })
       return
     }
-    if (!adjustReason.trim()) {
-      setAdjustNotice('理由を入力してください')
+    if (!form.reason.trim()) {
+      setToast({ type: 'error', message: '理由を入力してください' })
       return
     }
-    if (!activeUserId) {
-      setAdjustNotice('対象ユーザーが選択されていません')
+    if (!dashboardQuery.data) {
+      setToast({ type: 'error', message: '先にユーザー検索を行ってください' })
       return
     }
-    const delta = adjustMode === 'add' ? numeric : -numeric
-    adjustMutation.mutate({
-      userId: activeUserId,
-      delta,
-      reason: adjustReason.trim(),
-      operator: 'admin_console',
+    setConfirmState({
+      mode,
+      amount: Math.floor(parsed),
+      reason: form.reason.trim(),
     })
   }
+
+  const runConfirmedAdjustment = () => {
+    if (!confirmState || !dashboardQuery.data) return
+    const payload = {
+      userId: dashboardQuery.data.summary.userId,
+      amount: confirmState.amount,
+      reason: confirmState.reason,
+    }
+    if (confirmState.mode === 'add') {
+      grantMutation.mutate(payload)
+    } else {
+      deductMutation.mutate(payload)
+    }
+  }
+
+  const closeConfirm = () => {
+    if (isMutationRunning) return
+    setConfirmState(null)
+  }
+
+  const showSkeleton =
+    submittedFilters && dashboardQuery.isLoading && !dashboardQuery.data
+  const showEmptyState = !submittedFilters && !dashboardQuery.isFetching
 
   return (
     <div className="min-h-screen bg-slate-950 text-white">
       <div className="mx-auto max-w-7xl space-y-8 px-6 py-10">
-        <header className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <p className="text-sm uppercase tracking-[0.4em] text-white/40">
-              A-05 / POINT MANAGEMENT
-            </p>
-            <h1 className="mt-2 text-4xl font-bold">ポイント管理</h1>
-            <p className="text-sm text-white/70">
-              入金・消費・手動補填を横断的に監査し、不正兆候を即座にブロックします。
-            </p>
-          </div>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => {
-              snapshotQuery.refetch()
-              historyQuery.refetch()
-            }}
-            disabled={snapshotQuery.isFetching || historyQuery.isFetching}
-          >
-            {snapshotQuery.isFetching || historyQuery.isFetching ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                更新中
-              </>
-            ) : (
-              <>
-                <RefreshCw className="h-4 w-4" />
-                最新に更新
-              </>
-            )}
-          </Button>
-        </header>
+        <PageHeader onRefresh={() => dashboardQuery.refetch()} />
 
-        <Card>
+        <Card className="border-white/10 bg-white/5">
           <CardHeader>
             <CardTitle className="flex items-center gap-3 text-2xl">
-              <Search className="h-5 w-5 text-rose-300" />
+              <Search className="h-5 w-5 text-cyan-300" />
               ユーザー検索
             </CardTitle>
             <CardDescription>
-              ユーザーIDを指定して残高/履歴を参照し、疑わしい挙動を素早く追跡します。
+              ユーザーID / メール / おともID /
+              名前を組み合わせて的確に特定します。
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form className="space-y-4" onSubmit={handleSearchSubmit}>
-              <div className="grid gap-4 md:grid-cols-[2fr,1fr]">
+            <form className="space-y-4" onSubmit={handleSearch}>
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <input
-                  value={searchInput}
-                  onChange={(event: ChangeEvent<HTMLInputElement>) =>
-                    setSearchInput(event.target.value)
-                  }
                   className={inputBaseClass}
-                  placeholder="ユーザーID (user_xxx)"
+                  placeholder="ユーザーID"
+                  value={filters.userId}
+                  onChange={handleInputChange('userId')}
                 />
+                <input
+                  className={inputBaseClass}
+                  placeholder="メールアドレス"
+                  value={filters.email}
+                  onChange={handleInputChange('email')}
+                />
+                <input
+                  className={inputBaseClass}
+                  placeholder="おともはんID (otomo_XXX)"
+                  value={filters.otomoId}
+                  onChange={handleInputChange('otomoId')}
+                />
+                <input
+                  className={inputBaseClass}
+                  placeholder="名前（部分一致）"
+                  value={filters.name}
+                  onChange={handleInputChange('name')}
+                />
+              </div>
+              <div className="flex flex-wrap items-center gap-3">
                 <Button type="submit" className="rounded-2xl">
                   <Search className="h-4 w-4" />
-                  残高を取得
+                  検索
                 </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="rounded-2xl"
+                  onClick={handleReset}
+                >
+                  リセット
+                </Button>
+                {submittedFilters && activeQuerySummary && (
+                  <Badge variant="info" className="rounded-full px-4 text-xs">
+                    {activeQuerySummary}
+                  </Badge>
+                )}
               </div>
-              <div className="flex flex-wrap gap-3">
-                {presetUsers.map((preset) => (
-                  <Button
-                    key={preset.id}
-                    type="button"
-                    variant={
-                      preset.id === activeUserId ? 'secondary' : 'outline'
-                    }
-                    className="rounded-2xl"
-                    onClick={() => handleQuickSelect(preset.id)}
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                    {preset.label}
-                    <span className="text-white/60">({preset.id})</span>
-                  </Button>
-                ))}
-              </div>
-              {searchNotice && (
-                <div className="flex items-center gap-2 text-sm text-amber-200">
-                  <AlertCircle className="h-4 w-4" />
-                  {searchNotice}
-                </div>
+              {searchError && (
+                <p className="text-sm text-rose-200">{searchError}</p>
               )}
             </form>
           </CardContent>
         </Card>
 
-        <section className="grid gap-4 md:grid-cols-3">
-          {snapshotQuery.status === 'pending' ? (
-            <PointStatSkeleton />
-          ) : snapshot ? (
-            <>
-              <PointStatCard
-                title="現在の残高"
-                helper="リアルタイム反映"
-                value={`${snapshot.currentBalance.toLocaleString()} pt`}
-                icon={<Coins className="h-5 w-5" />}
-              />
-              <PointStatCard
-                title="累計購入ポイント"
-                helper="課金処理ベース"
-                value={`${snapshot.totalPurchased.toLocaleString()} pt`}
-                icon={<CreditCard className="h-5 w-5" />}
-              />
-              <PointStatCard
-                title="累計消費ポイント"
-                helper="通話課金ベース"
-                value={`${snapshot.totalUsed.toLocaleString()} pt`}
-                icon={<Activity className="h-5 w-5" />}
-              />
-            </>
-          ) : (
-            <PointErrorState message="ポイント情報を取得できませんでした" />
-          )}
-        </section>
+        {dashboardQuery.isError && (
+          <ErrorCallout
+            message={
+              dashboardQuery.error instanceof Error
+                ? dashboardQuery.error.message
+                : 'ポイント情報を取得できませんでした'
+            }
+            onRetry={() => dashboardQuery.refetch()}
+          />
+        )}
 
-        <Card>
-          <CardHeader className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <CardTitle className="text-2xl">残高スナップショット</CardTitle>
-              <CardDescription>
-                システムフラグやメモを参照して、補填判断の前提情報を整理します。
-              </CardDescription>
+        {showSkeleton && <DashboardSkeleton />}
+        {showEmptyState && <EmptyState />}
+
+        {dashboardQuery.data && (
+          <DashboardSections
+            data={dashboardQuery.data}
+            grantForm={grantForm}
+            deductForm={deductForm}
+            setGrantForm={setGrantForm}
+            setDeductForm={setDeductForm}
+            onSubmitAdd={() => submitAdjustment('add')}
+            onSubmitSubtract={() => submitAdjustment('subtract')}
+            disableAdjust={isMutationRunning}
+          />
+        )}
+      </div>
+
+      <Dialog
+        open={Boolean(confirmState)}
+        onOpenChange={(open) => (!open ? closeConfirm() : null)}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-lg text-white">
+              <AlertTriangle className="h-5 w-5 text-amber-300" />
+              操作の確認
+            </DialogTitle>
+            <DialogDescription>
+              ポイント調整は即時反映され、監査ログに記録されます。取り消しできません。
+            </DialogDescription>
+          </DialogHeader>
+          {confirmState && (
+            <div className="space-y-3 rounded-2xl bg-white/5 p-4 text-sm text-white/80">
+              <p>
+                {confirmState.mode === 'add' ? '付与' : '減算'}:
+                <span className="ml-2 text-lg font-semibold text-white">
+                  {confirmState.amount.toLocaleString()} pt
+                </span>
+              </p>
+              <p>理由: {confirmState.reason}</p>
             </div>
-            {snapshot?.lastUpdatedAt && (
-              <Badge variant="info" className="text-xs">
-                <History className="mr-1 h-3.5 w-3.5" />
-                {formatTimestamp(snapshot.lastUpdatedAt)} 反映
+          )}
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="ghost"
+              className="rounded-2xl"
+              onClick={closeConfirm}
+              disabled={isMutationRunning}
+            >
+              キャンセル
+            </Button>
+            <Button
+              type="button"
+              variant={confirmState?.mode === 'add' ? 'default' : 'destructive'}
+              className="rounded-2xl"
+              onClick={runConfirmedAdjustment}
+              disabled={isMutationRunning}
+            >
+              {isMutationRunning ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  実行中
+                </>
+              ) : (
+                '実行する'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {toast && <ToastBanner toast={toast} onDismiss={() => setToast(null)} />}
+    </div>
+  )
+}
+
+function PageHeader({ onRefresh }: { onRefresh: () => void }) {
+  return (
+    <header className="flex flex-wrap items-center justify-between gap-4">
+      <div className="flex items-center gap-3">
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="h-11 w-11 rounded-2xl border border-white/10"
+        >
+          <Menu className="h-5 w-5" />
+        </Button>
+        <div>
+          <p className="text-xs uppercase tracking-[0.5em] text-white/40">
+            A-05 / POINT CONTROL
+          </p>
+          <h1 className="text-3xl font-semibold">ポイント管理</h1>
+          <p className="text-sm text-white/70">
+            残高・履歴・手動調整を統合し、異常検知に即応する運営画面です。
+          </p>
+        </div>
+      </div>
+      <Button
+        variant="secondary"
+        size="sm"
+        className="rounded-2xl"
+        onClick={onRefresh}
+      >
+        <RefreshCw className="h-4 w-4" />
+        最新に更新
+      </Button>
+    </header>
+  )
+}
+
+function DashboardSections({
+  data,
+  grantForm,
+  deductForm,
+  setGrantForm,
+  setDeductForm,
+  onSubmitAdd,
+  onSubmitSubtract,
+  disableAdjust,
+}: {
+  data: AdminPointDashboard
+  grantForm: { amount: string; reason: string }
+  deductForm: { amount: string; reason: string }
+  setGrantForm: Dispatch<SetStateAction<{ amount: string; reason: string }>>
+  setDeductForm: Dispatch<SetStateAction<{ amount: string; reason: string }>>
+  onSubmitAdd: () => void
+  onSubmitSubtract: () => void
+  disableAdjust: boolean
+}) {
+  const { summary } = data
+
+  return (
+    <div className="space-y-8">
+      <Card className="border-white/10 bg-white/5">
+        <CardHeader className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <CardTitle className="text-3xl">{summary.userName}</CardTitle>
+            <CardDescription className="space-y-1 text-white/70">
+              <p>ユーザーID: {summary.userId}</p>
+              <p>メール: {summary.email}</p>
+              {summary.otomoId && <p>紐付けおともID: {summary.otomoId}</p>}
+            </CardDescription>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            {summary.suspiciousFlag && (
+              <Badge variant="warning" className="rounded-full px-4 text-xs">
+                ⚠ {summary.suspiciousFlag.message}
               </Badge>
             )}
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {snapshotQuery.status === 'pending' && <SnapshotSkeleton />}
-            {snapshotQuery.status === 'error' && (
-              <ErrorBanner error={snapshotQuery.error} />
-            )}
-            {snapshot && (
-              <div className="space-y-4">
-                <div className="flex flex-wrap items-center gap-3">
-                  {snapshot.suspicious && (
-                    <Badge variant="warning">
-                      <ShieldAlert className="mr-2 h-4 w-4" />
-                      システム監査フラグ中
-                    </Badge>
-                  )}
-                  <Badge variant="outline">
-                    <ClipboardList className="mr-2 h-4 w-4" />
-                    ユーザーID: {activeUserId}
-                  </Badge>
-                </div>
-                {snapshot.notes && (
-                  <p className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/80">
-                    {snapshot.notes}
-                  </p>
-                )}
-                {!!riskSignals.length && (
-                  <div className="space-y-2 rounded-2xl border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-sm text-amber-50">
-                    <div className="flex items-center gap-2 text-amber-200">
-                      <AlertTriangle className="h-4 w-4" />
-                      リスク検知サマリー
-                    </div>
-                    <ul className="list-disc space-y-1 pl-5">
-                      {riskSignals.map((signal) => (
-                        <li key={signal}>{signal}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+            <Button variant="outline" className="rounded-2xl">
+              <ClipboardList className="h-4 w-4" />
+              詳細を見る
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-3">
+            <MetricCard
+              label="残ポイント"
+              value={`${summary.balance.toLocaleString()} pt`}
+              helper={
+                summary.lastUsageAt
+                  ? `最終消費 ${formatDate(summary.lastUsageAt)}`
+                  : '最終消費情報なし'
+              }
+              accent="from-emerald-500/30 to-emerald-400/20"
+              icon={<Coins className="h-6 w-6" />}
+            />
+            <MetricCard
+              label="累計購入"
+              value={`${summary.totalPurchased.toLocaleString()} pt`}
+              helper={
+                summary.lastChargeAt
+                  ? `最終購入 ${formatDate(summary.lastChargeAt)}`
+                  : '最終購入情報なし'
+              }
+              accent="from-sky-500/30 to-indigo-500/20"
+              icon={<TrendingUp className="h-6 w-6" />}
+            />
+            <MetricCard
+              label="累計使用"
+              value={`${summary.totalUsed.toLocaleString()} pt`}
+              helper="通話・調整による総消費"
+              accent="from-rose-500/30 to-orange-500/20"
+              icon={<Activity className="h-6 w-6" />}
+            />
+          </div>
+          <p className="text-sm text-white/60">
+            最終更新: {formatDate(data.lastUpdatedAt)}
+          </p>
+        </CardContent>
+      </Card>
 
-        <div className="grid gap-6 lg:grid-cols-3">
-          <Card className="lg:col-span-2">
-            <CardHeader>
-              <CardTitle className="text-2xl">履歴タイムライン</CardTitle>
-              <CardDescription>
-                課金購入・消費・手動調整をタブで切り替えて、一貫した監査証跡を残します。
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {historyQuery.status === 'pending' && <HistorySkeleton />}
-              {historyQuery.status === 'error' && (
-                <ErrorBanner error={historyQuery.error} />
-              )}
-              {history && (
-                <Tabs
-                  value={historyTab}
-                  onValueChange={(value) => setHistoryTab(value as HistoryTab)}
-                >
-                  <TabsList>
-                    <TabsTrigger value="purchases">入金履歴</TabsTrigger>
-                    <TabsTrigger value="usage">消費履歴</TabsTrigger>
-                    <TabsTrigger value="adminLogs">手動調整ログ</TabsTrigger>
-                  </TabsList>
-                  <TabsContent value="purchases">
-                    <PurchaseHistory entries={history.purchases} />
-                  </TabsContent>
-                  <TabsContent value="usage">
-                    <UsageHistory entries={history.usage} />
-                  </TabsContent>
-                  <TabsContent value="adminLogs">
-                    <AdminLogHistory entries={history.adminLogs} />
-                  </TabsContent>
-                </Tabs>
-              )}
-            </CardContent>
-          </Card>
+      {summary.suspiciousFlag && (
+        <SuspiciousAlert flag={summary.suspiciousFlag} />
+      )}
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-2xl">ポイント調整</CardTitle>
-              <CardDescription>
-                不足補填や過剰利用の差し引きを記録付きで実施します。
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form className="space-y-4" onSubmit={handleAdjustSubmit}>
-                <div>
-                  <label className="mb-2 block text-sm text-white/70">
-                    方向
-                  </label>
-                  <div className="grid grid-cols-2 gap-3">
-                    <Button
-                      type="button"
-                      variant={adjustMode === 'add' ? 'secondary' : 'outline'}
-                      className="rounded-2xl"
-                      onClick={() => setAdjustMode('add')}
-                    >
-                      <Sparkles className="h-4 w-4" />
-                      加算
-                    </Button>
-                    <Button
-                      type="button"
-                      variant={
-                        adjustMode === 'subtract' ? 'secondary' : 'outline'
-                      }
-                      className="rounded-2xl"
-                      onClick={() => setAdjustMode('subtract')}
-                    >
-                      <Calculator className="h-4 w-4" />
-                      減算
-                    </Button>
-                  </div>
-                </div>
-                <div>
-                  <label className="mb-2 block text-sm text-white/70">
-                    調整ポイント
-                  </label>
-                  <input
-                    type="number"
-                    min={1}
-                    step={10}
-                    value={adjustPoints}
-                    onChange={(event: ChangeEvent<HTMLInputElement>) =>
-                      setAdjustPoints(event.target.value)
-                    }
-                    className={inputBaseClass}
-                    placeholder="例) 100"
-                  />
-                </div>
-                <div>
-                  <label className="mb-2 block text-sm text-white/70">
-                    理由 / メモ
-                  </label>
-                  <textarea
-                    value={adjustReason}
-                    onChange={(event: ChangeEvent<HTMLTextAreaElement>) =>
-                      setAdjustReason(event.target.value)
-                    }
-                    className={cn(
-                      inputBaseClass,
-                      'min-h-[96px] resize-none bg-white/0',
-                    )}
-                    placeholder="利用不具合の補填 など"
-                  />
-                </div>
-                <Button
-                  type="submit"
-                  className="w-full rounded-2xl"
-                  disabled={adjustMutation.isPending}
-                >
-                  {adjustMutation.isPending ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      調整中
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="h-4 w-4" />
-                      記録して調整
-                    </>
-                  )}
-                </Button>
-                {adjustNotice && (
-                  <div className="flex items-center gap-2 text-sm text-white/80">
-                    <AlertCircle className="h-4 w-4" />
-                    {adjustNotice}
-                  </div>
-                )}
-              </form>
-            </CardContent>
-          </Card>
+      <Card className="border-white/10 bg-white/5">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-3 text-2xl">
+            <History className="h-5 w-5 text-cyan-300" />
+            ポイント履歴
+          </CardTitle>
+          <CardDescription>
+            購入履歴 / 使用履歴 / 管理者操作ログをタブで切り替えて閲覧できます。
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Tabs defaultValue="purchases">
+            <TabsList>
+              <TabsTrigger value="purchases">購入履歴</TabsTrigger>
+              <TabsTrigger value="usage">使用履歴</TabsTrigger>
+              <TabsTrigger value="adminLogs">管理ログ</TabsTrigger>
+            </TabsList>
+            <TabsContent value="purchases">
+              <PurchaseHistoryTable entries={data.purchases} />
+            </TabsContent>
+            <TabsContent value="usage">
+              <UsageHistoryTable entries={data.usage} />
+            </TabsContent>
+            <TabsContent value="adminLogs">
+              <AdminLogTable entries={data.adminLogs} />
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
+
+      <Card className="border-white/10 bg-white/5">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-3 text-2xl">
+            <Shield className="h-5 w-5 text-emerald-300" />
+            ポイント調整（手動）
+          </CardTitle>
+          <CardDescription>
+            付与・減算はいずれも理由必須で確認モーダルを経由し、監査ログに自動記録されます。
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-6 md:grid-cols-2">
+            <AdjustmentPanel
+              title="ポイント付与"
+              description="問い合わせ補填 / プロモーション付与"
+              icon={<PlusCircle className="h-5 w-5 text-emerald-300" />}
+              amount={grantForm.amount}
+              reason={grantForm.reason}
+              onAmountChange={(value) =>
+                setGrantForm((prev) => ({ ...prev, amount: value }))
+              }
+              onReasonChange={(value) =>
+                setGrantForm((prev) => ({ ...prev, reason: value }))
+              }
+              onSubmit={onSubmitAdd}
+              disabled={disableAdjust}
+              actionLabel="付与する"
+              accent="from-emerald-500/20"
+            />
+            <AdjustmentPanel
+              title="ポイント減算"
+              description="不正利用 / 返金補正時の差し引き"
+              icon={<MinusCircle className="h-5 w-5 text-rose-300" />}
+              amount={deductForm.amount}
+              reason={deductForm.reason}
+              onAmountChange={(value) =>
+                setDeductForm((prev) => ({ ...prev, amount: value }))
+              }
+              onReasonChange={(value) =>
+                setDeductForm((prev) => ({ ...prev, reason: value }))
+              }
+              onSubmit={onSubmitSubtract}
+              disabled={disableAdjust}
+              actionLabel="減算する"
+              accent="from-rose-500/20"
+            />
+          </div>
+          <p className="mt-4 text-xs text-white/60">
+            操作後は「管理ログ」タブで監査証跡を即座に確認できます。
+          </p>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+function AdjustmentPanel({
+  title,
+  description,
+  icon,
+  amount,
+  reason,
+  onAmountChange,
+  onReasonChange,
+  onSubmit,
+  disabled,
+  actionLabel,
+  accent,
+}: {
+  title: string
+  description: string
+  icon: ReactNode
+  amount: string
+  reason: string
+  onAmountChange: (value: string) => void
+  onReasonChange: (value: string) => void
+  onSubmit: () => void
+  disabled: boolean
+  actionLabel: string
+  accent: string
+}) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
+      <div className="flex items-center gap-3">
+        <div
+          className={cn(
+            'rounded-2xl border border-white/10 bg-gradient-to-r p-3 text-white',
+            accent,
+          )}
+        >
+          {icon}
         </div>
+        <div>
+          <h3 className="text-xl font-semibold">{title}</h3>
+          <p className="text-sm text-white/70">{description}</p>
+        </div>
+      </div>
+      <div className="mt-4 space-y-3">
+        <input
+          type="number"
+          min="0"
+          className={adjustmentInputClass}
+          placeholder="100"
+          value={amount}
+          onChange={(event) => onAmountChange(event.target.value)}
+          disabled={disabled}
+        />
+        <textarea
+          className={cn(adjustmentInputClass, 'min-h-[96px] resize-none')}
+          placeholder="理由を入力 (必須)"
+          value={reason}
+          onChange={(event) => onReasonChange(event.target.value)}
+          disabled={disabled}
+        />
+        <Button
+          type="button"
+          className="w-full rounded-2xl"
+          onClick={onSubmit}
+          disabled={disabled}
+        >
+          {actionLabel}
+        </Button>
       </div>
     </div>
   )
 }
 
-function PointStatCard({
-  title,
-  helper,
+function MetricCard({
+  label,
   value,
+  helper,
   icon,
+  accent,
 }: {
-  title: string
-  helper: string
+  label: string
   value: string
+  helper: string
   icon: ReactNode
+  accent: string
 }) {
   return (
-    <Card>
-      <CardContent className="flex items-center justify-between p-6">
+    <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+      <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm uppercase tracking-[0.2em] text-white/40">
-            {helper}
-          </p>
-          <p className="mt-2 text-3xl font-semibold">{value}</p>
-          <p className="text-sm text-white/60">{title}</p>
+          <p className="text-sm text-white/60">{label}</p>
+          <p className="text-2xl font-semibold text-white">{value}</p>
         </div>
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-rose-200">
+        <div
+          className={cn(
+            'flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-gradient-to-br text-white',
+            accent,
+          )}
+        >
           {icon}
         </div>
-      </CardContent>
-    </Card>
+      </div>
+      <p className="mt-3 text-xs text-white/60">{helper}</p>
+    </div>
   )
 }
 
-function PointStatSkeleton() {
+function PurchaseHistoryTable({
+  entries,
+}: {
+  entries: AdminPointDashboard['purchases']
+}) {
+  if (!entries.length) {
+    return <EmptyTable message="購入履歴がまだありません" />
+  }
   return (
-    <Card>
-      <CardContent className="space-y-3 p-6">
-        <Skeleton className="h-3 w-24 rounded-full bg-white/10" />
-        <Skeleton className="h-8 w-36 rounded-full bg-white/10" />
-        <Skeleton className="h-3 w-32 rounded-full bg-white/10" />
-      </CardContent>
-    </Card>
+    <div className="overflow-auto rounded-2xl border border-white/10">
+      <table className="min-w-full text-left text-sm">
+        <thead className="bg-white/5 text-xs uppercase tracking-wide text-white/60">
+          <tr>
+            {[
+              '日付',
+              '購入ポイント',
+              '金額',
+              '決済手段',
+              'トランザクションID',
+            ].map((heading) => (
+              <th key={heading} className="px-4 py-3">
+                {heading}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {entries.map((entry) => (
+            <tr key={entry.id} className="border-t border-white/5">
+              <td className="px-4 py-3">{formatDate(entry.occurredAt)}</td>
+              <td className="px-4 py-3 font-semibold">
+                {entry.points.toLocaleString()} pt
+              </td>
+              <td className="px-4 py-3">
+                {yenFormatter.format(entry.amountYen)}
+              </td>
+              <td className="px-4 py-3">{entry.method}</td>
+              <td className="px-4 py-3 font-mono text-xs">
+                {entry.transactionId}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   )
 }
 
-function PointErrorState({ message }: { message: string }) {
+function UsageHistoryTable({
+  entries,
+}: {
+  entries: AdminPointDashboard['usage']
+}) {
+  if (!entries.length) {
+    return <EmptyTable message="使用履歴がまだありません" />
+  }
   return (
-    <Card>
-      <CardContent className="flex items-center gap-3 p-6 text-sm text-rose-200">
+    <div className="overflow-auto rounded-2xl border border-white/10">
+      <table className="min-w-full text-left text-sm">
+        <thead className="bg-white/5 text-xs uppercase tracking-wide text-white/60">
+          <tr>
+            {['日付', '消費ポイント', '通話ID', '相手', '通話時間'].map(
+              (heading) => (
+                <th key={heading} className="px-4 py-3">
+                  {heading}
+                </th>
+              ),
+            )}
+          </tr>
+        </thead>
+        <tbody>
+          {entries.map((entry) => (
+            <tr key={entry.id} className="border-t border-white/5">
+              <td className="px-4 py-3">{formatDate(entry.occurredAt)}</td>
+              <td className="px-4 py-3 font-semibold">
+                {entry.points.toLocaleString()} pt
+              </td>
+              <td className="px-4 py-3">{entry.callId}</td>
+              <td className="px-4 py-3">{entry.partnerName}</td>
+              <td className="px-4 py-3">{entry.durationMinutes} 分</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+function AdminLogTable({
+  entries,
+}: {
+  entries: AdminPointDashboard['adminLogs']
+}) {
+  if (!entries.length) {
+    return <EmptyTable message="管理者操作ログはまだありません" />
+  }
+  return (
+    <div className="overflow-auto rounded-2xl border border-white/10">
+      <table className="min-w-full text-left text-sm">
+        <thead className="bg-white/5 text-xs uppercase tracking-wide text-white/60">
+          <tr>
+            {['日付', '操作', '担当者', '変更量', '理由'].map((heading) => (
+              <th key={heading} className="px-4 py-3">
+                {heading}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {entries.map((entry) => (
+            <tr key={entry.id} className="border-t border-white/5">
+              <td className="px-4 py-3">{formatDate(entry.occurredAt)}</td>
+              <td className="px-4 py-3">
+                <Badge
+                  variant={
+                    entry.operation === 'add' ? 'success' : 'destructive'
+                  }
+                >
+                  {entry.operation === 'add' ? '手動付与' : '減算'}
+                </Badge>
+              </td>
+              <td className="px-4 py-3">{entry.operator}</td>
+              <td className="px-4 py-3 font-semibold">
+                {entry.operation === 'add' ? '+' : '-'}
+                {entry.delta.toLocaleString()} pt
+              </td>
+              <td className="px-4 py-3 text-white/70">{entry.reason}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+function SuspiciousAlert({
+  flag,
+}: {
+  flag: NonNullable<AdminPointDashboard['summary']['suspiciousFlag']>
+}) {
+  return (
+    <div className="rounded-2xl border border-rose-500/30 bg-rose-500/10 p-5 text-sm text-rose-100">
+      <div className="flex items-center gap-2 text-base font-semibold">
+        <AlertTriangle className="h-5 w-5" />
+        不正利用の可能性があります
+      </div>
+      <p className="mt-2 text-white">{flag.message}</p>
+      <p className="text-xs text-rose-200">
+        検知日時: {formatDate(flag.detectedAt)} / レベル:{' '}
+        {flag.severity.toUpperCase()}
+      </p>
+    </div>
+  )
+}
+
+function ErrorCallout({
+  message,
+  onRetry,
+}: {
+  message: string
+  onRetry: () => void
+}) {
+  return (
+    <div className="flex items-center justify-between gap-4 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+      <div className="flex items-center gap-2">
         <AlertCircle className="h-4 w-4" />
-        {message}
-      </CardContent>
-    </Card>
-  )
-}
-
-function SnapshotSkeleton() {
-  return (
-    <div className="space-y-3">
-      <Skeleton className="h-5 w-72 rounded-full bg-white/10" />
-      <Skeleton className="h-20 w-full rounded-2xl bg-white/5" />
+        <span>{message}</span>
+      </div>
+      <Button
+        variant="secondary"
+        size="sm"
+        className="rounded-2xl"
+        onClick={onRetry}
+      >
+        再試行
+      </Button>
     </div>
   )
 }
 
-function HistorySkeleton() {
+function DashboardSkeleton() {
   return (
-    <div className="space-y-3">
-      <Skeleton className="h-10 w-full rounded-2xl bg-white/5" />
-      <Skeleton className="h-32 w-full rounded-2xl bg-white/5" />
+    <div className="space-y-6">
+      <div className="grid gap-4 md:grid-cols-3">
+        {Array.from({ length: 3 }).map((_, index) => (
+          <Skeleton key={index} className="h-32 rounded-2xl bg-white/10" />
+        ))}
+      </div>
+      <Skeleton className="h-64 rounded-2xl bg-white/10" />
+      <Skeleton className="h-64 rounded-2xl bg-white/10" />
     </div>
   )
 }
 
-function ErrorBanner({ error }: { error: unknown }) {
+function EmptyState() {
   return (
-    <div className="flex items-center gap-2 rounded-2xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
-      <AlertCircle className="h-4 w-4" />
-      {error instanceof Error
-        ? error.message
-        : 'データの取得中にエラーが発生しました'}
+    <div className="flex flex-col items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-8 py-12 text-center text-white/70">
+      <AlertCircle className="h-8 w-8 text-cyan-300" />
+      <p className="text-lg font-semibold text-white">
+        ユーザーを検索してください
+      </p>
+      <p className="text-sm">
+        条件を指定して検索を実行すると、残高・履歴・操作ログがここに表示されます。
+      </p>
     </div>
   )
 }
 
-function PurchaseHistory({
-  entries,
-}: {
-  entries: Array<AdminUserPointPurchaseEntry>
-}) {
-  if (!entries.length) {
-    return <EmptyHistory message="入金履歴がありません" />
-  }
-
+function EmptyTable({ message }: { message: string }) {
   return (
-    <div className="overflow-auto rounded-2xl border border-white/10">
-      <table className="min-w-full text-left text-sm">
-        <thead className="bg-white/5 text-white/60">
-          <tr>
-            <th className="px-4 py-3 font-medium">日時</th>
-            <th className="px-4 py-3 font-medium">ポイント</th>
-            <th className="px-4 py-3 font-medium">金額</th>
-            <th className="px-4 py-3 font-medium">決済手段</th>
-            <th className="px-4 py-3 font-medium">取引ID</th>
-          </tr>
-        </thead>
-        <tbody>
-          {entries.map((entry) => (
-            <tr key={entry.id} className="border-t border-white/5">
-              <td className="px-4 py-3 text-white/80">
-                {formatTimestamp(entry.occurredAt)}
-              </td>
-              <td className="px-4 py-3 text-white">
-                {entry.points.toLocaleString()} pt
-              </td>
-              <td className="px-4 py-3 text-white/80">
-                ¥{entry.amountYen.toLocaleString()}
-              </td>
-              <td className="px-4 py-3 text-white/80">{entry.method}</td>
-              <td className="px-4 py-3 text-white/60">{entry.transactionId}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  )
-}
-
-function UsageHistory({
-  entries,
-}: {
-  entries: Array<AdminUserPointUsageEntry>
-}) {
-  if (!entries.length) {
-    return <EmptyHistory message="ポイント消費履歴がありません" />
-  }
-
-  return (
-    <div className="overflow-auto rounded-2xl border border-white/10">
-      <table className="min-w-full text-left text-sm">
-        <thead className="bg-white/5 text-white/60">
-          <tr>
-            <th className="px-4 py-3 font-medium">日時</th>
-            <th className="px-4 py-3 font-medium">消費ポイント</th>
-            <th className="px-4 py-3 font-medium">通話ID</th>
-            <th className="px-4 py-3 font-medium">おともはんID</th>
-            <th className="px-4 py-3 font-medium">通話時間</th>
-          </tr>
-        </thead>
-        <tbody>
-          {entries.map((entry) => (
-            <tr key={entry.id} className="border-t border-white/5">
-              <td className="px-4 py-3 text-white/80">
-                {formatTimestamp(entry.occurredAt)}
-              </td>
-              <td className="px-4 py-3 text-white">
-                {entry.points.toLocaleString()} pt
-              </td>
-              <td className="px-4 py-3 text-white/80">{entry.callId}</td>
-              <td className="px-4 py-3 text-white/80">{entry.otomoId}</td>
-              <td className="px-4 py-3 text-white/80">
-                {(entry.durationSec / 60).toFixed(1)} 分
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  )
-}
-
-function AdminLogHistory({
-  entries,
-}: {
-  entries: Array<AdminUserPointAdminLogEntry>
-}) {
-  if (!entries.length) {
-    return <EmptyHistory message="手動調整ログがありません" />
-  }
-
-  return (
-    <div className="space-y-4">
-      {entries.map((entry) => (
-        <div
-          key={entry.id}
-          className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3"
-        >
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2 text-sm text-white/70">
-              <History className="h-4 w-4" />
-              {formatTimestamp(entry.occurredAt)}
-            </div>
-            <Badge variant={entry.delta >= 0 ? 'success' : 'danger'}>
-              {entry.delta >= 0 ? '+' : '-'}
-              {Math.abs(entry.delta).toLocaleString()} pt
-            </Badge>
-          </div>
-          <div className="mt-2 text-sm text-white/80">{entry.reason}</div>
-          <p className="mt-2 text-xs uppercase tracking-[0.2em] text-white/50">
-            Operator: {entry.operator}
-          </p>
-        </div>
-      ))}
-    </div>
-  )
-}
-
-function EmptyHistory({ message }: { message: string }) {
-  return (
-    <div className="rounded-2xl border border-dashed border-white/10 px-6 py-10 text-center text-sm text-white/60">
+    <div className="rounded-2xl border border-dashed border-white/10 bg-white/5 px-4 py-10 text-center text-sm text-white/60">
       {message}
     </div>
   )
 }
 
-function formatTimestamp(value: string) {
-  return new Date(value).toLocaleString('ja-JP', {
-    timeZone: 'Asia/Tokyo',
-    hour12: false,
-  })
+function ToastBanner({
+  toast,
+  onDismiss,
+}: {
+  toast: ToastState
+  onDismiss: () => void
+}) {
+  return (
+    <div className="fixed bottom-6 right-6 flex items-center gap-3 rounded-2xl border border-white/10 bg-slate-900/90 px-4 py-3 text-sm text-white shadow-2xl">
+      <AlertCircle
+        className={cn(
+          'h-4 w-4',
+          toast.type === 'success' ? 'text-emerald-300' : 'text-rose-300',
+        )}
+      />
+      <span>{toast.message}</span>
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        className="rounded-2xl"
+        onClick={onDismiss}
+      >
+        閉じる
+      </Button>
+    </div>
+  )
+}
+
+function formatDate(input: string) {
+  const date = new Date(input)
+  return dateFormatter.format(date)
+}
+
+function buildSearchFilters(
+  filters: typeof initialFilters,
+): AdminPointSearchFilters | null {
+  const normalized = {
+    userId: filters.userId.trim(),
+    email: filters.email.trim(),
+    otomoId: filters.otomoId.trim(),
+    name: filters.name.trim(),
+  }
+  const payload: AdminPointSearchFilters = {}
+  if (normalized.userId) payload.userId = normalized.userId
+  if (normalized.email) payload.email = normalized.email
+  if (normalized.otomoId) payload.otomoId = normalized.otomoId
+  if (normalized.name) payload.name = normalized.name
+  return Object.keys(payload).length ? payload : null
 }

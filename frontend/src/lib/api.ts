@@ -1801,6 +1801,553 @@ export async function retireAdminUser(
   return cloneAdminUserDetail(user)
 }
 
+export interface AdminPointSearchFilters {
+  userId?: string
+  email?: string
+  otomoId?: string
+  name?: string
+}
+
+export type AdminPointAnomalyCode =
+  | 'rapid_consumption'
+  | 'consumption_without_purchase'
+  | 'bot_suspected'
+
+export interface AdminPointAnomalyFlag {
+  code: AdminPointAnomalyCode
+  message: string
+  severity: 'warning' | 'critical'
+  detectedAt: string
+}
+
+export interface AdminPointUserSummary {
+  userId: string
+  userName: string
+  email: string
+  otomoId?: string | null
+  balance: number
+  totalPurchased: number
+  totalUsed: number
+  lastChargeAt?: string | null
+  lastUsageAt?: string | null
+  suspiciousFlag?: AdminPointAnomalyFlag | null
+}
+
+export interface AdminPointPurchaseHistoryEntry {
+  id: string
+  occurredAt: string
+  points: number
+  amountYen: number
+  method: string
+  transactionId: string
+}
+
+export interface AdminPointUsageHistoryEntry {
+  id: string
+  occurredAt: string
+  points: number
+  callId: string
+  partnerName: string
+  durationMinutes: number
+}
+
+export interface AdminPointAdminLogEntry {
+  id: string
+  occurredAt: string
+  operator: string
+  operation: 'add' | 'subtract'
+  delta: number
+  reason: string
+}
+
+export interface AdminPointDashboard {
+  summary: AdminPointUserSummary
+  purchases: Array<AdminPointPurchaseHistoryEntry>
+  usage: Array<AdminPointUsageHistoryEntry>
+  adminLogs: Array<AdminPointAdminLogEntry>
+  lastUpdatedAt: string
+}
+
+export interface AdminPointAdjustmentPayload {
+  amount: number
+  reason: string
+  operator?: string
+}
+
+const ADMIN_POINTS_DELAY_MS = 620
+
+type AdminPointLedgerRecord = {
+  profile: {
+    userId: string
+    userName: string
+    email: string
+    otomoId?: string | null
+  }
+  totals: {
+    balance: number
+    purchased: number
+    used: number
+    lastChargeAt?: string | null
+    lastUsageAt?: string | null
+  }
+  suspiciousFlag?: AdminPointAnomalyFlag | null
+  purchases: Array<AdminPointPurchaseHistoryEntry>
+  usage: Array<AdminPointUsageHistoryEntry>
+  adminLogs: Array<AdminPointAdminLogEntry>
+  lastUpdatedAt: string
+}
+
+const initialAdminPointLedger: Array<AdminPointLedgerRecord> = [
+  {
+    profile: {
+      userId: 'user_123',
+      userName: 'たろう',
+      email: 'taro@example.com',
+      otomoId: 'otomo_021',
+    },
+    totals: {
+      balance: 720,
+      purchased: 4800,
+      used: 4080,
+      lastChargeAt: '2025-01-30T08:12:00Z',
+      lastUsageAt: '2025-01-30T09:05:00Z',
+    },
+    suspiciousFlag: {
+      code: 'rapid_consumption',
+      message: '1分間で500ptを消費しました',
+      severity: 'warning',
+      detectedAt: '2025-01-30T09:06:00Z',
+    },
+    purchases: [
+      {
+        id: 'purchase_001',
+        occurredAt: '2025-01-30T08:12:00Z',
+        points: 300,
+        amountYen: 360,
+        method: 'クレカ',
+        transactionId: 'tr_abc123',
+      },
+      {
+        id: 'purchase_002',
+        occurredAt: '2025-01-28T21:40:00Z',
+        points: 1500,
+        amountYen: 1800,
+        method: 'Apple Pay',
+        transactionId: 'tr_def456',
+      },
+      {
+        id: 'purchase_003',
+        occurredAt: '2025-01-25T19:05:00Z',
+        points: 3000,
+        amountYen: 3600,
+        method: 'クレカ',
+        transactionId: 'tr_xyz890',
+      },
+    ],
+    usage: [
+      {
+        id: 'usage_001',
+        occurredAt: '2025-01-30T09:05:00Z',
+        points: 100,
+        callId: 'call_55',
+        partnerName: 'さくら',
+        durationMinutes: 1,
+      },
+      {
+        id: 'usage_002',
+        occurredAt: '2025-01-30T08:58:00Z',
+        points: 400,
+        callId: 'call_54',
+        partnerName: 'ひろ',
+        durationMinutes: 4,
+      },
+      {
+        id: 'usage_003',
+        occurredAt: '2025-01-29T23:10:00Z',
+        points: 680,
+        callId: 'call_53',
+        partnerName: 'まゆ',
+        durationMinutes: 7,
+      },
+      {
+        id: 'usage_004',
+        occurredAt: '2025-01-29T12:30:00Z',
+        points: 1600,
+        callId: 'call_52',
+        partnerName: 'レン',
+        durationMinutes: 16,
+      },
+      {
+        id: 'usage_005',
+        occurredAt: '2025-01-28T18:05:00Z',
+        points: 1300,
+        callId: 'call_51',
+        partnerName: 'なぎさ',
+        durationMinutes: 13,
+      },
+    ],
+    adminLogs: [
+      {
+        id: 'log_001',
+        occurredAt: '2025-01-29T18:40:00Z',
+        operator: 'admin_ito',
+        operation: 'add',
+        delta: 100,
+        reason: '問い合わせ補填',
+      },
+      {
+        id: 'log_002',
+        occurredAt: '2025-01-27T10:12:00Z',
+        operator: 'finance_team',
+        operation: 'subtract',
+        delta: 80,
+        reason: '不正利用の疑い',
+      },
+    ],
+    lastUpdatedAt: '2025-01-30T09:10:00Z',
+  },
+  {
+    profile: {
+      userId: 'user_987',
+      userName: 'みさき',
+      email: 'misaki@example.com',
+      otomoId: 'otomo_044',
+    },
+    totals: {
+      balance: 3120,
+      purchased: 9600,
+      used: 6480,
+      lastChargeAt: '2025-01-28T20:10:00Z',
+      lastUsageAt: '2025-01-29T23:20:00Z',
+    },
+    purchases: [
+      {
+        id: 'purchase_010',
+        occurredAt: '2025-01-28T20:10:00Z',
+        points: 2400,
+        amountYen: 2880,
+        method: 'クレカ',
+        transactionId: 'tr_jkl111',
+      },
+      {
+        id: 'purchase_011',
+        occurredAt: '2025-01-25T12:44:00Z',
+        points: 3600,
+        amountYen: 4320,
+        method: '銀行振込',
+        transactionId: 'tr_jkl222',
+      },
+      {
+        id: 'purchase_012',
+        occurredAt: '2025-01-20T09:28:00Z',
+        points: 3600,
+        amountYen: 4320,
+        method: 'クレカ',
+        transactionId: 'tr_jkl333',
+      },
+    ],
+    usage: [
+      {
+        id: 'usage_020',
+        occurredAt: '2025-01-29T23:20:00Z',
+        points: 480,
+        callId: 'call_80',
+        partnerName: 'さくら',
+        durationMinutes: 5,
+      },
+      {
+        id: 'usage_021',
+        occurredAt: '2025-01-29T21:05:00Z',
+        points: 320,
+        callId: 'call_79',
+        partnerName: 'レン',
+        durationMinutes: 3,
+      },
+      {
+        id: 'usage_022',
+        occurredAt: '2025-01-27T10:00:00Z',
+        points: 960,
+        callId: 'call_78',
+        partnerName: 'まゆ',
+        durationMinutes: 10,
+      },
+      {
+        id: 'usage_023',
+        occurredAt: '2025-01-25T22:18:00Z',
+        points: 1280,
+        callId: 'call_77',
+        partnerName: 'なぎさ',
+        durationMinutes: 13,
+      },
+    ],
+    adminLogs: [
+      {
+        id: 'log_010',
+        occurredAt: '2025-01-26T09:00:00Z',
+        operator: 'finance_team',
+        operation: 'add',
+        delta: 200,
+        reason: '長期利用キャンペーン',
+      },
+    ],
+    lastUpdatedAt: '2025-01-29T23:30:00Z',
+  },
+  {
+    profile: {
+      userId: 'user_555',
+      userName: 'Alex Chen',
+      email: 'alex@example.com',
+    },
+    totals: {
+      balance: 180,
+      purchased: 2000,
+      used: 1820,
+      lastChargeAt: '2025-01-20T11:15:00Z',
+      lastUsageAt: '2025-01-30T01:05:00Z',
+    },
+    suspiciousFlag: {
+      code: 'consumption_without_purchase',
+      message: '課金なしで消費のみが続いています',
+      severity: 'critical',
+      detectedAt: '2025-01-30T01:10:00Z',
+    },
+    purchases: [
+      {
+        id: 'purchase_020',
+        occurredAt: '2025-01-20T11:15:00Z',
+        points: 2000,
+        amountYen: 2400,
+        method: 'PayPay',
+        transactionId: 'tr_pay200',
+      },
+    ],
+    usage: [
+      {
+        id: 'usage_030',
+        occurredAt: '2025-01-30T01:05:00Z',
+        points: 220,
+        callId: 'call_91',
+        partnerName: 'りお',
+        durationMinutes: 2,
+      },
+      {
+        id: 'usage_031',
+        occurredAt: '2025-01-29T23:50:00Z',
+        points: 420,
+        callId: 'call_90',
+        partnerName: 'カナ',
+        durationMinutes: 4,
+      },
+      {
+        id: 'usage_032',
+        occurredAt: '2025-01-28T17:10:00Z',
+        points: 520,
+        callId: 'call_89',
+        partnerName: 'マコ',
+        durationMinutes: 5,
+      },
+      {
+        id: 'usage_033',
+        occurredAt: '2025-01-27T08:25:00Z',
+        points: 660,
+        callId: 'call_88',
+        partnerName: 'はる',
+        durationMinutes: 7,
+      },
+    ],
+    adminLogs: [
+      {
+        id: 'log_020',
+        occurredAt: '2025-01-29T12:14:00Z',
+        operator: 'risk_eye',
+        operation: 'subtract',
+        delta: 60,
+        reason: '通話外請求の補正',
+      },
+    ],
+    lastUpdatedAt: '2025-01-30T01:12:00Z',
+  },
+]
+
+const cloneAdminPointLedgerRecord = (
+  record: AdminPointLedgerRecord,
+): AdminPointLedgerRecord => ({
+  profile: { ...record.profile },
+  totals: { ...record.totals },
+  suspiciousFlag: record.suspiciousFlag
+    ? { ...record.suspiciousFlag }
+    : undefined,
+  purchases: record.purchases.map((entry) => ({ ...entry })),
+  usage: record.usage.map((entry) => ({ ...entry })),
+  adminLogs: record.adminLogs.map((entry) => ({ ...entry })),
+  lastUpdatedAt: record.lastUpdatedAt,
+})
+
+const adminPointLedger = initialAdminPointLedger.map((record) =>
+  cloneAdminPointLedgerRecord(record),
+)
+
+const normalizePointFilters = (
+  filters: AdminPointSearchFilters,
+): AdminPointSearchFilters | null => {
+  const normalized: AdminPointSearchFilters = {}
+  const pushValue = (key: keyof AdminPointSearchFilters, value?: string) => {
+    if (value && value.trim().length > 0) {
+      normalized[key] = value.trim()
+    }
+  }
+  pushValue('userId', filters.userId)
+  pushValue('email', filters.email)
+  pushValue('otomoId', filters.otomoId)
+  pushValue('name', filters.name)
+  return Object.keys(normalized).length ? normalized : null
+}
+
+const matchesPointRecord = (
+  record: AdminPointLedgerRecord,
+  filters: AdminPointSearchFilters,
+) => {
+  const userId = filters.userId?.toLowerCase()
+  if (userId) {
+    if (!record.profile.userId.toLowerCase().includes(userId)) {
+      return false
+    }
+  }
+  const email = filters.email?.toLowerCase()
+  if (email) {
+    if (!record.profile.email.toLowerCase().includes(email)) {
+      return false
+    }
+  }
+  const otomoId = filters.otomoId?.toLowerCase()
+  if (otomoId) {
+    if (!record.profile.otomoId?.toLowerCase().includes(otomoId)) {
+      return false
+    }
+  }
+  const name = filters.name?.toLowerCase()
+  if (name) {
+    if (!record.profile.userName.toLowerCase().includes(name)) {
+      return false
+    }
+  }
+  return true
+}
+
+const buildPointDashboard = (
+  record: AdminPointLedgerRecord,
+): AdminPointDashboard => ({
+  summary: {
+    userId: record.profile.userId,
+    userName: record.profile.userName,
+    email: record.profile.email,
+    otomoId: record.profile.otomoId ?? null,
+    balance: record.totals.balance,
+    totalPurchased: record.totals.purchased,
+    totalUsed: record.totals.used,
+    lastChargeAt: record.totals.lastChargeAt ?? null,
+    lastUsageAt: record.totals.lastUsageAt ?? null,
+    suspiciousFlag: record.suspiciousFlag ?? null,
+  },
+  purchases: record.purchases.map((entry) => ({ ...entry })),
+  usage: record.usage.map((entry) => ({ ...entry })),
+  adminLogs: record.adminLogs.map((entry) => ({ ...entry })),
+  lastUpdatedAt: record.lastUpdatedAt,
+})
+
+export async function fetchAdminPointDashboard(
+  filters: AdminPointSearchFilters,
+): Promise<AdminPointDashboard> {
+  await waitForMock(ADMIN_POINTS_DELAY_MS)
+  const normalized = normalizePointFilters(filters)
+  if (!normalized) {
+    throw new Error('検索条件を1つ以上入力してください')
+  }
+  const record = adminPointLedger.find((entry) =>
+    matchesPointRecord(entry, normalized),
+  )
+  if (!record) {
+    throw new Error('該当するユーザーが見つかりませんでした')
+  }
+  return buildPointDashboard(record)
+}
+
+const findPointLedgerOrThrow = (userId: string) => {
+  const record = adminPointLedger.find(
+    (candidate) => candidate.profile.userId === userId,
+  )
+  if (!record) {
+    throw new Error('対象ユーザーが見つかりません')
+  }
+  return record
+}
+
+const validateAdjustmentInput = (amount: number, reason: string) => {
+  if (!Number.isFinite(amount) || amount <= 0) {
+    throw new Error('ポイントは1以上の整数を入力してください')
+  }
+  if (!Number.isInteger(amount)) {
+    throw new Error('ポイントは整数で入力してください')
+  }
+  if (!reason || reason.trim().length < 3) {
+    throw new Error('理由は3文字以上で入力してください')
+  }
+}
+
+const applyAdminPointAdjustment = async (
+  userId: string,
+  direction: 'add' | 'subtract',
+  payload: AdminPointAdjustmentPayload,
+): Promise<AdminPointDashboard> => {
+  await waitForMock(ADMIN_POINTS_DELAY_MS)
+  const record = findPointLedgerOrThrow(userId)
+  const trimmedReason = payload.reason.trim()
+  const amount = Math.floor(payload.amount)
+  validateAdjustmentInput(amount, trimmedReason)
+  if (direction === 'subtract' && record.totals.balance < amount) {
+    throw new Error('残ポイントが不足しています')
+  }
+
+  if (direction === 'add') {
+    record.totals.balance += amount
+    record.totals.lastChargeAt = new Date().toISOString()
+  } else {
+    record.totals.balance -= amount
+    record.totals.used += amount
+    record.totals.lastUsageAt = new Date().toISOString()
+  }
+
+  record.lastUpdatedAt = new Date().toISOString()
+  const operator = payload.operator?.trim() || 'admin_demo'
+  record.adminLogs = [
+    {
+      id: `audit_${Date.now()}`,
+      occurredAt: record.lastUpdatedAt,
+      operator,
+      operation: direction,
+      delta: amount,
+      reason: trimmedReason,
+    },
+    ...record.adminLogs,
+  ]
+
+  return buildPointDashboard(record)
+}
+
+export async function grantAdminPoints(
+  userId: string,
+  payload: AdminPointAdjustmentPayload,
+): Promise<AdminPointDashboard> {
+  return applyAdminPointAdjustment(userId, 'add', payload)
+}
+
+export async function deductAdminPoints(
+  userId: string,
+  payload: AdminPointAdjustmentPayload,
+): Promise<AdminPointDashboard> {
+  return applyAdminPointAdjustment(userId, 'subtract', payload)
+}
+
 export type AdminOtomoStatus = 'underReview' | 'approved' | 'paused' | 'frozen'
 
 export type AdminOtomoPresence = 'online' | 'offline'
