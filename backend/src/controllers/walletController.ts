@@ -1,5 +1,8 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
-import { getWalletBalance } from "../services/walletService.js";
+import {
+  getWalletBalance,
+  listWalletPlans,
+} from "../services/walletService.js";
 
 export async function handleGetWalletBalance(
   request: FastifyRequest,
@@ -42,6 +45,26 @@ export async function handleGetWalletBalance(
       status: "error",
       error: "INTERNAL_ERROR",
       message: "ポイント残高の取得に失敗しました。",
+    });
+  }
+}
+
+export async function handleGetWalletPlans(
+  _request: FastifyRequest,
+  reply: FastifyReply
+) {
+  try {
+    const plans = await listWalletPlans();
+    return reply.send({
+      status: "success",
+      items: plans,
+    });
+  } catch (error) {
+    reply.log.error(error, "Failed to load wallet plans");
+    return reply.status(500).send({
+      status: "error",
+      error: "INTERNAL_ERROR",
+      message: "チャージプラン一覧の取得に失敗しました。",
     });
   }
 }

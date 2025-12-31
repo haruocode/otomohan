@@ -14,6 +14,7 @@ This directory hosts a Fastify + TypeScript backend that will gradually replace 
 - `SET-01 GET /settings` (fetch consolidated app settings)
 - `SET-02 PUT /settings/notifications` (update notification toggles)
 - `WAL-01 GET /wallet/balance` (fetch wallet balance)
+- `WAL-02 GET /wallet/plans` (list wallet charge plans)
 
 ## Scripts
 

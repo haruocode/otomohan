@@ -65,6 +65,16 @@ type WalletRecord = {
   updatedAt: string;
 };
 
+type WalletPlanRecord = {
+  planId: string;
+  title: string;
+  price: number;
+  points: number;
+  bonusPoints: number;
+  description: string;
+  isActive: boolean;
+};
+
 const usersTable: Record<string, UserRecord> = {
   "user-123": {
     id: "user-123",
@@ -208,6 +218,36 @@ const walletTable: Record<string, WalletRecord> = {
   },
 };
 
+const walletPlansTable: WalletPlanRecord[] = [
+  {
+    planId: "plan_001",
+    title: "お手軽チャージ",
+    price: 500,
+    points: 500,
+    bonusPoints: 0,
+    description: "気軽にチャージできる入門プラン",
+    isActive: true,
+  },
+  {
+    planId: "plan_002",
+    title: "おすすめプラン",
+    price: 1000,
+    points: 1000,
+    bonusPoints: 100,
+    description: "ちょっとお得なボーナス付きプラン",
+    isActive: true,
+  },
+  {
+    planId: "plan_003",
+    title: "たっぷりプラン",
+    price: 3000,
+    points: 3000,
+    bonusPoints: 500,
+    description: "長く話したい人におすすめの大容量プラン",
+    isActive: true,
+  },
+];
+
 export async function fetchUserById(id: string): Promise<UserRecord | null> {
   const record = usersTable[id];
   if (!record || record.is_deleted) {
@@ -224,6 +264,17 @@ export async function fetchWalletByUserId(
   userId: string
 ): Promise<WalletRecord | null> {
   return walletTable[userId] ?? null;
+}
+
+export async function fetchActiveWalletPlans(): Promise<WalletPlanRecord[]> {
+  return walletPlansTable
+    .filter((plan) => plan.isActive)
+    .sort((a, b) => {
+      if (a.price === b.price) {
+        return a.planId.localeCompare(b.planId);
+      }
+      return a.price - b.price;
+    });
 }
 
 export async function saveUserNotificationsRecord(

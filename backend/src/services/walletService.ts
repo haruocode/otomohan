@@ -1,4 +1,5 @@
 import { getWalletByUserId } from "../repositories/walletRepository.js";
+import { getActiveWalletPlans } from "../repositories/walletPlanRepository.js";
 
 export type WalletBalancePayload = {
   userId: string;
@@ -14,4 +15,8 @@ export async function getWalletBalance(
     return null;
   }
   return wallet;
+}
+
+export async function listWalletPlans() {
+  return getActiveWalletPlans();
 }
