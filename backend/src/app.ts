@@ -11,6 +11,7 @@ import { otomoListRoutes } from "./routes/otomo/list.js";
 import { otomoDetailRoutes } from "./routes/otomo/detail.js";
 import { otomoReviewsRoutes } from "./routes/otomo/reviews.js";
 import { otomoStatusRoutes } from "./routes/otomo/status.js";
+import { settingsRoutes } from "./routes/settings.js";
 
 export function buildApp() {
   const app = Fastify({
@@ -33,6 +34,7 @@ export function buildApp() {
   app.register(otomoDetailRoutes);
   app.register(otomoReviewsRoutes);
   app.register(otomoStatusRoutes);
+  app.register(settingsRoutes);
 
   app.get("/health", async () => ({ status: "ok" }));
 
