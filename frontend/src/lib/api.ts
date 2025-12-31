@@ -2130,6 +2130,242 @@ export async function updateAdminOtomoStatus(
   return cloneAdminOtomoDetail(detail)
 }
 
+export interface AdminUserPointSnapshots {
+  currentBalance: number
+  totalPurchased: number
+  totalUsed: number
+  lastUpdatedAt: string
+  suspicious?: boolean
+  notes?: string
+}
+
+export interface AdminUserPointPurchaseEntry {
+  id: string
+  occurredAt: string
+  points: number
+  amountYen: number
+  method: string
+  transactionId: string
+}
+
+export interface AdminUserPointUsageEntry {
+  id: string
+  occurredAt: string
+  points: number
+  callId: string
+  otomoId: string
+  durationSec: number
+}
+
+export interface AdminUserPointAdminLogEntry {
+  id: string
+  occurredAt: string
+  operator: string
+  delta: number
+  reason: string
+}
+
+export interface AdminUserPointHistoryResponse {
+  purchases: Array<AdminUserPointPurchaseEntry>
+  usage: Array<AdminUserPointUsageEntry>
+  adminLogs: Array<AdminUserPointAdminLogEntry>
+}
+
+export interface UpdateAdminUserPointsPayload {
+  userId: string
+  delta: number
+  reason: string
+  operator?: string
+}
+
+const ADMIN_POINTS_DELAY_MS = 360
+
+const adminUserPointSnapshots: Partial<
+  Record<string, AdminUserPointSnapshots>
+> = {
+  user_001: {
+    currentBalance: 720,
+    totalPurchased: 4800,
+    totalUsed: 4100,
+    lastUpdatedAt: '2025-01-30T12:00:00Z',
+  },
+  user_002: {
+    currentBalance: 120,
+    totalPurchased: 5200,
+    totalUsed: 5080,
+    lastUpdatedAt: '2025-01-28T11:00:00Z',
+    suspicious: true,
+    notes: '通報増加に伴いポイント消費を監査中',
+  },
+  user_003: {
+    currentBalance: 1650,
+    totalPurchased: 6000,
+    totalUsed: 4350,
+    lastUpdatedAt: '2025-01-30T07:30:00Z',
+  },
+}
+
+const adminUserPointHistory: Partial<
+  Record<string, AdminUserPointHistoryResponse>
+> = {
+  user_001: {
+    purchases: [
+      {
+        id: 'pur_100',
+        occurredAt: '2025-01-30T06:00:00Z',
+        points: 300,
+        amountYen: 360,
+        method: 'クレジットカード',
+        transactionId: 'tr_abc123',
+      },
+      {
+        id: 'pur_101',
+        occurredAt: '2025-01-20T03:00:00Z',
+        points: 500,
+        amountYen: 600,
+        method: 'Apple Pay',
+        transactionId: 'tr_xyz789',
+      },
+    ],
+    usage: [
+      {
+        id: 'use_200',
+        occurredAt: '2025-01-30T09:00:00Z',
+        points: 100,
+        callId: 'call_130',
+        otomoId: 'otomo_010',
+        durationSec: 360,
+      },
+      {
+        id: 'use_201',
+        occurredAt: '2025-01-29T15:10:00Z',
+        points: 80,
+        callId: 'call_128',
+        otomoId: 'otomo_006',
+        durationSec: 240,
+      },
+    ],
+    adminLogs: [
+      {
+        id: 'admin_001',
+        occurredAt: '2025-01-29T11:00:00Z',
+        operator: 'admin_ito',
+        delta: 100,
+        reason: '問い合わせ補填',
+      },
+    ],
+  },
+  user_002: {
+    purchases: [
+      {
+        id: 'pur_150',
+        occurredAt: '2025-01-25T05:00:00Z',
+        points: 200,
+        amountYen: 240,
+        method: 'PayPay',
+        transactionId: 'tr_pp001',
+      },
+    ],
+    usage: [
+      {
+        id: 'use_250',
+        occurredAt: '2025-01-25T06:00:00Z',
+        points: 200,
+        callId: 'call_180',
+        otomoId: 'otomo_012',
+        durationSec: 420,
+      },
+      {
+        id: 'use_251',
+        occurredAt: '2025-01-25T06:05:00Z',
+        points: 180,
+        callId: 'call_181',
+        otomoId: 'otomo_017',
+        durationSec: 390,
+      },
+    ],
+    adminLogs: [
+      {
+        id: 'admin_200',
+        occurredAt: '2025-01-28T11:30:00Z',
+        operator: 'admin_yuki',
+        delta: -50,
+        reason: '不正疑いのため減算',
+      },
+    ],
+  },
+  user_003: {
+    purchases: [],
+    usage: [],
+    adminLogs: [],
+  },
+}
+
+export async function fetchAdminUserPoints(
+  userId: string,
+): Promise<AdminUserPointSnapshots> {
+  await waitForMock(ADMIN_POINTS_DELAY_MS)
+  const snapshot = adminUserPointSnapshots[userId]
+  if (!snapshot) {
+    throw new Error('該当ユーザーのポイント情報が見つかりません')
+  }
+  return { ...snapshot }
+}
+
+export async function fetchAdminUserPointHistory(
+  userId: string,
+): Promise<AdminUserPointHistoryResponse> {
+  await waitForMock(ADMIN_POINTS_DELAY_MS)
+  const history = adminUserPointHistory[userId]
+  if (!history) {
+    return { purchases: [], usage: [], adminLogs: [] }
+  }
+  return {
+    purchases: history.purchases.map((entry) => ({ ...entry })),
+    usage: history.usage.map((entry) => ({ ...entry })),
+    adminLogs: history.adminLogs.map((entry) => ({ ...entry })),
+  }
+}
+
+export async function updateAdminUserPoints(
+  payload: UpdateAdminUserPointsPayload,
+): Promise<AdminUserPointSnapshots> {
+  await waitForMock(ADMIN_POINTS_DELAY_MS)
+  const snapshot = adminUserPointSnapshots[payload.userId]
+  if (!snapshot) {
+    throw new Error('ユーザーが見つかりません')
+  }
+  const nextBalance = snapshot.currentBalance + payload.delta
+  if (nextBalance < 0) {
+    throw new Error('残ポイントがマイナスになります')
+  }
+  snapshot.currentBalance = nextBalance
+  if (payload.delta > 0) {
+    snapshot.totalPurchased += payload.delta
+  } else {
+    snapshot.totalUsed += Math.abs(payload.delta)
+  }
+  snapshot.lastUpdatedAt = new Date().toISOString()
+  const history = adminUserPointHistory[payload.userId]
+  const adminLog: AdminUserPointAdminLogEntry = {
+    id: `admin_${Date.now()}`,
+    occurredAt: snapshot.lastUpdatedAt,
+    operator: payload.operator ?? 'admin_mock',
+    delta: payload.delta,
+    reason: payload.reason,
+  }
+  if (history) {
+    history.adminLogs = [adminLog, ...history.adminLogs]
+  } else {
+    adminUserPointHistory[payload.userId] = {
+      purchases: [],
+      usage: [],
+      adminLogs: [adminLog],
+    }
+  }
+  return { ...snapshot }
+}
+
 export type AdminCallStatus =
   | 'normal'
   | 'abnormal'
