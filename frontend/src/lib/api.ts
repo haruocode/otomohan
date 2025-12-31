@@ -1451,3 +1451,681 @@ export async function retireAdminUser(
   }
   return cloneAdminUserDetail(user)
 }
+
+export type AdminOtomoStatus = 'underReview' | 'approved' | 'paused' | 'frozen'
+
+export type AdminOtomoPresence = 'online' | 'offline'
+
+export interface AdminOtomoSummary {
+  id: string
+  displayName: string
+  email: string
+  status: AdminOtomoStatus
+  presence: AdminOtomoPresence
+  averageRating: number
+  reviewCount: number
+  callCount: number
+  callMinutes: number
+  reportCount: number
+  lastLoginAt: string
+}
+
+export interface AdminOtomoCallTrendPoint {
+  label: string
+  calls: number
+  minutes: number
+}
+
+export interface AdminOtomoPopularSlot {
+  label: string
+  calls: number
+  minutes: number
+}
+
+export interface AdminOtomoCallMetrics {
+  totalCalls: number
+  totalMinutes: number
+  averageMinutes: number
+  last30Days: Array<AdminOtomoCallTrendPoint>
+  popularSlots: Array<AdminOtomoPopularSlot>
+}
+
+export interface AdminOtomoRevenueMetrics {
+  lifetime: number
+  monthly: Array<{ month: string; amount: number }>
+  recentTrend: Array<{ label: string; amount: number }>
+}
+
+export interface AdminOtomoReviewStats {
+  averageRating: number
+  reviewCount: number
+  distribution: Array<OtomoReviewDistributionEntry>
+  highlight?: string
+}
+
+export interface AdminOtomoReviewEntry {
+  id: string
+  rating: number
+  comment: string
+  createdAt: string
+  userId: string
+}
+
+export interface AdminOtomoReportEntry {
+  id: string
+  reporterId: string
+  reason: string
+  createdAt: string
+  status: 'resolved' | 'investigating'
+}
+
+export interface AdminOtomoScheduleEntry {
+  dayLabel: string
+  slots: Array<{ start: string; end: string }>
+  isDayOff?: boolean
+}
+
+export interface AdminOtomoAttachment {
+  id: string
+  type: 'document' | 'audio'
+  label: string
+  url: string
+  note?: string
+  confidential?: boolean
+}
+
+export interface AdminOtomoAuditLogEntry {
+  id: string
+  status: AdminOtomoStatus
+  reason: string
+  changedBy: string
+  changedAt: string
+}
+
+export interface AdminOtomoDetail extends AdminOtomoSummary {
+  legalName: string
+  avatarUrl: string
+  profileTitle?: string
+  profileBio: string
+  tags: Array<string>
+  registeredAt: string
+  callMetrics: AdminOtomoCallMetrics
+  revenue: AdminOtomoRevenueMetrics
+  reviewStats: AdminOtomoReviewStats
+  recentReviews: Array<AdminOtomoReviewEntry>
+  reports: Array<AdminOtomoReportEntry>
+  schedule: Array<AdminOtomoScheduleEntry>
+  attachments: Array<AdminOtomoAttachment>
+  auditLog: Array<AdminOtomoAuditLogEntry>
+}
+
+export interface AdminOtomoListFilters {
+  otomoId?: string
+  name?: string
+  email?: string
+  status?: AdminOtomoStatus
+  minRating?: number
+  reportFilter?: AdminReportFilter
+  presence?: AdminOtomoPresence
+  callVolume?: 'low' | 'mid' | 'high'
+  sortBy?: 'calls' | 'rating' | 'lastLogin'
+  sortOrder?: 'asc' | 'desc'
+}
+
+const ADMIN_OTOMO_DELAY_MS = 520
+
+const initialAdminOtomoDetails: Array<AdminOtomoDetail> = [
+  {
+    id: 'otomo_001',
+    displayName: 'さくら',
+    legalName: '桜井 美桜',
+    email: 'sakura@otomohan.jp',
+    status: 'approved',
+    presence: 'online',
+    averageRating: 4.6,
+    reviewCount: 178,
+    callCount: 350,
+    callMinutes: 890,
+    reportCount: 2,
+    lastLoginAt: '2025-01-30T09:45:00Z',
+    registeredAt: '2024-08-15T03:00:00Z',
+    avatarUrl:
+      'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=256&q=80',
+    profileTitle: '夜の癒やしカウンセラー',
+    profileBio:
+      '深夜帯に寄り添う傾聴スタイルが強み。静かなトーンとゆっくりとした相槌で、安心して話せる時間を提供します。',
+    tags: ['傾聴', '深夜枠', 'やさしい声'],
+    callMetrics: {
+      totalCalls: 350,
+      totalMinutes: 890,
+      averageMinutes: 8.4,
+      last30Days: [
+        { label: '01/02', calls: 12, minutes: 96 },
+        { label: '01/05', calls: 15, minutes: 110 },
+        { label: '01/08', calls: 9, minutes: 70 },
+        { label: '01/11', calls: 14, minutes: 120 },
+        { label: '01/14', calls: 13, minutes: 105 },
+        { label: '01/17', calls: 11, minutes: 84 },
+        { label: '01/20', calls: 18, minutes: 140 },
+        { label: '01/23', calls: 16, minutes: 128 },
+        { label: '01/26', calls: 20, minutes: 150 },
+        { label: '01/29', calls: 17, minutes: 136 },
+      ],
+      popularSlots: [
+        { label: '20:00-23:00', calls: 128, minutes: 320 },
+        { label: '23:00-25:00', calls: 76, minutes: 210 },
+        { label: '08:00-10:00', calls: 28, minutes: 90 },
+      ],
+    },
+    revenue: {
+      lifetime: 540000,
+      monthly: [
+        { month: '2024-12', amount: 82000 },
+        { month: '2025-01', amount: 91000 },
+      ],
+      recentTrend: [
+        { label: 'Week1', amount: 20000 },
+        { label: 'Week2', amount: 18000 },
+        { label: 'Week3', amount: 22000 },
+        { label: 'Week4', amount: 21000 },
+      ],
+    },
+    reviewStats: {
+      averageRating: 4.6,
+      reviewCount: 178,
+      distribution: [
+        { rating: 5, count: 120, percentage: 67 },
+        { rating: 4, count: 38, percentage: 21 },
+        { rating: 3, count: 12, percentage: 7 },
+        { rating: 2, count: 5, percentage: 3 },
+        { rating: 1, count: 3, percentage: 2 },
+      ],
+      highlight: '穏やかなトーンと間の取り方が高評価。',
+    },
+    recentReviews: [
+      {
+        id: 'rev_200',
+        rating: 5,
+        comment: '癒やされました。またお願いしたいです。',
+        createdAt: '2025-01-29T12:00:00Z',
+        userId: 'user_112',
+      },
+      {
+        id: 'rev_201',
+        rating: 4,
+        comment: '夜勤明けでしっかり向き合ってもらえた。',
+        createdAt: '2025-01-27T15:30:00Z',
+        userId: 'user_088',
+      },
+    ],
+    reports: [
+      {
+        id: 'rep_201',
+        reporterId: 'user_112',
+        reason: '不適切な言動',
+        createdAt: '2025-01-29T09:30:00Z',
+        status: 'investigating',
+      },
+      {
+        id: 'rep_202',
+        reporterId: 'user_099',
+        reason: '長時間無言',
+        createdAt: '2025-01-18T14:10:00Z',
+        status: 'resolved',
+      },
+    ],
+    schedule: [
+      { dayLabel: '月', slots: [{ start: '20:00', end: '23:00' }] },
+      { dayLabel: '火', slots: [{ start: '20:00', end: '23:00' }] },
+      { dayLabel: '水', slots: [], isDayOff: true },
+      { dayLabel: '木', slots: [{ start: '21:00', end: '24:00' }] },
+      { dayLabel: '金', slots: [{ start: '20:30', end: '24:30' }] },
+      { dayLabel: '土', slots: [{ start: '19:00', end: '22:00' }] },
+      { dayLabel: '日', slots: [{ start: '10:00', end: '12:00' }] },
+    ],
+    attachments: [
+      {
+        id: 'att_001',
+        type: 'document',
+        label: '本人確認書類（2024/08/10）',
+        url: '#',
+        confidential: true,
+      },
+      {
+        id: 'att_002',
+        type: 'audio',
+        label: '声質チェック音源',
+        url: '#',
+        note: '48kHz wav',
+      },
+    ],
+    auditLog: [
+      {
+        id: 'log_001',
+        status: 'approved',
+        reason: '初期審査通過',
+        changedBy: 'admin_001',
+        changedAt: '2024-08-18T03:00:00Z',
+      },
+      {
+        id: 'log_002',
+        status: 'paused',
+        reason: '本人からの短期休暇申請',
+        changedBy: 'admin_002',
+        changedAt: '2024-12-20T05:00:00Z',
+      },
+      {
+        id: 'log_003',
+        status: 'approved',
+        reason: '休暇終了を確認して再稼働',
+        changedBy: 'admin_002',
+        changedAt: '2024-12-24T18:00:00Z',
+      },
+    ],
+  },
+  {
+    id: 'otomo_017',
+    displayName: 'レン',
+    legalName: '高杉 蓮',
+    email: 'ren@otomohan.jp',
+    status: 'underReview',
+    presence: 'offline',
+    averageRating: 4.2,
+    reviewCount: 42,
+    callCount: 65,
+    callMinutes: 310,
+    reportCount: 0,
+    lastLoginAt: '2025-01-28T11:20:00Z',
+    registeredAt: '2025-01-05T02:00:00Z',
+    avatarUrl:
+      'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=256&q=80',
+    profileTitle: 'ギターと夜ドライブトーク',
+    profileBio:
+      '音楽やナイトドライブの話題で盛り上げるのが得意。審査用の音声を準備中です。',
+    tags: ['音楽', 'ドライブ', '20代'],
+    callMetrics: {
+      totalCalls: 65,
+      totalMinutes: 310,
+      averageMinutes: 6.1,
+      last30Days: [
+        { label: '01/04', calls: 4, minutes: 20 },
+        { label: '01/07', calls: 6, minutes: 32 },
+        { label: '01/10', calls: 8, minutes: 44 },
+        { label: '01/13', calls: 5, minutes: 28 },
+        { label: '01/16', calls: 7, minutes: 36 },
+        { label: '01/19', calls: 11, minutes: 52 },
+        { label: '01/22', calls: 9, minutes: 48 },
+        { label: '01/25', calls: 7, minutes: 37 },
+        { label: '01/28', calls: 8, minutes: 35 },
+      ],
+      popularSlots: [
+        { label: '21:00-23:00', calls: 32, minutes: 140 },
+        { label: '23:00-24:00', calls: 11, minutes: 50 },
+      ],
+    },
+    revenue: {
+      lifetime: 78000,
+      monthly: [{ month: '2025-01', amount: 78000 }],
+      recentTrend: [
+        { label: 'Week1', amount: 12000 },
+        { label: 'Week2', amount: 18000 },
+        { label: 'Week3', amount: 22000 },
+        { label: 'Week4', amount: 26000 },
+      ],
+    },
+    reviewStats: {
+      averageRating: 4.2,
+      reviewCount: 42,
+      distribution: [
+        { rating: 5, count: 22, percentage: 52 },
+        { rating: 4, count: 10, percentage: 24 },
+        { rating: 3, count: 7, percentage: 17 },
+        { rating: 2, count: 2, percentage: 5 },
+        { rating: 1, count: 1, percentage: 2 },
+      ],
+      highlight: '共感力が高く、男性ユーザーからの支持が高い。',
+    },
+    recentReviews: [
+      {
+        id: 'rev_310',
+        rating: 5,
+        comment: 'ギターの話で盛り上がった！',
+        createdAt: '2025-01-27T22:00:00Z',
+        userId: 'user_180',
+      },
+    ],
+    reports: [],
+    schedule: [
+      { dayLabel: '月', slots: [{ start: '21:00', end: '24:00' }] },
+      { dayLabel: '火', slots: [{ start: '21:00', end: '24:00' }] },
+      { dayLabel: '水', slots: [{ start: '22:00', end: '24:00' }] },
+      { dayLabel: '木', slots: [], isDayOff: true },
+      { dayLabel: '金', slots: [{ start: '22:00', end: '25:00' }] },
+      { dayLabel: '土', slots: [{ start: '19:00', end: '23:00' }] },
+      { dayLabel: '日', slots: [{ start: '10:00', end: '12:00' }] },
+    ],
+    attachments: [
+      {
+        id: 'att_120',
+        type: 'document',
+        label: '本人確認書類（2025/01/04）',
+        url: '#',
+        confidential: true,
+      },
+    ],
+    auditLog: [
+      {
+        id: 'log_020',
+        status: 'underReview',
+        reason: '音声チェック待ち',
+        changedBy: 'admin_004',
+        changedAt: '2025-01-05T05:00:00Z',
+      },
+    ],
+  },
+  {
+    id: 'otomo_022',
+    displayName: 'ミホ',
+    legalName: '上原 美帆',
+    email: 'miho@otomohan.jp',
+    status: 'frozen',
+    presence: 'offline',
+    averageRating: 3.8,
+    reviewCount: 96,
+    callCount: 210,
+    callMinutes: 620,
+    reportCount: 4,
+    lastLoginAt: '2025-01-15T03:40:00Z',
+    registeredAt: '2024-05-11T04:00:00Z',
+    avatarUrl:
+      'https://images.unsplash.com/photo-1544723795-3fb6469f5b39?auto=format&fit=crop&w=256&q=80',
+    profileTitle: 'テンポの良い雑談',
+    profileBio:
+      'テンション高めの雑談スタイル。最近通報が続いたため凍結中で、再教育プランを調整。',
+    tags: ['盛り上げ', '20分枠', 'テンション高め'],
+    callMetrics: {
+      totalCalls: 210,
+      totalMinutes: 620,
+      averageMinutes: 6.5,
+      last30Days: [
+        { label: '01/01', calls: 8, minutes: 36 },
+        { label: '01/04', calls: 10, minutes: 42 },
+        { label: '01/07', calls: 7, minutes: 30 },
+        { label: '01/10', calls: 6, minutes: 28 },
+        { label: '01/13', calls: 5, minutes: 26 },
+        { label: '01/16', calls: 3, minutes: 14 },
+        { label: '01/19', calls: 2, minutes: 12 },
+        { label: '01/22', calls: 1, minutes: 8 },
+      ],
+      popularSlots: [
+        { label: '19:00-21:00', calls: 85, minutes: 250 },
+        { label: '21:00-23:00', calls: 92, minutes: 280 },
+      ],
+    },
+    revenue: {
+      lifetime: 380000,
+      monthly: [
+        { month: '2024-12', amount: 66000 },
+        { month: '2025-01', amount: 22000 },
+      ],
+      recentTrend: [
+        { label: 'Week1', amount: 18000 },
+        { label: 'Week2', amount: 9000 },
+        { label: 'Week3', amount: 5000 },
+        { label: 'Week4', amount: 0 },
+      ],
+    },
+    reviewStats: {
+      averageRating: 3.8,
+      reviewCount: 96,
+      distribution: [
+        { rating: 5, count: 34, percentage: 35 },
+        { rating: 4, count: 25, percentage: 26 },
+        { rating: 3, count: 18, percentage: 19 },
+        { rating: 2, count: 12, percentage: 13 },
+        { rating: 1, count: 7, percentage: 7 },
+      ],
+      highlight: 'テンポの速さが好みを分けている傾向。',
+    },
+    recentReviews: [
+      {
+        id: 'rev_510',
+        rating: 2,
+        comment: 'もう少し落ち着いて話したい',
+        createdAt: '2025-01-18T12:00:00Z',
+        userId: 'user_052',
+      },
+    ],
+    reports: [
+      {
+        id: 'rep_320',
+        reporterId: 'user_071',
+        reason: '通話中の私語',
+        createdAt: '2025-01-10T11:00:00Z',
+        status: 'resolved',
+      },
+      {
+        id: 'rep_321',
+        reporterId: 'user_054',
+        reason: '態度が冷たい',
+        createdAt: '2025-01-14T09:00:00Z',
+        status: 'investigating',
+      },
+      {
+        id: 'rep_322',
+        reporterId: 'user_099',
+        reason: '長時間無言',
+        createdAt: '2025-01-18T09:30:00Z',
+        status: 'investigating',
+      },
+      {
+        id: 'rep_323',
+        reporterId: 'user_101',
+        reason: '個人情報の質問',
+        createdAt: '2025-01-19T13:30:00Z',
+        status: 'investigating',
+      },
+    ],
+    schedule: [
+      { dayLabel: '月', slots: [{ start: '19:00', end: '24:00' }] },
+      { dayLabel: '火', slots: [{ start: '20:00', end: '23:30' }] },
+      { dayLabel: '水', slots: [{ start: '18:00', end: '22:00' }] },
+      { dayLabel: '木', slots: [{ start: '20:00', end: '23:00' }] },
+      { dayLabel: '金', slots: [{ start: '19:00', end: '24:00' }] },
+      { dayLabel: '土', slots: [{ start: '18:00', end: '25:00' }] },
+      { dayLabel: '日', slots: [], isDayOff: true },
+    ],
+    attachments: [
+      {
+        id: 'att_220',
+        type: 'document',
+        label: '再審査アンケート',
+        url: '#',
+        note: '2025/01/22 アップロード',
+      },
+    ],
+    auditLog: [
+      {
+        id: 'log_102',
+        status: 'paused',
+        reason: 'ユーザー通報が急増',
+        changedBy: 'admin_003',
+        changedAt: '2025-01-15T04:10:00Z',
+      },
+      {
+        id: 'log_103',
+        status: 'frozen',
+        reason: '再教育プログラムのため凍結',
+        changedBy: 'admin_003',
+        changedAt: '2025-01-18T06:40:00Z',
+      },
+    ],
+  },
+]
+
+const cloneAdminOtomoDetail = (detail: AdminOtomoDetail): AdminOtomoDetail => ({
+  ...detail,
+  tags: detail.tags.slice(),
+  callMetrics: {
+    ...detail.callMetrics,
+    last30Days: detail.callMetrics.last30Days.map((point) => ({ ...point })),
+    popularSlots: detail.callMetrics.popularSlots.map((slot) => ({ ...slot })),
+  },
+  revenue: {
+    ...detail.revenue,
+    monthly: detail.revenue.monthly.map((entry) => ({ ...entry })),
+    recentTrend: detail.revenue.recentTrend.map((entry) => ({ ...entry })),
+  },
+  reviewStats: {
+    ...detail.reviewStats,
+    distribution: detail.reviewStats.distribution.map((entry) => ({
+      ...entry,
+    })),
+  },
+  recentReviews: detail.recentReviews.map((review) => ({ ...review })),
+  reports: detail.reports.map((report) => ({ ...report })),
+  schedule: detail.schedule.map((day) => ({
+    dayLabel: day.dayLabel,
+    isDayOff: day.isDayOff,
+    slots: day.slots.map((slot) => ({ ...slot })),
+  })),
+  attachments: detail.attachments.map((item) => ({ ...item })),
+  auditLog: detail.auditLog.map((entry) => ({ ...entry })),
+})
+
+const adminOtomoDatabase: Array<AdminOtomoDetail> =
+  initialAdminOtomoDetails.map((detail) => cloneAdminOtomoDetail(detail))
+
+const toAdminOtomoSummary = (detail: AdminOtomoDetail): AdminOtomoSummary => ({
+  id: detail.id,
+  displayName: detail.displayName,
+  email: detail.email,
+  status: detail.status,
+  presence: detail.presence,
+  averageRating: detail.averageRating,
+  reviewCount: detail.reviewCount,
+  callCount: detail.callCount,
+  callMinutes: detail.callMinutes,
+  reportCount: detail.reportCount,
+  lastLoginAt: detail.lastLoginAt,
+})
+
+const classifyCallVolume = (count: number): 'low' | 'mid' | 'high' => {
+  if (count >= 300) return 'high'
+  if (count >= 120) return 'mid'
+  return 'low'
+}
+
+export async function fetchAdminOtomoList(
+  filters: AdminOtomoListFilters = {},
+): Promise<Array<AdminOtomoSummary>> {
+  await waitForMock(ADMIN_OTOMO_DELAY_MS)
+
+  let items = adminOtomoDatabase.slice()
+
+  if (filters.otomoId) {
+    const keyword = filters.otomoId.toLowerCase()
+    items = items.filter((detail) => detail.id.toLowerCase().includes(keyword))
+  }
+  if (filters.name) {
+    const keyword = filters.name.toLowerCase()
+    items = items.filter((detail) =>
+      detail.displayName.toLowerCase().includes(keyword),
+    )
+  }
+  if (filters.email) {
+    const keyword = filters.email.toLowerCase()
+    items = items.filter((detail) =>
+      detail.email.toLowerCase().includes(keyword),
+    )
+  }
+  if (filters.status) {
+    items = items.filter((detail) => detail.status === filters.status)
+  }
+  if (typeof filters.minRating === 'number') {
+    items = items.filter(
+      (detail) => detail.averageRating >= (filters.minRating ?? 0),
+    )
+  }
+  if (filters.reportFilter) {
+    items = items.filter((detail) =>
+      applyReportFilter(detail.reportCount, filters.reportFilter),
+    )
+  }
+  if (filters.presence) {
+    items = items.filter((detail) => detail.presence === filters.presence)
+  }
+  if (filters.callVolume) {
+    items = items.filter(
+      (detail) => classifyCallVolume(detail.callCount) === filters.callVolume,
+    )
+  }
+
+  const sortBy = filters.sortBy ?? 'lastLogin'
+  const sortOrder = filters.sortOrder ?? 'desc'
+
+  items.sort((a, b) => {
+    let valueA: number
+    let valueB: number
+    if (sortBy === 'calls') {
+      valueA = a.callCount
+      valueB = b.callCount
+    } else if (sortBy === 'rating') {
+      valueA = a.averageRating
+      valueB = b.averageRating
+    } else {
+      valueA = parseDate(a.lastLoginAt)
+      valueB = parseDate(b.lastLoginAt)
+    }
+    return sortOrder === 'desc' ? valueB - valueA : valueA - valueB
+  })
+
+  return items.map(toAdminOtomoSummary)
+}
+
+const findAdminOtomoOrThrow = (id: string) => {
+  const detail = adminOtomoDatabase.find((candidate) => candidate.id === id)
+  if (!detail) {
+    throw new Error('おともはんが見つかりません')
+  }
+  return detail
+}
+
+export async function fetchAdminOtomoDetail(
+  otomoId: string,
+): Promise<AdminOtomoDetail> {
+  await waitForMock(ADMIN_OTOMO_DELAY_MS)
+  const detail = findAdminOtomoOrThrow(otomoId)
+  return cloneAdminOtomoDetail(detail)
+}
+
+export interface UpdateAdminOtomoStatusPayload {
+  otomoId: string
+  nextStatus: AdminOtomoStatus
+  reason: string
+  changedBy?: string
+}
+
+export async function updateAdminOtomoStatus(
+  payload: UpdateAdminOtomoStatusPayload,
+): Promise<AdminOtomoDetail> {
+  await waitForMock(ADMIN_OTOMO_DELAY_MS)
+  const trimmedReason = payload.reason.trim()
+  if (!trimmedReason) {
+    throw new Error('変更理由を入力してください')
+  }
+  const detail = findAdminOtomoOrThrow(payload.otomoId)
+  detail.status = payload.nextStatus
+  detail.presence = payload.nextStatus === 'approved' ? 'online' : 'offline'
+  detail.auditLog = [
+    {
+      id: `audit_${Date.now()}`,
+      status: payload.nextStatus,
+      reason: trimmedReason,
+      changedBy: payload.changedBy ?? 'ops-team',
+      changedAt: new Date().toISOString(),
+    },
+    ...detail.auditLog,
+  ]
+  return cloneAdminOtomoDetail(detail)
+}
