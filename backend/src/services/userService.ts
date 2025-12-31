@@ -4,9 +4,13 @@ import {
   saveUserAvatar,
   getUserPasswordHash,
   saveUserPasswordHash,
+  softDeleteUser,
 } from "../repositories/userRepository.js";
 import { randomUUID } from "node:crypto";
-import { getUserNotifications } from "../repositories/userSettingsRepository.js";
+import {
+  getUserNotifications,
+  deleteUserNotifications,
+} from "../repositories/userSettingsRepository.js";
 import { compare as comparePassword, hash as hashPassword } from "bcryptjs";
 
 export type UserProfile = {
@@ -121,4 +125,27 @@ export async function changeUserPassword(
   }
 
   return { success: true };
+}
+
+export type DeleteUserAccountResult =
+  | { success: true; alreadyDeleted: boolean }
+  | { success: false; reason: "USER_NOT_FOUND" | "DELETE_FAILED" };
+
+export async function deleteUserAccount(
+  userId: string
+): Promise<DeleteUserAccountResult> {
+  const status = await softDeleteUser(userId);
+  if (status === "not_found") {
+    return { success: false, reason: "USER_NOT_FOUND" };
+  }
+
+  const notificationsDeleted = await deleteUserNotifications(userId)
+    .then(() => true)
+    .catch(() => false);
+
+  if (!notificationsDeleted) {
+    return { success: false, reason: "DELETE_FAILED" };
+  }
+
+  return { success: true, alreadyDeleted: status === "already_deleted" };
 }

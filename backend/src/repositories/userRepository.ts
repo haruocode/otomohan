@@ -4,6 +4,7 @@ import {
   updateUserAvatarUrl,
   fetchUserPasswordHash,
   updateUserPasswordHash,
+  softDeleteUserRecord,
 } from "../db/index.js";
 
 export type UserEntity = {
@@ -45,4 +46,10 @@ export async function saveUserPasswordHash(
   hash: string
 ): Promise<boolean> {
   return updateUserPasswordHash(userId, hash);
+}
+
+export async function softDeleteUser(
+  userId: string
+): Promise<"not_found" | "already_deleted" | "success"> {
+  return softDeleteUserRecord(userId);
 }

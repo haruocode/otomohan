@@ -6,6 +6,7 @@ import { userMeRoutes } from "./routes/user/me.js";
 import { userProfileRoutes } from "./routes/user/profile.js";
 import { userPasswordRoutes } from "./routes/user/password.js";
 import { userAvatarRoutes } from "./routes/user/avatar.js";
+import { userDeleteRoutes } from "./routes/user/delete.js";
 
 export function buildApp() {
   const app = Fastify({
@@ -23,6 +24,7 @@ export function buildApp() {
   app.register(userProfileRoutes);
   app.register(userAvatarRoutes);
   app.register(userPasswordRoutes);
+  app.register(userDeleteRoutes);
 
   app.get("/health", async () => ({ status: "ok" }));
 

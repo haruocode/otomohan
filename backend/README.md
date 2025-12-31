@@ -6,6 +6,7 @@ This directory hosts a Fastify + TypeScript backend that will gradually replace 
 - `USER-02 PUT /user/profile` (basic profile update)
 - `USER-03 PUT /user/avatar` (multipart avatar upload)
 - `USER-04 PUT /user/password` (change password)
+- `USER-05 DELETE /user/delete` (account soft delete)
 
 ## Scripts
 

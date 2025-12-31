@@ -7,6 +7,7 @@ type UserRecord = {
   birthday: string | null;
   balance: number;
   password_hash: string;
+  is_deleted: boolean;
 };
 
 const usersTable: Record<string, UserRecord> = {
@@ -20,6 +21,7 @@ const usersTable: Record<string, UserRecord> = {
     balance: 1200,
     password_hash:
       "$2b$10$r5g2bHujNKJMkBz7OpHSxO/XrXhsat1qNvrcvxKl6nQe.iTMfPCY2",
+    is_deleted: false,
   },
 };
 
@@ -45,7 +47,11 @@ const userSettingsTable: Record<
 };
 
 export async function fetchUserById(id: string): Promise<UserRecord | null> {
-  return usersTable[id] ?? null;
+  const record = usersTable[id];
+  if (!record || record.is_deleted) {
+    return null;
+  }
+  return record;
 }
 
 export async function fetchUserNotifications(userId: string) {
@@ -93,4 +99,25 @@ export async function updateUserPasswordHash(
   if (!record) return false;
   record.password_hash = newHash;
   return true;
+}
+
+export async function softDeleteUserRecord(
+  id: string
+): Promise<"not_found" | "already_deleted" | "success"> {
+  const record = usersTable[id];
+  if (!record) return "not_found";
+  if (record.is_deleted) return "already_deleted";
+
+  record.is_deleted = true;
+  record.name = "退会ユーザー";
+  record.avatar_url = "";
+  record.bio = null;
+  record.gender = null;
+  record.birthday = null;
+
+  return "success";
+}
+
+export async function deleteUserSettingsRecord(id: string): Promise<void> {
+  delete userSettingsTable[id];
 }

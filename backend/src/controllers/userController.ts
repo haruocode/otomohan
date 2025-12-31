@@ -5,6 +5,7 @@ import {
   updateUserProfile,
   updateUserAvatar,
   changeUserPassword,
+  deleteUserAccount,
 } from "../services/userService.js";
 import { randomUUID } from "node:crypto";
 
@@ -338,6 +339,49 @@ export async function handleUpdateUserPassword(
       status: "error",
       error: "DB_ERROR",
       message: "Failed to update password.",
+    });
+  }
+
+  return reply.send({
+    status: "success",
+  });
+}
+
+export async function handleDeleteUserAccount(
+  request: FastifyRequest,
+  reply: FastifyReply
+) {
+  const authUser = request.user;
+  if (!authUser) {
+    return reply.status(401).send({
+      status: "error",
+      error: "UNAUTHORIZED",
+      message: "Authentication required.",
+    });
+  }
+
+  if (authUser.role !== "user") {
+    return reply.status(403).send({
+      status: "error",
+      error: "FORBIDDEN",
+      message: "This endpoint is for user role only.",
+    });
+  }
+
+  const result = await deleteUserAccount(authUser.id);
+
+  if (!result.success) {
+    if (result.reason === "USER_NOT_FOUND") {
+      return reply.status(404).send({
+        status: "error",
+        error: "USER_NOT_FOUND",
+      });
+    }
+
+    return reply.status(500).send({
+      status: "error",
+      error: "DB_ERROR",
+      message: "Failed to delete account.",
     });
   }
 
