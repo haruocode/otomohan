@@ -48,3 +48,20 @@ export async function fetchUserById(id: string): Promise<UserRecord | null> {
 export async function fetchUserNotifications(userId: string) {
   return userSettingsTable[userId]?.notifications ?? null;
 }
+
+export async function updateUserProfileRecord(
+  id: string,
+  payload: { name?: string; bio?: string | null }
+): Promise<Pick<UserRecord, "id" | "name" | "bio"> | null> {
+  const record = usersTable[id];
+  if (!record) return null;
+
+  if (payload.name !== undefined) {
+    record.name = payload.name;
+  }
+  if (payload.bio !== undefined) {
+    record.bio = payload.bio;
+  }
+
+  return { id: record.id, name: record.name, bio: record.bio };
+}

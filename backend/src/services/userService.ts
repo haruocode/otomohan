@@ -1,4 +1,7 @@
-import { getUserById } from "../repositories/userRepository.js";
+import {
+  getUserById,
+  updateUserProfile as updateUserProfileRecord,
+} from "../repositories/userRepository.js";
 import { getUserNotifications } from "../repositories/userSettingsRepository.js";
 
 export type UserProfile = {
@@ -11,6 +14,17 @@ export type UserProfile = {
   birthday: string | null;
   balance: number;
   notifications: Record<string, boolean>;
+};
+
+export type UserProfileUpdateInput = {
+  name?: string;
+  bio?: string | null;
+};
+
+export type UserProfileUpdateResult = {
+  id: string;
+  name: string;
+  bio: string | null;
 };
 
 export async function getUserProfile(
@@ -37,4 +51,15 @@ export async function getUserProfile(
     balance: user.balance,
     notifications,
   };
+}
+
+export async function updateUserProfile(
+  userId: string,
+  payload: UserProfileUpdateInput
+): Promise<UserProfileUpdateResult | null> {
+  const updated = await updateUserProfileRecord(userId, payload);
+  if (!updated) {
+    return null;
+  }
+  return updated;
 }

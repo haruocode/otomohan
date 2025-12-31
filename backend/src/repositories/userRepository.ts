@@ -1,4 +1,4 @@
-import { fetchUserById } from "../db/index.js";
+import { fetchUserById, updateUserProfileRecord } from "../db/index.js";
 
 export type UserEntity = {
   id: string;
@@ -12,4 +12,11 @@ export type UserEntity = {
 
 export async function getUserById(userId: string): Promise<UserEntity | null> {
   return fetchUserById(userId);
+}
+
+export async function updateUserProfile(
+  userId: string,
+  payload: { name?: string; bio?: string | null }
+) {
+  return updateUserProfileRecord(userId, payload);
 }
