@@ -4,6 +4,7 @@ import {
   getUserProfile,
   updateUserProfile,
   updateUserAvatar,
+  changeUserPassword,
 } from "../services/userService.js";
 import { randomUUID } from "node:crypto";
 
@@ -24,9 +25,18 @@ const MIME_EXTENSION_MAP: Record<string, string> = {
   "image/webp": "webp",
 };
 
+const PASSWORD_MIN_LENGTH = 8;
+const PASSWORD_MAX_LENGTH = 72;
+const ASCII_ONLY_REGEX = /^[\x20-\x7E]+$/;
+
 type UpdateProfileBody = {
   name?: string;
   bio?: string;
+};
+
+type UpdatePasswordBody = {
+  currentPassword?: string;
+  newPassword?: string;
 };
 
 function sanitizeBioInput(value: string) {
@@ -230,5 +240,108 @@ export async function handleUpdateUserAvatar(
   return reply.send({
     status: "success",
     avatar: result.avatar,
+  });
+}
+
+export async function handleUpdateUserPassword(
+  request: FastifyRequest,
+  reply: FastifyReply
+) {
+  const authUser = request.user;
+  if (!authUser) {
+    return reply.status(401).send({
+      status: "error",
+      error: "UNAUTHORIZED",
+      message: "Authentication required.",
+    });
+  }
+
+  if (authUser.role !== "user") {
+    return reply.status(403).send({
+      status: "error",
+      error: "FORBIDDEN",
+      message: "This endpoint is for user role only.",
+    });
+  }
+
+  const body = (request.body ?? {}) as UpdatePasswordBody;
+  const currentPassword = body.currentPassword;
+  const newPassword = body.newPassword;
+
+  if (typeof currentPassword !== "string" || !currentPassword.length) {
+    return reply.status(400).send({
+      status: "error",
+      error: "INVALID_CURRENT_PASSWORD",
+      message: "Current password is required.",
+    });
+  }
+
+  if (typeof newPassword !== "string" || !newPassword.length) {
+    return reply.status(400).send({
+      status: "error",
+      error: "INVALID_PASSWORD_FORMAT",
+      message: "New password is required.",
+    });
+  }
+
+  if (
+    newPassword.length < PASSWORD_MIN_LENGTH ||
+    newPassword.length > PASSWORD_MAX_LENGTH
+  ) {
+    return reply.status(400).send({
+      status: "error",
+      error: "INVALID_PASSWORD_FORMAT",
+      message: "Password must be between 8 and 72 characters.",
+    });
+  }
+
+  if (!ASCII_ONLY_REGEX.test(newPassword)) {
+    return reply.status(400).send({
+      status: "error",
+      error: "INVALID_PASSWORD_FORMAT",
+      message: "Password must use ASCII characters only.",
+    });
+  }
+
+  if (newPassword === currentPassword) {
+    return reply.status(400).send({
+      status: "error",
+      error: "INVALID_PASSWORD_FORMAT",
+      message: "New password must be different from current password.",
+    });
+  }
+
+  const result = await changeUserPassword(
+    authUser.id,
+    currentPassword,
+    newPassword
+  );
+
+  if (!result.success) {
+    if (result.reason === "INVALID_CURRENT_PASSWORD") {
+      return reply.status(400).send({
+        status: "error",
+        error: "INVALID_CURRENT_PASSWORD",
+        message: "Current password is incorrect.",
+      });
+    }
+
+    if (result.reason === "USER_NOT_FOUND") {
+      return reply.status(404).send({
+        status: "error",
+        error: "USER_NOT_FOUND",
+        message: "User not found.",
+      });
+    }
+
+    return reply.status(500).send({
+      status: "error",
+      error: "DB_ERROR",
+      message: "Failed to update password.",
+    });
+  }
+
+  return reply.send({
+    status: "success",
   });
 }

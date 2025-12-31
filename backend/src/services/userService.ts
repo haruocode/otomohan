@@ -2,9 +2,12 @@ import {
   getUserById,
   updateUserProfile as updateUserProfileRecord,
   saveUserAvatar,
+  getUserPasswordHash,
+  saveUserPasswordHash,
 } from "../repositories/userRepository.js";
 import { randomUUID } from "node:crypto";
 import { getUserNotifications } from "../repositories/userSettingsRepository.js";
+import { compare as comparePassword, hash as hashPassword } from "bcryptjs";
 
 export type UserProfile = {
   id: string;
@@ -85,4 +88,37 @@ export async function updateUserAvatar(
     return null;
   }
   return { avatar: result.avatar_url };
+}
+
+export type PasswordChangeResult =
+  | { success: true }
+  | {
+      success: false;
+      reason: "USER_NOT_FOUND" | "INVALID_CURRENT_PASSWORD" | "UPDATE_FAILED";
+    };
+
+const PASSWORD_SALT_ROUNDS = 10;
+
+export async function changeUserPassword(
+  userId: string,
+  currentPassword: string,
+  newPassword: string
+): Promise<PasswordChangeResult> {
+  const storedHash = await getUserPasswordHash(userId);
+  if (!storedHash) {
+    return { success: false, reason: "USER_NOT_FOUND" };
+  }
+
+  const isCurrentValid = await comparePassword(currentPassword, storedHash);
+  if (!isCurrentValid) {
+    return { success: false, reason: "INVALID_CURRENT_PASSWORD" };
+  }
+
+  const newHash = await hashPassword(newPassword, PASSWORD_SALT_ROUNDS);
+  const updated = await saveUserPasswordHash(userId, newHash);
+  if (!updated) {
+    return { success: false, reason: "UPDATE_FAILED" };
+  }
+
+  return { success: true };
 }

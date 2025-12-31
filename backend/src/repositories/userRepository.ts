@@ -2,6 +2,8 @@ import {
   fetchUserById,
   updateUserProfileRecord,
   updateUserAvatarUrl,
+  fetchUserPasswordHash,
+  updateUserPasswordHash,
 } from "../db/index.js";
 
 export type UserEntity = {
@@ -30,4 +32,17 @@ export async function saveUserAvatar(
   avatarUrl: string
 ): Promise<{ id: string; avatar_url: string } | null> {
   return updateUserAvatarUrl(userId, avatarUrl);
+}
+
+export async function getUserPasswordHash(
+  userId: string
+): Promise<string | null> {
+  return fetchUserPasswordHash(userId);
+}
+
+export async function saveUserPasswordHash(
+  userId: string,
+  hash: string
+): Promise<boolean> {
+  return updateUserPasswordHash(userId, hash);
 }

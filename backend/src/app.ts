@@ -1,8 +1,11 @@
 import Fastify from "fastify";
 import sensible from "fastify-sensible";
+import multipart from "@fastify/multipart";
 import authPlugin from "./plugins/auth.js";
 import { userMeRoutes } from "./routes/user/me.js";
 import { userProfileRoutes } from "./routes/user/profile.js";
+import { userPasswordRoutes } from "./routes/user/password.js";
+import { userAvatarRoutes } from "./routes/user/avatar.js";
 
 export function buildApp() {
   const app = Fastify({
@@ -10,9 +13,16 @@ export function buildApp() {
   });
 
   app.register(sensible);
+  app.register(multipart, {
+    limits: {
+      fileSize: 5 * 1024 * 1024,
+    },
+  });
   app.register(authPlugin);
   app.register(userMeRoutes);
   app.register(userProfileRoutes);
+  app.register(userAvatarRoutes);
+  app.register(userPasswordRoutes);
 
   app.get("/health", async () => ({ status: "ok" }));
 

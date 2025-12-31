@@ -6,6 +6,7 @@ type UserRecord = {
   gender: "male" | "female" | "other" | null;
   birthday: string | null;
   balance: number;
+  password_hash: string;
 };
 
 const usersTable: Record<string, UserRecord> = {
@@ -17,6 +18,8 @@ const usersTable: Record<string, UserRecord> = {
     gender: "male",
     birthday: "1995-03-10",
     balance: 1200,
+    password_hash:
+      "$2b$10$r5g2bHujNKJMkBz7OpHSxO/XrXhsat1qNvrcvxKl6nQe.iTMfPCY2",
   },
 };
 
@@ -74,4 +77,20 @@ export async function updateUserAvatarUrl(
   if (!record) return null;
   record.avatar_url = avatarUrl;
   return { id: record.id, avatar_url: record.avatar_url };
+}
+
+export async function fetchUserPasswordHash(
+  id: string
+): Promise<string | null> {
+  return usersTable[id]?.password_hash ?? null;
+}
+
+export async function updateUserPasswordHash(
+  id: string,
+  newHash: string
+): Promise<boolean> {
+  const record = usersTable[id];
+  if (!record) return false;
+  record.password_hash = newHash;
+  return true;
 }

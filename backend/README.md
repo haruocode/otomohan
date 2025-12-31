@@ -4,6 +4,8 @@ This directory hosts a Fastify + TypeScript backend that will gradually replace 
 
 - `USER-01 GET /user/me` (extended profile fetch)
 - `USER-02 PUT /user/profile` (basic profile update)
+- `USER-03 PUT /user/avatar` (multipart avatar upload)
+- `USER-04 PUT /user/password` (change password)
 
 ## Scripts
 
