@@ -1,9 +1,16 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
-import { listCallHistoryForAccount } from "../services/callService.js";
+import {
+  listCallHistoryForAccount,
+  getCallDetailForAccount,
+} from "../services/callService.js";
 
 type CallsQuery = {
   page?: number;
   limit?: number;
+};
+
+type CallDetailParams = {
+  callId?: string;
 };
 
 export async function handleGetCalls(
@@ -71,6 +78,74 @@ export async function handleGetCalls(
       status: "error",
       error: "INTERNAL_ERROR",
       message: "通話履歴の取得に失敗しました。",
+    });
+  }
+}
+
+export async function handleGetCallDetail(
+  request: FastifyRequest,
+  reply: FastifyReply
+) {
+  const authUser = request.user;
+  if (!authUser) {
+    return reply.status(401).send({
+      status: "error",
+      error: "UNAUTHORIZED",
+      message: "Authentication required.",
+    });
+  }
+
+  if (authUser.role !== "user" && authUser.role !== "otomo") {
+    return reply.status(403).send({
+      status: "error",
+      error: "FORBIDDEN",
+      message: "This endpoint is available for user or otomo accounts only.",
+    });
+  }
+
+  const params = request.params as CallDetailParams | undefined;
+  const callId = params?.callId?.trim();
+  if (!callId) {
+    return reply.status(400).send({
+      status: "error",
+      error: "INVALID_CALL_ID",
+      message: "callId is required.",
+    });
+  }
+
+  try {
+    const result = await getCallDetailForAccount({
+      callId,
+      accountId: authUser.id,
+      role: authUser.role,
+    });
+
+    if (!result.success) {
+      if (result.reason === "CALL_NOT_FOUND") {
+        return reply.status(404).send({
+          status: "error",
+          error: "CALL_NOT_FOUND",
+          message: "Call record not found.",
+        });
+      }
+
+      return reply.status(403).send({
+        status: "error",
+        error: "FORBIDDEN",
+        message: "You are not allowed to view this call.",
+      });
+    }
+
+    return reply.send({
+      status: "success",
+      call: result.call,
+    });
+  } catch (error) {
+    request.log.error(error, "Failed to fetch call detail");
+    return reply.status(500).send({
+      status: "error",
+      error: "INTERNAL_ERROR",
+      message: "通話詳細の取得に失敗しました。",
     });
   }
 }

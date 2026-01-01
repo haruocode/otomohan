@@ -1,4 +1,8 @@
-import { fetchCallsForParticipant } from "../db/index.js";
+import {
+  fetchCallsForParticipant,
+  fetchCallById,
+  fetchCallBillingUnits,
+} from "../db/index.js";
 
 export type CallEntity = {
   callId: string;
@@ -23,4 +27,22 @@ export async function listCallsForAccount(options: {
     limit: options.limit,
     offset: options.offset,
   });
+}
+
+export async function getCallById(callId: string): Promise<CallEntity | null> {
+  return fetchCallById(callId);
+}
+
+export type CallBillingUnitEntity = {
+  unitId: string;
+  callId: string;
+  minuteIndex: number;
+  chargedPoints: number;
+  timestamp: string;
+};
+
+export async function listCallBillingUnits(
+  callId: string
+): Promise<CallBillingUnitEntity[]> {
+  return fetchCallBillingUnits(callId);
 }

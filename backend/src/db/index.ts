@@ -119,6 +119,14 @@ type CallRecord = {
   billedPoints: number;
 };
 
+type CallBillingUnitRecord = {
+  unitId: string;
+  callId: string;
+  minuteIndex: number;
+  chargedPoints: number;
+  timestamp: string;
+};
+
 type RefreshTokenRecord = {
   token: string;
   userId: string;
@@ -364,7 +372,95 @@ const callHistoryTable: CallRecord[] = [
   },
 ];
 
+const callBillingUnitsTable: CallBillingUnitRecord[] = [
+  {
+    unitId: "unit_call_20250110_001_00",
+    callId: "call_20250110_001",
+    minuteIndex: 0,
+    chargedPoints: 100,
+    timestamp: "2025-01-10T12:04:20Z",
+  },
+  {
+    unitId: "unit_call_20250110_001_01",
+    callId: "call_20250110_001",
+    minuteIndex: 1,
+    chargedPoints: 100,
+    timestamp: "2025-01-10T12:05:20Z",
+  },
+  {
+    unitId: "unit_call_20250110_001_11",
+    callId: "call_20250110_001",
+    minuteIndex: 11,
+    chargedPoints: 100,
+    timestamp: "2025-01-10T12:15:20Z",
+  },
+  {
+    unitId: "unit_call_20250112_002_00",
+    callId: "call_20250112_002",
+    minuteIndex: 0,
+    chargedPoints: 100,
+    timestamp: "2025-01-12T21:01:00Z",
+  },
+  {
+    unitId: "unit_call_20250112_002_05",
+    callId: "call_20250112_002",
+    minuteIndex: 5,
+    chargedPoints: 100,
+    timestamp: "2025-01-12T21:06:00Z",
+  },
+  {
+    unitId: "unit_call_20250112_002_17",
+    callId: "call_20250112_002",
+    minuteIndex: 17,
+    chargedPoints: 100,
+    timestamp: "2025-01-12T21:18:00Z",
+  },
+  {
+    unitId: "unit_call_20250115_003_00",
+    callId: "call_20250115_003",
+    minuteIndex: 0,
+    chargedPoints: 100,
+    timestamp: "2025-01-15T09:31:00Z",
+  },
+  {
+    unitId: "unit_call_20250115_003_05",
+    callId: "call_20250115_003",
+    minuteIndex: 5,
+    chargedPoints: 100,
+    timestamp: "2025-01-15T09:36:00Z",
+  },
+  {
+    unitId: "unit_call_20250115_003_09",
+    callId: "call_20250115_003",
+    minuteIndex: 9,
+    chargedPoints: 100,
+    timestamp: "2025-01-15T09:40:00Z",
+  },
+];
+
 const refreshTokenTable: RefreshTokenRecord[] = [];
+
+export async function upsertRefreshTokenRecord(entry: {
+  userId: string;
+  token: string;
+  expiresAt: string;
+}): Promise<RefreshTokenRecord> {
+  const existingIndex = refreshTokenTable.findIndex(
+    (record) => record.userId === entry.userId
+  );
+  if (existingIndex !== -1) {
+    refreshTokenTable.splice(existingIndex, 1);
+  }
+  const record: RefreshTokenRecord = { ...entry };
+  refreshTokenTable.push(record);
+  return record;
+}
+
+export async function fetchRefreshTokenRecord(
+  token: string
+): Promise<RefreshTokenRecord | null> {
+  return refreshTokenTable.find((record) => record.token === token) ?? null;
+}
 
 export async function fetchUserById(id: string): Promise<UserRecord | null> {
   const record = usersTable[id];
@@ -525,27 +621,6 @@ export async function fetchWalletUsageForUser(options: {
   sort: "newest" | "oldest";
   otomoId?: string;
 }): Promise<{ items: WalletUsageViewRecord[]; total: number }> {
-  export async function upsertRefreshTokenRecord(entry: {
-    userId: string;
-    token: string;
-    expiresAt: string;
-  }): Promise<RefreshTokenRecord> {
-    const existingIndex = refreshTokenTable.findIndex(
-      (record) => record.userId === entry.userId
-    );
-    if (existingIndex !== -1) {
-      refreshTokenTable.splice(existingIndex, 1);
-    }
-    const record: RefreshTokenRecord = { ...entry };
-    refreshTokenTable.push(record);
-    return record;
-  }
-
-  export async function fetchRefreshTokenRecord(
-    token: string
-  ): Promise<RefreshTokenRecord | null> {
-    return refreshTokenTable.find((record) => record.token === token) ?? null;
-  }
   const { userId, limit, offset, sort, otomoId } = options;
   let records = walletUsageTable.filter((entry) => entry.userId === userId);
   if (otomoId) {
@@ -594,6 +669,20 @@ export async function fetchCallsForParticipant(options: {
   );
   const items = sorted.slice(safeOffset, safeOffset + safeLimit);
   return { items, total };
+}
+
+export async function fetchCallById(
+  callId: string
+): Promise<CallRecord | null> {
+  return callHistoryTable.find((record) => record.callId === callId) ?? null;
+}
+
+export async function fetchCallBillingUnits(
+  callId: string
+): Promise<CallBillingUnitRecord[]> {
+  return callBillingUnitsTable
+    .filter((unit) => unit.callId === callId)
+    .sort((a, b) => a.minuteIndex - b.minuteIndex);
 }
 
 export async function saveUserNotificationsRecord(

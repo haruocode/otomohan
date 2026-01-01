@@ -1,5 +1,8 @@
 import type { FastifyPluginAsync } from "fastify";
-import { handleGetCalls } from "../controllers/callController.js";
+import {
+  handleGetCalls,
+  handleGetCallDetail,
+} from "../controllers/callController.js";
 
 const callWithUserSchema = {
   type: "object",
@@ -50,6 +53,62 @@ const callsSuccessSchema = {
   additionalProperties: false,
 } as const;
 
+const callBillingUnitSchema = {
+  type: "object",
+  properties: {
+    minute: { type: "number" },
+    chargedPoints: { type: "number" },
+    timestamp: { type: "string" },
+  },
+  required: ["minute", "chargedPoints", "timestamp"],
+  additionalProperties: false,
+} as const;
+
+const callDetailSuccessSchema = {
+  type: "object",
+  properties: {
+    status: { type: "string", const: "success" },
+    call: {
+      type: "object",
+      properties: {
+        callId: { type: "string" },
+        withUser: callWithUserSchema,
+        startedAt: { type: "string" },
+        endedAt: { type: "string" },
+        durationSeconds: { type: "number" },
+        billedUnits: { type: "number" },
+        billedPoints: { type: "number" },
+        billingUnits: {
+          type: "array",
+          items: callBillingUnitSchema,
+        },
+      },
+      required: [
+        "callId",
+        "withUser",
+        "startedAt",
+        "endedAt",
+        "durationSeconds",
+        "billedUnits",
+        "billedPoints",
+        "billingUnits",
+      ],
+      additionalProperties: false,
+    },
+  },
+  required: ["status", "call"],
+  additionalProperties: false,
+} as const;
+
+const callDetailParamsSchema = {
+  type: "object",
+  properties: {
+    callId: { type: "string", minLength: 1 },
+  },
+  required: ["callId"],
+  additionalProperties: false,
+} as const;
+
 const callsErrorSchema = {
   type: "object",
   properties: {
@@ -88,5 +147,25 @@ export const callsRoutes: FastifyPluginAsync = async (app) => {
       },
     },
     handleGetCalls
+  );
+
+  app.get(
+    "/calls/:callId",
+    {
+      schema: {
+        params: callDetailParamsSchema,
+        response: {
+          200: callDetailSuccessSchema,
+          400: callsErrorSchema,
+          401: callsErrorSchema,
+          403: callsErrorSchema,
+          404: callsErrorSchema,
+          500: callsErrorSchema,
+        },
+        tags: ["calls"],
+        description: "CALL-02: Fetch detailed call history entry",
+      },
+    },
+    handleGetCallDetail
   );
 };

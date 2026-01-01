@@ -1,4 +1,8 @@
-import { listCallsForAccount } from "../repositories/callRepository.js";
+import {
+  listCallsForAccount,
+  getCallById,
+  listCallBillingUnits,
+} from "../repositories/callRepository.js";
 import { getUserById } from "../repositories/userRepository.js";
 import { findOtomoById } from "../repositories/otomoRepository.js";
 
@@ -20,6 +24,20 @@ export type CallHistoryResult = {
   calls: CallHistoryItem[];
   total: number;
 };
+
+export type CallBillingUnit = {
+  minute: number;
+  chargedPoints: number;
+  timestamp: string;
+};
+
+export type CallDetail = CallHistoryItem & {
+  billingUnits: CallBillingUnit[];
+};
+
+export type CallDetailResult =
+  | { success: true; call: CallDetail }
+  | { success: false; reason: "CALL_NOT_FOUND" | "FORBIDDEN" };
 
 export async function listCallHistoryForAccount(options: {
   accountId: string;
@@ -127,4 +145,77 @@ async function buildUserMap(ids: string[]) {
         ] => Boolean(entry)
       )
   );
+}
+
+export async function getCallDetailForAccount(options: {
+  callId: string;
+  accountId: string;
+  role: "user" | "otomo";
+}): Promise<CallDetailResult> {
+  const call = await getCallById(options.callId);
+  if (!call) {
+    return { success: false, reason: "CALL_NOT_FOUND" };
+  }
+
+  const isParticipant =
+    call.userId === options.accountId || call.otomoId === options.accountId;
+  if (!isParticipant) {
+    return { success: false, reason: "FORBIDDEN" };
+  }
+  const billingUnits = await listCallBillingUnits(call.callId);
+
+  return {
+    success: true,
+    call: {
+      callId: call.callId,
+      withUser:
+        call.userId === options.accountId
+          ? await resolveOtomoProfile(call.otomoId)
+          : await resolveUserProfile(call.userId),
+      startedAt: call.startedAt,
+      endedAt: call.endedAt,
+      durationSeconds: call.durationSeconds,
+      billedUnits: call.billedUnits,
+      billedPoints: call.billedPoints,
+      billingUnits: billingUnits.map((unit) => ({
+        minute: unit.minuteIndex,
+        chargedPoints: unit.chargedPoints,
+        timestamp: unit.timestamp,
+      })),
+    },
+  };
+}
+
+async function resolveOtomoProfile(otomoId: string) {
+  const otomo = await findOtomoById(otomoId);
+  if (!otomo) {
+    return {
+      id: otomoId,
+      name: "不明なおとも",
+      avatar: null,
+    };
+  }
+
+  return {
+    id: otomo.otomoId,
+    name: otomo.displayName,
+    avatar: otomo.profileImageUrl,
+  };
+}
+
+async function resolveUserProfile(userId: string) {
+  const user = await getUserById(userId);
+  if (!user) {
+    return {
+      id: userId,
+      name: "不明なユーザー",
+      avatar: null,
+    };
+  }
+
+  return {
+    id: user.id,
+    name: user.name,
+    avatar: user.avatar_url,
+  };
 }
