@@ -3,13 +3,15 @@ import { randomUUID } from "node:crypto";
 type UserRecord = {
   id: string;
   name: string;
-  avatar_url: string;
+  email: string;
+  avatar_url: string | null;
   bio: string | null;
   gender: "male" | "female" | "other" | null;
   birthday: string | null;
   balance: number;
   password_hash: string;
   is_deleted: boolean;
+  createdAt: string;
 };
 
 type OtomoReviewRecord = {
@@ -110,6 +112,7 @@ const usersTable: Record<string, UserRecord> = {
   "user-123": {
     id: "user-123",
     name: "たろう",
+    email: "taro@example.com",
     avatar_url: "/avatars/user-123.png",
     bio: "よろしくお願いします！",
     gender: "male",
@@ -118,6 +121,7 @@ const usersTable: Record<string, UserRecord> = {
     password_hash:
       "$2b$10$r5g2bHujNKJMkBz7OpHSxO/XrXhsat1qNvrcvxKl6nQe.iTMfPCY2",
     is_deleted: false,
+    createdAt: "2024-12-01T12:00:00Z",
   },
 };
 
@@ -315,6 +319,41 @@ export async function fetchUserById(id: string): Promise<UserRecord | null> {
   if (!record || record.is_deleted) {
     return null;
   }
+  return record;
+}
+
+export async function fetchUserByEmail(
+  email: string
+): Promise<UserRecord | null> {
+  const normalized = email.trim().toLowerCase();
+  const record = Object.values(usersTable).find(
+    (entry) => entry.email === normalized && !entry.is_deleted
+  );
+  return record ?? null;
+}
+
+export async function insertUserRecord(entry: {
+  name: string;
+  email: string;
+  passwordHash: string;
+}): Promise<UserRecord> {
+  const id = randomUUID();
+  const now = new Date().toISOString();
+  const record: UserRecord = {
+    id,
+    name: entry.name,
+    email: entry.email.trim().toLowerCase(),
+    avatar_url: null,
+    bio: "",
+    gender: null,
+    birthday: null,
+    balance: 0,
+    password_hash: entry.passwordHash,
+    is_deleted: false,
+    createdAt: now,
+  };
+
+  usersTable[id] = record;
   return record;
 }
 
@@ -525,7 +564,7 @@ export async function softDeleteUserRecord(
 
   record.is_deleted = true;
   record.name = "退会ユーザー";
-  record.avatar_url = "";
+  record.avatar_url = null;
   record.bio = null;
   record.gender = null;
   record.birthday = null;

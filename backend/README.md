@@ -13,6 +13,7 @@ This directory hosts a Fastify + TypeScript backend that will gradually replace 
 - `OTOMO-04 PUT /otomo/status` (update otomo availability)
 - `SET-01 GET /settings` (fetch consolidated app settings)
 - `SET-02 PUT /settings/notifications` (update notification toggles)
+- `AUTH-01 POST /auth/signup` (create a new user session)
 - `WAL-01 GET /wallet/balance` (fetch wallet balance)
 - `WAL-02 GET /wallet/plans` (list wallet charge plans)
 - `WAL-03 POST /wallet/charge` (apply a purchased plan to wallet)

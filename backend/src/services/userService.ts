@@ -18,7 +18,7 @@ export type UserProfile = {
   id: string;
   role: "user";
   name: string;
-  avatar: string;
+  avatar: string | null;
   bio: string | null;
   gender: string | null;
   birthday: string | null;

@@ -5,12 +5,15 @@ import {
   fetchUserPasswordHash,
   updateUserPasswordHash,
   softDeleteUserRecord,
+  fetchUserByEmail,
+  insertUserRecord,
 } from "../db/index.js";
 
 export type UserEntity = {
   id: string;
   name: string;
-  avatar_url: string;
+  email: string;
+  avatar_url: string | null;
   bio: string | null;
   gender: string | null;
   birthday: string | null;
@@ -19,6 +22,20 @@ export type UserEntity = {
 
 export async function getUserById(userId: string): Promise<UserEntity | null> {
   return fetchUserById(userId);
+}
+
+export async function getUserByEmail(
+  email: string
+): Promise<UserEntity | null> {
+  return fetchUserByEmail(email);
+}
+
+export async function createUser(entry: {
+  name: string;
+  email: string;
+  passwordHash: string;
+}): Promise<UserEntity> {
+  return insertUserRecord(entry);
 }
 
 export async function updateUserProfile(
