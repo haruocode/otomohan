@@ -17,6 +17,7 @@ This directory hosts a Fastify + TypeScript backend that will gradually replace 
 - `AUTH-02 POST /auth/login` (authenticate an existing user)
 - `AUTH-03 POST /auth/logout` (terminate client session)
 - `AUTH-04 POST /auth/refresh` (issue a new access token)
+- `AUTH-05 GET /auth/me` (fetch authenticated user profile)
 - `WAL-01 GET /wallet/balance` (fetch wallet balance)
 - `WAL-02 GET /wallet/plans` (list wallet charge plans)
 - `WAL-03 POST /wallet/charge` (apply a purchased plan to wallet)

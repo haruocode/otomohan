@@ -15,6 +15,7 @@ import {
   saveRefreshTokenForUser,
   findRefreshToken,
 } from "../repositories/authRepository.js";
+import { findOtomoById } from "../repositories/otomoRepository.js";
 
 const PASSWORD_SALT_ROUNDS = 10;
 const TOKEN_EXPIRATION_SECONDS = 60 * 30; // 30m mock expiry
@@ -224,4 +225,85 @@ async function issueSessionTokens(user: UserEntity) {
     refreshToken,
     expiresIn: TOKEN_EXPIRATION_SECONDS,
   } as const;
+}
+
+type AuthenticatedRole = "user" | "otomo" | "admin";
+
+export type AuthMeResult =
+  | {
+      success: true;
+      user: {
+        id: string;
+        role: "user" | "otomo";
+        name: string;
+        avatar: string | null;
+        balance: number;
+        status?: "online" | "busy" | "offline" | "break";
+      };
+    }
+  | {
+      success: false;
+      reason: "NOT_FOUND" | "UNSUPPORTED_ROLE" | "UNKNOWN_ERROR";
+    };
+
+export async function getAuthenticatedUserProfile(payload: {
+  userId: string;
+  role: AuthenticatedRole;
+}): Promise<AuthMeResult> {
+  try {
+    if (payload.role === "user") {
+      const user = await getUserById(payload.userId);
+      if (!user) {
+        return { success: false, reason: "NOT_FOUND" };
+      }
+      const wallet = await getWalletByUserId(user.id);
+      return {
+        success: true,
+        user: {
+          id: user.id,
+          role: "user",
+          name: user.name,
+          avatar: user.avatar_url,
+          balance: wallet?.balance ?? user.balance ?? 0,
+        },
+      };
+    }
+
+    if (payload.role === "otomo") {
+      const otomo = await findOtomoById(payload.userId);
+      if (!otomo) {
+        return { success: false, reason: "NOT_FOUND" };
+      }
+      return {
+        success: true,
+        user: {
+          id: otomo.otomoId,
+          role: "otomo",
+          name: otomo.displayName,
+          avatar: otomo.profileImageUrl,
+          balance: 0,
+          status: deriveOtomoStatus(otomo),
+        },
+      };
+    }
+
+    return { success: false, reason: "UNSUPPORTED_ROLE" };
+  } catch {
+    return { success: false, reason: "UNKNOWN_ERROR" };
+  }
+}
+
+type OtomoEntity = NonNullable<Awaited<ReturnType<typeof findOtomoById>>>;
+
+function deriveOtomoStatus(record: OtomoEntity) {
+  if (record.isOnline && record.isAvailable) {
+    return "online" as const;
+  }
+  if (record.isOnline && !record.isAvailable) {
+    return "busy" as const;
+  }
+  if (!record.isOnline && record.isAvailable) {
+    return "break" as const;
+  }
+  return "offline" as const;
 }

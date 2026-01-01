@@ -3,6 +3,7 @@ import {
   signUpUser,
   loginUser,
   refreshAccessToken,
+  getAuthenticatedUserProfile,
 } from "../services/authService.js";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -241,4 +242,52 @@ export async function handlePostAuthRefresh(
       message: "サーバー内部でエラーが発生しました。",
     });
   }
+}
+
+export async function handleGetAuthMe(
+  request: FastifyRequest,
+  reply: FastifyReply
+) {
+  const authUser = request.user;
+  if (!authUser) {
+    return reply.status(401).send({
+      status: "error",
+      error: "UNAUTHORIZED",
+      message: "Authentication required.",
+    });
+  }
+
+  const result = await getAuthenticatedUserProfile({
+    userId: authUser.id,
+    role: authUser.role,
+  });
+
+  if (!result.success) {
+    if (result.reason === "NOT_FOUND") {
+      return reply.status(404).send({
+        status: "error",
+        error: "USER_NOT_FOUND",
+        message: "User record not found.",
+      });
+    }
+
+    if (result.reason === "UNSUPPORTED_ROLE") {
+      return reply.status(403).send({
+        status: "error",
+        error: "ROLE_NOT_SUPPORTED",
+        message: "The current role cannot use this endpoint.",
+      });
+    }
+
+    return reply.status(500).send({
+      status: "error",
+      error: "UNKNOWN_ERROR",
+      message: "サーバー内部でエラーが発生しました。",
+    });
+  }
+
+  return reply.send({
+    status: "success",
+    user: result.user,
+  });
 }
