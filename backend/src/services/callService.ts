@@ -2,9 +2,13 @@ import {
   listCallsForAccount,
   getCallById,
   listCallBillingUnits,
+  finalizeCallDebugTotals,
 } from "../repositories/callRepository.js";
 import { getUserById } from "../repositories/userRepository.js";
-import { findOtomoById } from "../repositories/otomoRepository.js";
+import {
+  findOtomoById,
+  updateOtomoStatus,
+} from "../repositories/otomoRepository.js";
 
 export type CallHistoryItem = {
   callId: string;
@@ -41,6 +45,17 @@ export type CallDetailResult =
 
 export type CallBillingUnitsResult =
   | { success: true; callId: string; billingUnits: CallBillingUnit[] }
+  | { success: false; reason: "CALL_NOT_FOUND" | "FORBIDDEN" };
+
+export type DebugCallForceEndResult =
+  | {
+      success: true;
+      callId: string;
+      endedAt: string;
+      durationSeconds: number;
+      billedUnits: number;
+      billedPoints: number;
+    }
   | { success: false; reason: "CALL_NOT_FOUND" | "FORBIDDEN" };
 
 export async function listCallHistoryForAccount(options: {
@@ -214,6 +229,72 @@ export async function getCallBillingUnitsForAccount(options: {
       chargedPoints: unit.chargedPoints,
       timestamp: unit.timestamp,
     })),
+  };
+}
+
+export async function forceEndCallForDebug(options: {
+  callId: string;
+  accountId: string;
+  role: "user" | "otomo" | "admin";
+}): Promise<DebugCallForceEndResult> {
+  const call = await getCallById(options.callId);
+  if (!call) {
+    return { success: false, reason: "CALL_NOT_FOUND" };
+  }
+
+  const isParticipant =
+    call.userId === options.accountId || call.otomoId === options.accountId;
+  const canBypass = options.role === "admin";
+  if (!isParticipant && !canBypass) {
+    return { success: false, reason: "FORBIDDEN" };
+  }
+
+  const billingUnits = await listCallBillingUnits(call.callId);
+  const billingStats = billingUnits.reduce(
+    (acc, unit) => {
+      acc.billedPoints += unit.chargedPoints;
+      acc.billedUnits += 1;
+      return acc;
+    },
+    { billedUnits: 0, billedPoints: 0 }
+  );
+
+  const now = new Date();
+  const endedAt = now.toISOString();
+  const startedAt = new Date(call.startedAt);
+  const durationMs = Math.max(
+    0,
+    now.getTime() -
+      (Number.isNaN(startedAt.getTime()) ? now.getTime() : startedAt.getTime())
+  );
+  const durationSeconds = Math.round(durationMs / 1000);
+
+  const updated = await finalizeCallDebugTotals({
+    callId: call.callId,
+    endedAt,
+    durationSeconds,
+    billedUnits: billingStats.billedUnits,
+    billedPoints: billingStats.billedPoints,
+  });
+
+  if (!updated) {
+    return { success: false, reason: "CALL_NOT_FOUND" };
+  }
+
+  await updateOtomoStatus(call.otomoId, {
+    isOnline: true,
+    isAvailable: true,
+    statusMessage: "オンライン待機中（debug end）",
+    statusUpdatedAt: endedAt,
+  });
+
+  return {
+    success: true,
+    callId: call.callId,
+    endedAt,
+    durationSeconds,
+    billedUnits: billingStats.billedUnits,
+    billedPoints: billingStats.billedPoints,
   };
 }
 

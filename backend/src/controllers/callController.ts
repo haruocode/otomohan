@@ -3,6 +3,7 @@ import {
   listCallHistoryForAccount,
   getCallDetailForAccount,
   getCallBillingUnitsForAccount,
+  forceEndCallForDebug,
 } from "../services/callService.js";
 
 type CallsQuery = {
@@ -11,6 +12,10 @@ type CallsQuery = {
 };
 
 type CallDetailParams = {
+  callId?: string;
+};
+
+type CallDebugEndBody = {
   callId?: string;
 };
 
@@ -215,6 +220,93 @@ export async function handleGetCallBilling(
       status: "error",
       error: "INTERNAL_ERROR",
       message: "課金明細の取得に失敗しました。",
+    });
+  }
+}
+
+export async function handlePostCallDebugEnd(
+  request: FastifyRequest,
+  reply: FastifyReply
+) {
+  if (process.env.NODE_ENV === "production") {
+    return reply.status(403).send({
+      status: "error",
+      error: "NOT_ALLOWED",
+      message: "This endpoint is disabled in production.",
+    });
+  }
+
+  const authUser = request.user;
+  if (!authUser) {
+    return reply.status(401).send({
+      status: "error",
+      error: "UNAUTHORIZED",
+      message: "Authentication required.",
+    });
+  }
+
+  if (
+    authUser.role !== "user" &&
+    authUser.role !== "otomo" &&
+    authUser.role !== "admin"
+  ) {
+    return reply.status(403).send({
+      status: "error",
+      error: "FORBIDDEN",
+      message: "This endpoint is available for authenticated accounts only.",
+    });
+  }
+
+  const body = (request.body ?? {}) as CallDebugEndBody;
+  const callId = body.callId?.trim();
+  if (!callId) {
+    return reply.status(400).send({
+      status: "error",
+      error: "INVALID_CALL_ID",
+      message: "callId is required.",
+    });
+  }
+
+  try {
+    const result = await forceEndCallForDebug({
+      callId,
+      accountId: authUser.id,
+      role: authUser.role,
+    });
+
+    if (!result.success) {
+      if (result.reason === "CALL_NOT_FOUND") {
+        return reply.status(404).send({
+          status: "error",
+          error: "CALL_NOT_FOUND",
+          message: "Call record not found.",
+        });
+      }
+
+      return reply.status(403).send({
+        status: "error",
+        error: "FORBIDDEN",
+        message: "You are not allowed to control this call.",
+      });
+    }
+
+    return reply.send({
+      status: "success",
+      callId: result.callId,
+      ended: true,
+      meta: {
+        endedAt: result.endedAt,
+        durationSeconds: result.durationSeconds,
+        billedUnits: result.billedUnits,
+        billedPoints: result.billedPoints,
+      },
+    });
+  } catch (error) {
+    request.log.error(error, "Failed to force-end call for debug");
+    return reply.status(500).send({
+      status: "error",
+      error: "INTERNAL_ERROR",
+      message: "デバッグ用の通話終了に失敗しました。",
     });
   }
 }

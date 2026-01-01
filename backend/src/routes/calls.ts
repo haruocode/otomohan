@@ -3,6 +3,7 @@ import {
   handleGetCalls,
   handleGetCallDetail,
   handleGetCallBilling,
+  handlePostCallDebugEnd,
 } from "../controllers/callController.js";
 
 const callWithUserSchema = {
@@ -124,6 +125,37 @@ const callDetailParamsSchema = {
   additionalProperties: false,
 } as const;
 
+const callDebugEndBodySchema = {
+  type: "object",
+  properties: {
+    callId: { type: "string", minLength: 1 },
+  },
+  required: ["callId"],
+  additionalProperties: false,
+} as const;
+
+const callDebugEndSuccessSchema = {
+  type: "object",
+  properties: {
+    status: { type: "string", const: "success" },
+    callId: { type: "string" },
+    ended: { type: "boolean" },
+    meta: {
+      type: "object",
+      properties: {
+        endedAt: { type: "string" },
+        durationSeconds: { type: "number" },
+        billedUnits: { type: "number" },
+        billedPoints: { type: "number" },
+      },
+      required: ["endedAt", "durationSeconds", "billedUnits", "billedPoints"],
+      additionalProperties: false,
+    },
+  },
+  required: ["status", "callId", "ended", "meta"],
+  additionalProperties: false,
+} as const;
+
 const callsErrorSchema = {
   type: "object",
   properties: {
@@ -202,5 +234,26 @@ export const callsRoutes: FastifyPluginAsync = async (app) => {
       },
     },
     handleGetCallBilling
+  );
+
+  app.post(
+    "/calls/debug/end",
+    {
+      schema: {
+        body: callDebugEndBodySchema,
+        response: {
+          200: callDebugEndSuccessSchema,
+          400: callsErrorSchema,
+          401: callsErrorSchema,
+          403: callsErrorSchema,
+          404: callsErrorSchema,
+          500: callsErrorSchema,
+        },
+        tags: ["calls"],
+        description:
+          "CALL-04: Force end a call for debugging (disabled in production)",
+      },
+    },
+    handlePostCallDebugEnd
   );
 };

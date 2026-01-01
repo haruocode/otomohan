@@ -2,6 +2,7 @@ import {
   fetchCallsForParticipant,
   fetchCallById,
   fetchCallBillingUnits,
+  finalizeCallRecord,
 } from "../db/index.js";
 
 export type CallEntity = {
@@ -45,4 +46,19 @@ export async function listCallBillingUnits(
   callId: string
 ): Promise<CallBillingUnitEntity[]> {
   return fetchCallBillingUnits(callId);
+}
+
+export async function finalizeCallDebugTotals(options: {
+  callId: string;
+  endedAt: string;
+  durationSeconds: number;
+  billedUnits: number;
+  billedPoints: number;
+}): Promise<CallEntity | null> {
+  return finalizeCallRecord(options.callId, {
+    endedAt: options.endedAt,
+    durationSeconds: options.durationSeconds,
+    billedUnits: options.billedUnits,
+    billedPoints: options.billedPoints,
+  });
 }

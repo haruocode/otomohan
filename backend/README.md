@@ -26,6 +26,7 @@ This directory hosts a Fastify + TypeScript backend that will gradually replace 
 - `CALL-01 GET /calls` (list call history for the authenticated account)
 - `CALL-02 GET /calls/{id}` (fetch call detail with billing units)
 - `CALL-03 GET /calls/{id}/billing` (fetch per-minute billing units only)
+- `CALL-04 POST /calls/debug/end` (force-end a call for local debugging)
 
 ## Scripts
 

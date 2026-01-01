@@ -685,6 +685,28 @@ export async function fetchCallBillingUnits(
     .sort((a, b) => a.minuteIndex - b.minuteIndex);
 }
 
+export async function finalizeCallRecord(
+  callId: string,
+  payload: {
+    endedAt: string;
+    durationSeconds: number;
+    billedUnits: number;
+    billedPoints: number;
+  }
+): Promise<CallRecord | null> {
+  const record = callHistoryTable.find((entry) => entry.callId === callId);
+  if (!record) {
+    return null;
+  }
+
+  record.endedAt = payload.endedAt;
+  record.durationSeconds = payload.durationSeconds;
+  record.billedUnits = payload.billedUnits;
+  record.billedPoints = payload.billedPoints;
+
+  return record;
+}
+
 export async function saveUserNotificationsRecord(
   userId: string,
   notifications: NotificationSettingsRecord
