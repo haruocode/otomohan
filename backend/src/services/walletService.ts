@@ -4,7 +4,9 @@ import {
   hasProcessedPayment,
   logWalletCharge,
   listWalletHistoryForUser,
+  listWalletUsageForUser,
   type WalletHistoryEntry,
+  type WalletUsageEntry,
 } from "../repositories/walletRepository.js";
 import {
   getActiveWalletPlans,
@@ -45,6 +47,18 @@ export type WalletHistoryQuery = {
 
 export type WalletHistoryResponse = {
   items: WalletHistoryEntry[];
+  total: number;
+};
+
+export type WalletUsageQuery = {
+  limit?: number;
+  offset?: number;
+  sort?: "newest" | "oldest";
+  otomoId?: string;
+};
+
+export type WalletUsageResponse = {
+  items: WalletUsageEntry[];
   total: number;
 };
 
@@ -119,5 +133,27 @@ export async function listWalletPurchaseHistory(
     limit,
     offset,
     sort,
+  });
+}
+
+export async function listWalletUsage(
+  userId: string,
+  query: WalletUsageQuery
+): Promise<WalletUsageResponse> {
+  const limit = Math.min(Math.max(query.limit ?? 20, 1), 100);
+  const offset = Math.max(query.offset ?? 0, 0);
+  const sort: "newest" | "oldest" =
+    query.sort === "oldest" ? "oldest" : "newest";
+  const otomoId =
+    typeof query.otomoId === "string" && query.otomoId.trim().length
+      ? query.otomoId.trim()
+      : undefined;
+
+  return listWalletUsageForUser({
+    userId,
+    limit,
+    offset,
+    sort,
+    otomoId,
   });
 }

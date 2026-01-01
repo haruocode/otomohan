@@ -4,6 +4,7 @@ import {
   insertWalletHistoryRecord,
   isPaymentAlreadyProcessed,
   fetchWalletHistoryForUser,
+  fetchWalletUsageForUser,
 } from "../db/index.js";
 
 export type WalletSnapshot = {
@@ -55,4 +56,24 @@ export async function listWalletHistoryForUser(options: {
   sort: "newest" | "oldest";
 }): Promise<{ items: WalletHistoryEntry[]; total: number }> {
   return fetchWalletHistoryForUser(options);
+}
+
+export type WalletUsageEntry = {
+  usageId: string;
+  callId: string;
+  otomoId: string;
+  otomoName: string;
+  usedPoints: number;
+  durationMinutes: number;
+  createdAt: string;
+};
+
+export async function listWalletUsageForUser(options: {
+  userId: string;
+  limit: number;
+  offset: number;
+  sort: "newest" | "oldest";
+  otomoId?: string;
+}): Promise<{ items: WalletUsageEntry[]; total: number }> {
+  return fetchWalletUsageForUser(options);
 }

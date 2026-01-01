@@ -4,6 +4,7 @@ import {
   chargeWallet,
   listWalletPlans,
   listWalletPurchaseHistory,
+  listWalletUsage,
 } from "../services/walletService.js";
 
 export async function handleGetWalletBalance(
@@ -77,6 +78,10 @@ type WalletHistoryQueryParams = {
   sort?: "newest" | "oldest";
 };
 
+type WalletUsageQueryParams = WalletHistoryQueryParams & {
+  otomoId?: string;
+};
+
 export async function handleGetWalletPurchaseHistory(
   request: FastifyRequest,
   reply: FastifyReply
@@ -145,6 +150,91 @@ export async function handleGetWalletPurchaseHistory(
       status: "error",
       error: "INTERNAL_ERROR",
       message: "購入履歴の取得に失敗しました。",
+    });
+  }
+}
+
+export async function handleGetWalletUsage(
+  request: FastifyRequest,
+  reply: FastifyReply
+) {
+  const authUser = request.user;
+  if (!authUser) {
+    return reply.status(401).send({
+      status: "error",
+      error: "UNAUTHORIZED",
+      message: "Authentication required.",
+    });
+  }
+
+  if (authUser.role !== "user") {
+    return reply.status(403).send({
+      status: "error",
+      error: "FORBIDDEN",
+      message: "This endpoint is for user accounts only.",
+    });
+  }
+
+  const query = request.query as WalletUsageQueryParams | undefined;
+  const limit = query?.limit;
+  const offset = query?.offset;
+  const sort = query?.sort;
+  const otomoId = query?.otomoId;
+
+  if (limit !== undefined && (!Number.isFinite(limit) || limit <= 0)) {
+    return reply.status(400).send({
+      status: "error",
+      error: "INVALID_LIMIT",
+      message: "limit must be a positive number.",
+    });
+  }
+
+  if (offset !== undefined && (!Number.isFinite(offset) || offset < 0)) {
+    return reply.status(400).send({
+      status: "error",
+      error: "INVALID_OFFSET",
+      message: "offset must be zero or greater.",
+    });
+  }
+
+  if (sort !== undefined && sort !== "newest" && sort !== "oldest") {
+    return reply.status(400).send({
+      status: "error",
+      error: "INVALID_SORT",
+      message: "sort must be either 'newest' or 'oldest'.",
+    });
+  }
+
+  if (
+    otomoId !== undefined &&
+    (typeof otomoId !== "string" || !otomoId.trim().length)
+  ) {
+    return reply.status(400).send({
+      status: "error",
+      error: "INVALID_OTOMO_ID",
+      message: "otomoId must be a non-empty string when provided.",
+    });
+  }
+
+  try {
+    const usage = await listWalletUsage(authUser.id, {
+      limit,
+      offset,
+      sort,
+      otomoId,
+    });
+
+    return reply.send({
+      status: "success",
+      items: usage.items,
+      total: usage.total,
+    });
+  } catch (error) {
+    request.log.error(error, "Failed to load wallet usage history");
+    return reply.status(500).send({
+      status: "error",
+      error: "INTERNAL_ERROR",
+      message: "ポイント使用履歴の取得に失敗しました。",
     });
   }
 }

@@ -92,6 +92,20 @@ type WalletHistoryViewRecord = WalletHistoryRecord & {
   planTitle: string;
 };
 
+type WalletUsageRecord = {
+  usageId: string;
+  userId: string;
+  callId: string;
+  otomoId: string;
+  usedPoints: number;
+  durationMinutes: number;
+  createdAt: string;
+};
+
+type WalletUsageViewRecord = WalletUsageRecord & {
+  otomoName: string;
+};
+
 const usersTable: Record<string, UserRecord> = {
   "user-123": {
     id: "user-123",
@@ -266,6 +280,35 @@ const walletPlansTable: WalletPlanRecord[] = [
 ];
 
 const walletHistoryTable: WalletHistoryRecord[] = [];
+const walletUsageTable: WalletUsageRecord[] = [
+  {
+    usageId: "usage_001",
+    userId: "user-123",
+    callId: "call_20250115_01",
+    otomoId: "otomo_001",
+    usedPoints: 240,
+    durationMinutes: 2,
+    createdAt: "2025-01-15T12:00:00Z",
+  },
+  {
+    usageId: "usage_002",
+    userId: "user-123",
+    callId: "call_20250116_01",
+    otomoId: "otomo_002",
+    usedPoints: 360,
+    durationMinutes: 3,
+    createdAt: "2025-01-16T10:30:00Z",
+  },
+  {
+    usageId: "usage_003",
+    userId: "user-123",
+    callId: "call_20250118_01",
+    otomoId: "otomo_003",
+    usedPoints: 420,
+    durationMinutes: 3,
+    createdAt: "2025-01-18T21:45:00Z",
+  },
+];
 
 export async function fetchUserById(id: string): Promise<UserRecord | null> {
   const record = usersTable[id];
@@ -379,6 +422,42 @@ export async function fetchWalletHistoryForUser(options: {
   const items = paged.map((record) => ({
     ...record,
     planTitle: planTitleMap.get(record.planId) ?? "不明なプラン",
+  }));
+
+  return { items, total };
+}
+
+export async function fetchWalletUsageForUser(options: {
+  userId: string;
+  limit: number;
+  offset: number;
+  sort: "newest" | "oldest";
+  otomoId?: string;
+}): Promise<{ items: WalletUsageViewRecord[]; total: number }> {
+  const { userId, limit, offset, sort, otomoId } = options;
+  let records = walletUsageTable.filter((entry) => entry.userId === userId);
+  if (otomoId) {
+    records = records.filter((entry) => entry.otomoId === otomoId);
+  }
+
+  const total = records.length;
+  const sorted = [...records].sort((a, b) => {
+    const aTime = new Date(a.createdAt).getTime();
+    const bTime = new Date(b.createdAt).getTime();
+    return sort === "oldest" ? aTime - bTime : bTime - aTime;
+  });
+
+  const safeOffset = Math.max(offset, 0);
+  const safeLimit = Math.max(limit, 0);
+  const paged = sorted.slice(safeOffset, safeOffset + safeLimit);
+
+  const otomoNameMap = new Map(
+    otomoTable.map((otomo) => [otomo.otomoId, otomo.displayName])
+  );
+
+  const items = paged.map((record) => ({
+    ...record,
+    otomoName: otomoNameMap.get(record.otomoId) ?? "不明なおとも",
   }));
 
   return { items, total };

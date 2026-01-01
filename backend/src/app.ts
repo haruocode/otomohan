@@ -16,6 +16,7 @@ import { walletBalanceRoutes } from "./routes/wallet/balance.js";
 import { walletPlansRoutes } from "./routes/wallet/plans.js";
 import { walletChargeRoutes } from "./routes/wallet/charge.js";
 import { walletPurchaseHistoryRoutes } from "./routes/wallet/purchase-history.js";
+import { walletUsageRoutes } from "./routes/wallet/usage.js";
 
 export function buildApp() {
   const app = Fastify({
@@ -43,6 +44,7 @@ export function buildApp() {
   app.register(walletPlansRoutes);
   app.register(walletChargeRoutes);
   app.register(walletPurchaseHistoryRoutes);
+  app.register(walletUsageRoutes);
 
   app.get("/health", async () => ({ status: "ok" }));
 
