@@ -1,5 +1,9 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
-import { signUpUser, loginUser } from "../services/authService.js";
+import {
+  signUpUser,
+  loginUser,
+  refreshAccessToken,
+} from "../services/authService.js";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -12,6 +16,10 @@ type SignUpBody = {
 type LoginBody = {
   email?: string;
   password?: string;
+};
+
+type RefreshBody = {
+  refreshToken?: string;
 };
 
 export async function handlePostAuthSignup(
@@ -82,6 +90,8 @@ export async function handlePostAuthSignup(
       status: "success",
       user: result.user,
       token: result.token,
+      refreshToken: result.refreshToken,
+      expiresIn: result.expiresIn,
     });
   } catch (error) {
     request.log.error(error, "Failed to process signup request");
@@ -152,6 +162,8 @@ export async function handlePostAuthLogin(
       status: "success",
       user: result.user,
       token: result.token,
+      refreshToken: result.refreshToken,
+      expiresIn: result.expiresIn,
     });
   } catch (error) {
     request.log.error(error, "Failed to process login request");
@@ -180,4 +192,53 @@ export async function handlePostAuthLogout(
   return reply.send({
     status: "success",
   });
+}
+
+export async function handlePostAuthRefresh(
+  request: FastifyRequest,
+  reply: FastifyReply
+) {
+  const body = request.body as RefreshBody | undefined;
+  const refreshToken = body?.refreshToken?.trim();
+
+  if (!refreshToken) {
+    return reply.status(401).send({
+      status: "error",
+      error: "INVALID_REFRESH_TOKEN",
+      message: "refreshToken is required.",
+    });
+  }
+
+  try {
+    const result = await refreshAccessToken(refreshToken);
+    if (!result.success) {
+      if (result.reason === "INVALID_REFRESH_TOKEN") {
+        return reply.status(401).send({
+          status: "error",
+          error: "INVALID_REFRESH_TOKEN",
+          message: "refreshToken is invalid or expired.",
+        });
+      }
+
+      return reply.status(500).send({
+        status: "error",
+        error: "DB_ERROR",
+        message: "サーバー内部でエラーが発生しました。",
+      });
+    }
+
+    return reply.send({
+      status: "success",
+      accessToken: result.accessToken,
+      refreshToken: result.refreshToken,
+      expiresIn: result.expiresIn,
+    });
+  } catch (error) {
+    request.log.error(error, "Failed to refresh tokens");
+    return reply.status(500).send({
+      status: "error",
+      error: "DB_ERROR",
+      message: "サーバー内部でエラーが発生しました。",
+    });
+  }
 }

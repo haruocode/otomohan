@@ -108,6 +108,12 @@ type WalletUsageViewRecord = WalletUsageRecord & {
   otomoName: string;
 };
 
+type RefreshTokenRecord = {
+  token: string;
+  userId: string;
+  expiresAt: string;
+};
+
 const usersTable: Record<string, UserRecord> = {
   "user-123": {
     id: "user-123",
@@ -314,6 +320,8 @@ const walletUsageTable: WalletUsageRecord[] = [
   },
 ];
 
+const refreshTokenTable: RefreshTokenRecord[] = [];
+
 export async function fetchUserById(id: string): Promise<UserRecord | null> {
   const record = usersTable[id];
   if (!record || record.is_deleted) {
@@ -473,6 +481,27 @@ export async function fetchWalletUsageForUser(options: {
   sort: "newest" | "oldest";
   otomoId?: string;
 }): Promise<{ items: WalletUsageViewRecord[]; total: number }> {
+  export async function upsertRefreshTokenRecord(entry: {
+    userId: string;
+    token: string;
+    expiresAt: string;
+  }): Promise<RefreshTokenRecord> {
+    const existingIndex = refreshTokenTable.findIndex(
+      (record) => record.userId === entry.userId
+    );
+    if (existingIndex !== -1) {
+      refreshTokenTable.splice(existingIndex, 1);
+    }
+    const record: RefreshTokenRecord = { ...entry };
+    refreshTokenTable.push(record);
+    return record;
+  }
+
+  export async function fetchRefreshTokenRecord(
+    token: string
+  ): Promise<RefreshTokenRecord | null> {
+    return refreshTokenTable.find((record) => record.token === token) ?? null;
+  }
   const { userId, limit, offset, sort, otomoId } = options;
   let records = walletUsageTable.filter((entry) => entry.userId === userId);
   if (otomoId) {

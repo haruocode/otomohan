@@ -135,7 +135,7 @@ app.post("/auth/refresh", async (req, reply) => {
 
   const row = await db.query(
     "SELECT user_id, expires_at FROM refresh_tokens WHERE token=$1",
-    [refreshToken],
+    [refreshToken]
   );
 
   if (row.rowCount === 0 || row.rows[0].expires_at < new Date()) {
@@ -155,7 +155,7 @@ app.post("/auth/refresh", async (req, reply) => {
   const newRefreshToken = uuidv4();
   await db.query(
     "UPDATE refresh_tokens SET token=$1, expires_at=NOW() + INTERVAL '30 days' WHERE user_id=$2",
-    [newRefreshToken, userId],
+    [newRefreshToken, userId]
   );
 
   reply

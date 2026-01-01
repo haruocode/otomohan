@@ -32,8 +32,10 @@ const signUpSuccessResponse = {
     status: { type: "string", const: "success" },
     user: signUpUserSchema,
     token: { type: "string" },
+    refreshToken: { type: "string" },
+    expiresIn: { type: "number" },
   },
-  required: ["status", "user", "token"],
+  required: ["status", "user", "token", "refreshToken", "expiresIn"],
   additionalProperties: false,
 } as const;
 
