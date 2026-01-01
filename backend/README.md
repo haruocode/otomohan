@@ -16,6 +16,7 @@ This directory hosts a Fastify + TypeScript backend that will gradually replace 
 - `WAL-01 GET /wallet/balance` (fetch wallet balance)
 - `WAL-02 GET /wallet/plans` (list wallet charge plans)
 - `WAL-03 POST /wallet/charge` (apply a purchased plan to wallet)
+- `WAL-04 GET /wallet/purchase-history` (list wallet charge history)
 
 ## Scripts
 

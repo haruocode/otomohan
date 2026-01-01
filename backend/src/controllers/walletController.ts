@@ -3,6 +3,7 @@ import {
   getWalletBalance,
   chargeWallet,
   listWalletPlans,
+  listWalletPurchaseHistory,
 } from "../services/walletService.js";
 
 export async function handleGetWalletBalance(
@@ -66,6 +67,84 @@ export async function handleGetWalletPlans(
       status: "error",
       error: "INTERNAL_ERROR",
       message: "チャージプラン一覧の取得に失敗しました。",
+    });
+  }
+}
+
+type WalletHistoryQueryParams = {
+  limit?: number;
+  offset?: number;
+  sort?: "newest" | "oldest";
+};
+
+export async function handleGetWalletPurchaseHistory(
+  request: FastifyRequest,
+  reply: FastifyReply
+) {
+  const authUser = request.user;
+  if (!authUser) {
+    return reply.status(401).send({
+      status: "error",
+      error: "UNAUTHORIZED",
+      message: "Authentication required.",
+    });
+  }
+
+  if (authUser.role !== "user") {
+    return reply.status(403).send({
+      status: "error",
+      error: "FORBIDDEN",
+      message: "This endpoint is for user accounts only.",
+    });
+  }
+
+  const query = request.query as WalletHistoryQueryParams | undefined;
+  const limit = query?.limit;
+  const offset = query?.offset;
+  const sort = query?.sort;
+
+  if (limit !== undefined && (!Number.isFinite(limit) || limit <= 0)) {
+    return reply.status(400).send({
+      status: "error",
+      error: "INVALID_LIMIT",
+      message: "limit must be a positive number.",
+    });
+  }
+
+  if (offset !== undefined && (!Number.isFinite(offset) || offset < 0)) {
+    return reply.status(400).send({
+      status: "error",
+      error: "INVALID_OFFSET",
+      message: "offset must be zero or greater.",
+    });
+  }
+
+  if (sort !== undefined && sort !== "newest" && sort !== "oldest") {
+    return reply.status(400).send({
+      status: "error",
+      error: "INVALID_SORT",
+      message: "sort must be either 'newest' or 'oldest'.",
+    });
+  }
+
+  try {
+    const history = await listWalletPurchaseHistory(authUser.id, {
+      limit,
+      offset,
+      sort,
+    });
+
+    return reply.send({
+      status: "success",
+      items: history.items,
+      total: history.total,
+    });
+  } catch (error) {
+    request.log.error(error, "Failed to load wallet purchase history");
+    return reply.status(500).send({
+      status: "error",
+      error: "INTERNAL_ERROR",
+      message: "購入履歴の取得に失敗しました。",
     });
   }
 }

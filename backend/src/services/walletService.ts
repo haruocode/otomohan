@@ -3,6 +3,8 @@ import {
   getWalletByUserId,
   hasProcessedPayment,
   logWalletCharge,
+  listWalletHistoryForUser,
+  type WalletHistoryEntry,
 } from "../repositories/walletRepository.js";
 import {
   getActiveWalletPlans,
@@ -34,6 +36,17 @@ export type WalletChargeResult =
       reason: "PLAN_NOT_FOUND" | "INVALID_AMOUNT" | "PAYMENT_ALREADY_PROCESSED";
       expectedAmount?: number;
     };
+
+export type WalletHistoryQuery = {
+  limit?: number;
+  offset?: number;
+  sort?: "newest" | "oldest";
+};
+
+export type WalletHistoryResponse = {
+  items: WalletHistoryEntry[];
+  total: number;
+};
 
 export async function getWalletBalance(
   userId: string
@@ -90,4 +103,21 @@ export async function chargeWallet(
     planId: plan.planId,
     paymentId: payload.paymentId,
   };
+}
+
+export async function listWalletPurchaseHistory(
+  userId: string,
+  query: WalletHistoryQuery
+): Promise<WalletHistoryResponse> {
+  const limit = Math.min(Math.max(query.limit ?? 20, 1), 100);
+  const offset = Math.max(query.offset ?? 0, 0);
+  const sort: "newest" | "oldest" =
+    query.sort === "oldest" ? "oldest" : "newest";
+
+  return listWalletHistoryForUser({
+    userId,
+    limit,
+    offset,
+    sort,
+  });
 }

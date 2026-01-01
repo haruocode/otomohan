@@ -88,6 +88,10 @@ type WalletHistoryRecord = {
   createdAt: string;
 };
 
+type WalletHistoryViewRecord = WalletHistoryRecord & {
+  planTitle: string;
+};
+
 const usersTable: Record<string, UserRecord> = {
   "user-123": {
     id: "user-123",
@@ -347,6 +351,37 @@ export async function insertWalletHistoryRecord(entry: {
 
   walletHistoryTable.push(record);
   return record;
+}
+
+export async function fetchWalletHistoryForUser(options: {
+  userId: string;
+  limit: number;
+  offset: number;
+  sort: "newest" | "oldest";
+}): Promise<{ items: WalletHistoryViewRecord[]; total: number }> {
+  const { userId, limit, offset, sort } = options;
+  const records = walletHistoryTable.filter((entry) => entry.userId === userId);
+  const total = records.length;
+  const sorted = [...records].sort((a, b) => {
+    const aTime = new Date(a.createdAt).getTime();
+    const bTime = new Date(b.createdAt).getTime();
+    return sort === "oldest" ? aTime - bTime : bTime - aTime;
+  });
+
+  const safeOffset = Math.max(offset, 0);
+  const safeLimit = Math.max(limit, 0);
+  const paged = sorted.slice(safeOffset, safeOffset + safeLimit);
+
+  const planTitleMap = new Map(
+    walletPlansTable.map((plan) => [plan.planId, plan.title])
+  );
+
+  const items = paged.map((record) => ({
+    ...record,
+    planTitle: planTitleMap.get(record.planId) ?? "不明なプラン",
+  }));
+
+  return { items, total };
 }
 
 export async function saveUserNotificationsRecord(

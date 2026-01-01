@@ -3,6 +3,7 @@ import {
   incrementWalletBalanceRecord,
   insertWalletHistoryRecord,
   isPaymentAlreadyProcessed,
+  fetchWalletHistoryForUser,
 } from "../db/index.js";
 
 export type WalletSnapshot = {
@@ -34,4 +35,24 @@ export async function logWalletCharge(entry: {
   bonusPoints: number;
 }) {
   return insertWalletHistoryRecord(entry);
+}
+
+export type WalletHistoryEntry = {
+  historyId: string;
+  planId: string;
+  planTitle: string;
+  amount: number;
+  points: number;
+  bonusPoints: number;
+  paymentId: string;
+  createdAt: string;
+};
+
+export async function listWalletHistoryForUser(options: {
+  userId: string;
+  limit: number;
+  offset: number;
+  sort: "newest" | "oldest";
+}): Promise<{ items: WalletHistoryEntry[]; total: number }> {
+  return fetchWalletHistoryForUser(options);
 }
