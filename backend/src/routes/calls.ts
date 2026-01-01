@@ -2,6 +2,7 @@ import type { FastifyPluginAsync } from "fastify";
 import {
   handleGetCalls,
   handleGetCallDetail,
+  handleGetCallBilling,
 } from "../controllers/callController.js";
 
 const callWithUserSchema = {
@@ -100,6 +101,20 @@ const callDetailSuccessSchema = {
   additionalProperties: false,
 } as const;
 
+const callBillingSuccessSchema = {
+  type: "object",
+  properties: {
+    status: { type: "string", const: "success" },
+    callId: { type: "string" },
+    billingUnits: {
+      type: "array",
+      items: callBillingUnitSchema,
+    },
+  },
+  required: ["status", "callId", "billingUnits"],
+  additionalProperties: false,
+} as const;
+
 const callDetailParamsSchema = {
   type: "object",
   properties: {
@@ -167,5 +182,25 @@ export const callsRoutes: FastifyPluginAsync = async (app) => {
       },
     },
     handleGetCallDetail
+  );
+
+  app.get(
+    "/calls/:callId/billing",
+    {
+      schema: {
+        params: callDetailParamsSchema,
+        response: {
+          200: callBillingSuccessSchema,
+          400: callsErrorSchema,
+          401: callsErrorSchema,
+          403: callsErrorSchema,
+          404: callsErrorSchema,
+          500: callsErrorSchema,
+        },
+        tags: ["calls"],
+        description: "CALL-03: Fetch per-minute billing units",
+      },
+    },
+    handleGetCallBilling
   );
 };

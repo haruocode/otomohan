@@ -39,6 +39,10 @@ export type CallDetailResult =
   | { success: true; call: CallDetail }
   | { success: false; reason: "CALL_NOT_FOUND" | "FORBIDDEN" };
 
+export type CallBillingUnitsResult =
+  | { success: true; callId: string; billingUnits: CallBillingUnit[] }
+  | { success: false; reason: "CALL_NOT_FOUND" | "FORBIDDEN" };
+
 export async function listCallHistoryForAccount(options: {
   accountId: string;
   role: "user" | "otomo";
@@ -183,6 +187,33 @@ export async function getCallDetailForAccount(options: {
         timestamp: unit.timestamp,
       })),
     },
+  };
+}
+
+export async function getCallBillingUnitsForAccount(options: {
+  callId: string;
+  accountId: string;
+}): Promise<CallBillingUnitsResult> {
+  const call = await getCallById(options.callId);
+  if (!call) {
+    return { success: false, reason: "CALL_NOT_FOUND" };
+  }
+
+  const isParticipant =
+    call.userId === options.accountId || call.otomoId === options.accountId;
+  if (!isParticipant) {
+    return { success: false, reason: "FORBIDDEN" };
+  }
+
+  const billingUnits = await listCallBillingUnits(call.callId);
+  return {
+    success: true,
+    callId: call.callId,
+    billingUnits: billingUnits.map((unit) => ({
+      minute: unit.minuteIndex,
+      chargedPoints: unit.chargedPoints,
+      timestamp: unit.timestamp,
+    })),
   };
 }
 
