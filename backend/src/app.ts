@@ -14,6 +14,7 @@ import { otomoStatusRoutes } from "./routes/otomo/status.js";
 import { settingsRoutes } from "./routes/settings.js";
 import { walletBalanceRoutes } from "./routes/wallet/balance.js";
 import { walletPlansRoutes } from "./routes/wallet/plans.js";
+import { walletChargeRoutes } from "./routes/wallet/charge.js";
 
 export function buildApp() {
   const app = Fastify({
@@ -39,6 +40,7 @@ export function buildApp() {
   app.register(settingsRoutes);
   app.register(walletBalanceRoutes);
   app.register(walletPlansRoutes);
+  app.register(walletChargeRoutes);
 
   app.get("/health", async () => ({ status: "ok" }));
 

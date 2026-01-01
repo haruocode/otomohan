@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 type UserRecord = {
   id: string;
   name: string;
@@ -73,6 +75,17 @@ type WalletPlanRecord = {
   bonusPoints: number;
   description: string;
   isActive: boolean;
+};
+
+type WalletHistoryRecord = {
+  historyId: string;
+  userId: string;
+  planId: string;
+  paymentId: string;
+  amount: number;
+  points: number;
+  bonusPoints: number;
+  createdAt: string;
 };
 
 const usersTable: Record<string, UserRecord> = {
@@ -248,6 +261,8 @@ const walletPlansTable: WalletPlanRecord[] = [
   },
 ];
 
+const walletHistoryTable: WalletHistoryRecord[] = [];
+
 export async function fetchUserById(id: string): Promise<UserRecord | null> {
   const record = usersTable[id];
   if (!record || record.is_deleted) {
@@ -275,6 +290,63 @@ export async function fetchActiveWalletPlans(): Promise<WalletPlanRecord[]> {
       }
       return a.price - b.price;
     });
+}
+
+export async function fetchWalletPlanById(
+  planId: string
+): Promise<WalletPlanRecord | null> {
+  const plan = walletPlansTable.find(
+    (entry) => entry.planId === planId && entry.isActive
+  );
+  return plan ?? null;
+}
+
+export async function incrementWalletBalanceRecord(
+  userId: string,
+  deltaPoints: number
+): Promise<WalletRecord> {
+  const now = new Date().toISOString();
+  let wallet = walletTable[userId];
+  if (!wallet) {
+    wallet = {
+      userId,
+      balance: 0,
+      updatedAt: now,
+    };
+  }
+
+  wallet.balance += deltaPoints;
+  wallet.updatedAt = now;
+  walletTable[userId] = wallet;
+
+  const userRecord = usersTable[userId];
+  if (userRecord) {
+    userRecord.balance = wallet.balance;
+  }
+
+  return wallet;
+}
+
+export async function isPaymentAlreadyProcessed(paymentId: string) {
+  return walletHistoryTable.some((record) => record.paymentId === paymentId);
+}
+
+export async function insertWalletHistoryRecord(entry: {
+  userId: string;
+  planId: string;
+  paymentId: string;
+  amount: number;
+  points: number;
+  bonusPoints: number;
+}): Promise<WalletHistoryRecord> {
+  const record: WalletHistoryRecord = {
+    historyId: randomUUID(),
+    createdAt: new Date().toISOString(),
+    ...entry,
+  };
+
+  walletHistoryTable.push(record);
+  return record;
 }
 
 export async function saveUserNotificationsRecord(
