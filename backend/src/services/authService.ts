@@ -1,10 +1,14 @@
-import { hash as hashPassword } from "bcryptjs";
+import { hash as hashPassword, compare as comparePassword } from "bcryptjs";
 import {
   createUser,
   getUserByEmail,
+  getUserPasswordHash,
   type UserEntity,
 } from "../repositories/userRepository.js";
-import { addPointsToWallet } from "../repositories/walletRepository.js";
+import {
+  addPointsToWallet,
+  getWalletByUserId,
+} from "../repositories/walletRepository.js";
 
 const PASSWORD_SALT_ROUNDS = 10;
 const TOKEN_EXPIRATION_SECONDS = 60 * 60 * 24; // 24h mock expiry
@@ -79,6 +83,67 @@ export async function signUpUser(payload: SignUpInput): Promise<SignUpResult> {
         avatarUrl: user.avatar_url,
         intro: user.bio,
         balance: wallet.balance,
+      },
+      token,
+    };
+  } catch {
+    return { success: false, reason: "UNKNOWN_ERROR" };
+  }
+}
+
+export type LoginInput = {
+  email: string;
+  password: string;
+};
+
+export type LoginResult =
+  | {
+      success: true;
+      user: {
+        id: string;
+        name: string;
+        email: string;
+        avatarUrl: string | null;
+        intro: string | null;
+        balance: number;
+      };
+      token: string;
+    }
+  | {
+      success: false;
+      reason: "INVALID_CREDENTIALS" | "UNKNOWN_ERROR";
+    };
+
+export async function loginUser(payload: LoginInput): Promise<LoginResult> {
+  const normalizedEmail = payload.email.trim().toLowerCase();
+  const user = await getUserByEmail(normalizedEmail);
+  if (!user) {
+    return { success: false, reason: "INVALID_CREDENTIALS" };
+  }
+
+  const passwordHash = await getUserPasswordHash(user.id);
+  if (!passwordHash) {
+    return { success: false, reason: "INVALID_CREDENTIALS" };
+  }
+
+  const matches = await comparePassword(payload.password, passwordHash);
+  if (!matches) {
+    return { success: false, reason: "INVALID_CREDENTIALS" };
+  }
+
+  try {
+    const wallet = await getWalletByUserId(user.id);
+    const token = buildMockJwt(user);
+
+    return {
+      success: true,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        avatarUrl: user.avatar_url,
+        intro: user.bio,
+        balance: wallet?.balance ?? user.balance,
       },
       token,
     };

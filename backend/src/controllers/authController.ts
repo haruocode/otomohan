@@ -1,10 +1,15 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
-import { signUpUser } from "../services/authService.js";
+import { signUpUser, loginUser } from "../services/authService.js";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 type SignUpBody = {
   name?: string;
+  email?: string;
+  password?: string;
+};
+
+type LoginBody = {
   email?: string;
   password?: string;
 };
@@ -86,4 +91,93 @@ export async function handlePostAuthSignup(
       message: "トークン生成に失敗しました。",
     });
   }
+}
+
+export async function handlePostAuthLogin(
+  request: FastifyRequest,
+  reply: FastifyReply
+) {
+  const body = request.body as LoginBody | undefined;
+  if (!body || typeof body !== "object") {
+    return reply.status(400).send({
+      status: "error",
+      error: "INVALID_PAYLOAD",
+      message: "Request body is required.",
+    });
+  }
+
+  const email = body.email?.trim().toLowerCase();
+  const password = body.password;
+
+  if (!email || !EMAIL_REGEX.test(email)) {
+    return reply.status(400).send({
+      status: "error",
+      error: "INVALID_EMAIL",
+      message: "正しいメールアドレスを入力してください。",
+    });
+  }
+
+  if (
+    !password ||
+    typeof password !== "string" ||
+    password.length < 8 ||
+    password.length > 64
+  ) {
+    return reply.status(400).send({
+      status: "error",
+      error: "INVALID_PASSWORD",
+      message: "パスワードは 8〜64 文字で入力してください。",
+    });
+  }
+
+  try {
+    const result = await loginUser({ email, password });
+    if (!result.success) {
+      if (result.reason === "INVALID_CREDENTIALS") {
+        return reply.status(401).send({
+          status: "error",
+          error: "INVALID_CREDENTIALS",
+          message: "メールアドレスまたはパスワードが正しくありません。",
+        });
+      }
+
+      return reply.status(500).send({
+        status: "error",
+        error: "DB_ERROR",
+        message: "サーバー内部でエラーが発生しました。",
+      });
+    }
+
+    return reply.send({
+      status: "success",
+      user: result.user,
+      token: result.token,
+    });
+  } catch (error) {
+    request.log.error(error, "Failed to process login request");
+    return reply.status(500).send({
+      status: "error",
+      error: "TOKEN_ERROR",
+      message: "トークン生成に失敗しました。",
+    });
+  }
+}
+
+export async function handlePostAuthLogout(
+  request: FastifyRequest,
+  reply: FastifyReply
+) {
+  const authUser = request.user;
+  if (!authUser) {
+    return reply.status(401).send({
+      status: "error",
+      error: "UNAUTHORIZED",
+      message: "Authentication required.",
+    });
+  }
+
+  // Otomo specific offline handling would go here once otomo auth is wired.
+  return reply.send({
+    status: "success",
+  });
 }

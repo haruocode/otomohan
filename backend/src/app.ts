@@ -13,6 +13,8 @@ import { otomoReviewsRoutes } from "./routes/otomo/reviews.js";
 import { otomoStatusRoutes } from "./routes/otomo/status.js";
 import { settingsRoutes } from "./routes/settings.js";
 import { authSignupRoutes } from "./routes/auth/signup.js";
+import { authLoginRoutes } from "./routes/auth/login.js";
+import { authLogoutRoutes } from "./routes/auth/logout.js";
 import { walletBalanceRoutes } from "./routes/wallet/balance.js";
 import { walletPlansRoutes } from "./routes/wallet/plans.js";
 import { walletChargeRoutes } from "./routes/wallet/charge.js";
@@ -32,6 +34,8 @@ export function buildApp() {
   });
   app.register(authPlugin);
   app.register(authSignupRoutes);
+  app.register(authLoginRoutes);
+  app.register(authLogoutRoutes);
   app.register(userMeRoutes);
   app.register(userProfileRoutes);
   app.register(userAvatarRoutes);
