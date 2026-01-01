@@ -108,6 +108,17 @@ type WalletUsageViewRecord = WalletUsageRecord & {
   otomoName: string;
 };
 
+type CallRecord = {
+  callId: string;
+  userId: string;
+  otomoId: string;
+  startedAt: string;
+  endedAt: string;
+  durationSeconds: number;
+  billedUnits: number;
+  billedPoints: number;
+};
+
 type RefreshTokenRecord = {
   token: string;
   userId: string;
@@ -320,6 +331,39 @@ const walletUsageTable: WalletUsageRecord[] = [
   },
 ];
 
+const callHistoryTable: CallRecord[] = [
+  {
+    callId: "call_20250110_001",
+    userId: "user-123",
+    otomoId: "otomo_001",
+    startedAt: "2025-01-10T12:03:20Z",
+    endedAt: "2025-01-10T12:15:20Z",
+    durationSeconds: 720,
+    billedUnits: 12,
+    billedPoints: 1200,
+  },
+  {
+    callId: "call_20250112_002",
+    userId: "user-123",
+    otomoId: "otomo_002",
+    startedAt: "2025-01-12T21:00:00Z",
+    endedAt: "2025-01-12T21:18:00Z",
+    durationSeconds: 1080,
+    billedUnits: 18,
+    billedPoints: 1800,
+  },
+  {
+    callId: "call_20250115_003",
+    userId: "user-123",
+    otomoId: "otomo_003",
+    startedAt: "2025-01-15T09:30:00Z",
+    endedAt: "2025-01-15T09:40:00Z",
+    durationSeconds: 600,
+    billedUnits: 10,
+    billedPoints: 1000,
+  },
+];
+
 const refreshTokenTable: RefreshTokenRecord[] = [];
 
 export async function fetchUserById(id: string): Promise<UserRecord | null> {
@@ -528,6 +572,27 @@ export async function fetchWalletUsageForUser(options: {
     otomoName: otomoNameMap.get(record.otomoId) ?? "不明なおとも",
   }));
 
+  return { items, total };
+}
+
+export async function fetchCallsForParticipant(options: {
+  participantId: string;
+  participantType: "user" | "otomo";
+  limit: number;
+  offset: number;
+}): Promise<{ items: CallRecord[]; total: number }> {
+  const safeLimit = Math.max(options.limit, 0);
+  const safeOffset = Math.max(options.offset, 0);
+  const filtered = callHistoryTable.filter((record) =>
+    options.participantType === "user"
+      ? record.userId === options.participantId
+      : record.otomoId === options.participantId
+  );
+  const total = filtered.length;
+  const sorted = [...filtered].sort(
+    (a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime()
+  );
+  const items = sorted.slice(safeOffset, safeOffset + safeLimit);
   return { items, total };
 }
 
