@@ -12,6 +12,7 @@ import {
   sendJson,
   broadcastToUser,
 } from "./connectionRegistry.js";
+import { sendWsError } from "./wsError.js";
 
 type CallRequestMessage = {
   type: "call_request";
@@ -106,9 +107,8 @@ export const callGatewayRoutes: FastifyPluginAsync = async (app) => {
       connection.socket.on("message", async (raw) => {
         const message = parseMessage(raw);
         if (!message) {
-          sendJson(connection.socket, {
-            type: "error",
-            error: "INVALID_WS_MESSAGE",
+          sendWsError(connection.socket, "INVALID_WS_MESSAGE", {
+            message: "Invalid WebSocket message payload.",
           });
           return;
         }
@@ -122,30 +122,13 @@ export const callGatewayRoutes: FastifyPluginAsync = async (app) => {
             });
 
             if (!result.success) {
-              if (result.reason === "OTOMO_OFFLINE") {
-                sendJson(connection.socket, {
-                  type: "call_rejected",
-                  reason: "offline",
-                });
-                return;
-              }
-              if (result.reason === "OTOMO_BUSY") {
-                sendJson(connection.socket, {
-                  type: "call_rejected",
-                  reason: "busy",
-                });
-                return;
-              }
-              if (result.reason === "CALLER_BUSY") {
-                sendJson(connection.socket, {
-                  type: "error",
-                  error: "CALLER_BUSY",
-                });
-                return;
-              }
-              sendJson(connection.socket, {
-                type: "error",
-                error: result.reason,
+              const context = {
+                callId: message.callId,
+                targetUserId: message.toUserId,
+              } as const;
+
+              sendWsError(connection.socket, result.reason, {
+                context,
               });
               return;
             }
@@ -167,9 +150,8 @@ export const callGatewayRoutes: FastifyPluginAsync = async (app) => {
             });
           } catch (error) {
             request.log.error(error, "Failed to process call_request message");
-            sendJson(connection.socket, {
-              type: "error",
-              error: "SERVER_ERROR",
+            sendWsError(connection.socket, "INTERNAL_ERROR", {
+              context: { callId: message.callId },
             });
           }
           return;
@@ -177,9 +159,8 @@ export const callGatewayRoutes: FastifyPluginAsync = async (app) => {
 
         if (message.type === "call_accept") {
           if (authUser.role !== "otomo" && authUser.role !== "admin") {
-            sendJson(connection.socket, {
-              type: "error",
-              error: "FORBIDDEN",
+            sendWsError(connection.socket, "FORBIDDEN", {
+              message: "Only otomo accounts can accept calls.",
             });
             return;
           }
@@ -198,9 +179,8 @@ export const callGatewayRoutes: FastifyPluginAsync = async (app) => {
                   ? "FORBIDDEN"
                   : "INVALID_CALL_STATE";
 
-              sendJson(connection.socket, {
-                type: "error",
-                error: errorCode,
+              sendWsError(connection.socket, errorCode, {
+                context: { callId: message.callId },
               });
               return;
             }
@@ -218,9 +198,8 @@ export const callGatewayRoutes: FastifyPluginAsync = async (app) => {
             });
           } catch (error) {
             request.log.error(error, "Failed to process call_accept message");
-            sendJson(connection.socket, {
-              type: "error",
-              error: "SERVER_ERROR",
+            sendWsError(connection.socket, "INTERNAL_ERROR", {
+              context: { callId: message.callId },
             });
           }
           return;
@@ -228,9 +207,8 @@ export const callGatewayRoutes: FastifyPluginAsync = async (app) => {
 
         if (message.type === "call_reject") {
           if (authUser.role !== "otomo" && authUser.role !== "admin") {
-            sendJson(connection.socket, {
-              type: "error",
-              error: "FORBIDDEN",
+            sendWsError(connection.socket, "FORBIDDEN", {
+              message: "Only otomo accounts can reject calls.",
             });
             return;
           }
@@ -249,9 +227,8 @@ export const callGatewayRoutes: FastifyPluginAsync = async (app) => {
                   : result.reason === "FORBIDDEN"
                   ? "FORBIDDEN"
                   : "INVALID_CALL_STATE";
-              sendJson(connection.socket, {
-                type: "error",
-                error: errorCode,
+              sendWsError(connection.socket, errorCode, {
+                context: { callId: message.callId },
               });
               return;
             }
@@ -273,9 +250,8 @@ export const callGatewayRoutes: FastifyPluginAsync = async (app) => {
             });
           } catch (error) {
             request.log.error(error, "Failed to process call_reject message");
-            sendJson(connection.socket, {
-              type: "error",
-              error: "SERVER_ERROR",
+            sendWsError(connection.socket, "INTERNAL_ERROR", {
+              context: { callId: message.callId },
             });
           }
           return;
