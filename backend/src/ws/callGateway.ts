@@ -1,42 +1,17 @@
 import type { FastifyPluginAsync } from "fastify";
 import type { SocketStream } from "@fastify/websocket";
-import WebSocket, { type RawData } from "ws";
+import type { RawData } from "ws";
 import {
   initiateCallRequest,
   acceptCallRequest,
   rejectCallRequest,
 } from "../services/callRequestService.js";
-
-const activeConnections = new Map<string, Set<WebSocket>>();
-
-function registerConnection(userId: string, socket: WebSocket) {
-  const existing = activeConnections.get(userId) ?? new Set<WebSocket>();
-  existing.add(socket);
-  activeConnections.set(userId, existing);
-}
-
-function unregisterConnection(userId: string, socket: WebSocket) {
-  const existing = activeConnections.get(userId);
-  if (!existing) return;
-  existing.delete(socket);
-  if (existing.size === 0) {
-    activeConnections.delete(userId);
-  }
-}
-
-function sendJson(socket: WebSocket, payload: unknown) {
-  if (socket.readyState === socket.OPEN) {
-    socket.send(JSON.stringify(payload));
-  }
-}
-
-function broadcastToUser(userId: string, payload: unknown) {
-  const sockets = activeConnections.get(userId);
-  if (!sockets) return;
-  for (const socket of sockets) {
-    sendJson(socket, payload);
-  }
-}
+import {
+  registerConnection,
+  unregisterConnection,
+  sendJson,
+  broadcastToUser,
+} from "./connectionRegistry.js";
 
 type CallRequestMessage = {
   type: "call_request";

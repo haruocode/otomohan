@@ -701,6 +701,48 @@ export async function fetchCallBillingUnits(
     .sort((a, b) => a.minuteIndex - b.minuteIndex);
 }
 
+export async function insertCallBillingUnitRecord(entry: {
+  callId: string;
+  minuteIndex: number;
+  chargedPoints: number;
+  timestamp: string;
+}): Promise<CallBillingUnitRecord> {
+  const record: CallBillingUnitRecord = {
+    unitId: randomUUID(),
+    callId: entry.callId,
+    minuteIndex: entry.minuteIndex,
+    chargedPoints: entry.chargedPoints,
+    timestamp: entry.timestamp,
+  };
+  callBillingUnitsTable.push(record);
+  return record;
+}
+
+export async function updateCallBillingProgressRecord(
+  callId: string,
+  payload: {
+    billedUnits: number;
+    billedPointsDelta: number;
+    durationSeconds: number;
+    endedAt: string;
+  }
+): Promise<CallRecord | null> {
+  const record = callHistoryTable.find((entry) => entry.callId === callId);
+  if (!record) {
+    return null;
+  }
+
+  record.billedUnits = Math.max(record.billedUnits, payload.billedUnits);
+  record.billedPoints += payload.billedPointsDelta;
+  record.durationSeconds = Math.max(
+    record.durationSeconds,
+    payload.durationSeconds
+  );
+  record.endedAt = payload.endedAt;
+
+  return record;
+}
+
 export async function insertCallRequestRecord(entry: {
   callId: string;
   userId: string;

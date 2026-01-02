@@ -7,6 +7,8 @@ import {
   findActiveCallForParticipant as findActiveCallForParticipantDb,
   updateCallStatusRecord,
   markCallConnectedRecord,
+  insertCallBillingUnitRecord,
+  updateCallBillingProgressRecord,
   type CallStatus,
 } from "../db/index.js";
 
@@ -89,4 +91,24 @@ export async function updateCallStatus(callId: string, status: CallStatus) {
 
 export async function markCallConnected(callId: string, connectedAt: string) {
   return markCallConnectedRecord(callId, connectedAt);
+}
+
+export async function recordCallBillingUnit(entry: {
+  callId: string;
+  minuteIndex: number;
+  chargedPoints: number;
+  timestamp: string;
+}) {
+  return insertCallBillingUnitRecord(entry);
+}
+
+export async function updateCallBillingProgress(options: {
+  callId: string;
+  billedUnits: number;
+  billedPointsDelta: number;
+  durationSeconds: number;
+  endedAt: string;
+}) {
+  const { callId, ...payload } = options;
+  return updateCallBillingProgressRecord(callId, payload);
 }

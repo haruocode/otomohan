@@ -79,6 +79,8 @@ export type CallConnectedResult =
       otomoOwnerUserId: string;
       connectedAt: string;
       method: "sfu_rtp_detected";
+      pricePerMinute: number;
+      alreadyConnected: boolean;
     }
   | { success: false; reason: "CALL_NOT_FOUND" | "INVALID_STATE" };
 
@@ -285,9 +287,10 @@ export async function markCallConnectedBySfu(options: {
     return { success: false, reason: "CALL_NOT_FOUND" };
   }
 
+  const alreadyConnected = Boolean(call.connectedAt);
   const connectedAt = call.connectedAt ?? new Date().toISOString();
 
-  if (!call.connectedAt) {
+  if (!alreadyConnected) {
     await markCallConnected(call.callId, connectedAt);
     call.connectedAt = connectedAt;
     call.startedAt = connectedAt;
@@ -308,5 +311,7 @@ export async function markCallConnectedBySfu(options: {
     otomoOwnerUserId: otomo.ownerUserId,
     connectedAt,
     method: options.method ?? "sfu_rtp_detected",
+    pricePerMinute: otomo.pricePerMinute,
+    alreadyConnected,
   };
 }

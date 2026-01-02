@@ -25,6 +25,7 @@ import { walletChargeRoutes } from "./routes/wallet/charge.js";
 import { walletPurchaseHistoryRoutes } from "./routes/wallet/purchase-history.js";
 import { walletUsageRoutes } from "./routes/wallet/usage.js";
 import { callGatewayRoutes } from "./ws/callGateway.js";
+import { sfuRoutes } from "./routes/sfu.js";
 
 export function buildApp() {
   const app = Fastify({
@@ -60,6 +61,7 @@ export function buildApp() {
   app.register(walletChargeRoutes);
   app.register(walletPurchaseHistoryRoutes);
   app.register(walletUsageRoutes);
+  app.register(sfuRoutes);
   app.register(callGatewayRoutes);
 
   app.get("/health", async () => ({ status: "ok" }));

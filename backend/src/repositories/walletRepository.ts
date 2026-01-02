@@ -23,6 +23,10 @@ export async function addPointsToWallet(userId: string, points: number) {
   return incrementWalletBalanceRecord(userId, points);
 }
 
+export async function adjustWalletBalance(userId: string, deltaPoints: number) {
+  return incrementWalletBalanceRecord(userId, deltaPoints);
+}
+
 export async function hasProcessedPayment(paymentId: string) {
   return isPaymentAlreadyProcessed(paymentId);
 }
