@@ -1,6 +1,7 @@
 import { broadcastToUsers } from "../ws/connectionRegistry.js";
 import { getCallById } from "../repositories/callRepository.js";
 import { processBillingTick } from "./callBillingService.js";
+import { broadcastWalletUpdate } from "./walletUpdateService.js";
 
 const BILLING_INTERVAL_MS = 60_000;
 const RTP_TIMEOUT_MS = 15_000;
@@ -129,6 +130,13 @@ async function processTimerTick(callId: string) {
         timestamp: tickResult.timestamp,
         status: tickResult.status,
       },
+    });
+
+    broadcastWalletUpdate({
+      userId: state.userId,
+      balance: tickResult.userBalance,
+      reason: "call_tick",
+      timestamp: tickResult.timestamp,
     });
 
     if (tickResult.status === "ended") {

@@ -12,6 +12,7 @@ import {
   getActiveWalletPlans,
   getWalletPlanById,
 } from "../repositories/walletPlanRepository.js";
+import { broadcastWalletUpdate } from "./walletUpdateService.js";
 
 export type WalletBalancePayload = {
   userId: string;
@@ -108,6 +109,13 @@ export async function chargeWallet(
     amount: payload.amount,
     points: plan.points,
     bonusPoints: plan.bonusPoints,
+  });
+
+  broadcastWalletUpdate({
+    userId,
+    balance: wallet.balance,
+    reason: "charge",
+    timestamp: wallet.updatedAt,
   });
 
   return {
