@@ -45,3 +45,27 @@ export function findProducerForParticipant(options: {
   }
   return producersById.get(producerId) ?? null;
 }
+
+export function deleteProducersByCall(callId: string): number {
+  const targets: Array<{ producerId: string; participantKey: string }> = [];
+
+  for (const [producerId, record] of producersById) {
+    if (record.callId === callId) {
+      targets.push({
+        producerId,
+        participantKey: buildParticipantKey(
+          record.callId,
+          record.userId,
+          record.kind
+        ),
+      });
+    }
+  }
+
+  for (const target of targets) {
+    producersById.delete(target.producerId);
+    participantKeyToProducerId.delete(target.participantKey);
+  }
+
+  return targets.length;
+}

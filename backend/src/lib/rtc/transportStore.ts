@@ -94,3 +94,27 @@ export function markTransportConnected(options: {
   existing.connectedAt = new Date().toISOString();
   return existing;
 }
+
+export function deleteTransportsByCall(callId: string): number {
+  const targets: Array<{ transportId: string; participantKey: string }> = [];
+
+  for (const [transportId, record] of transportById) {
+    if (record.callId === callId) {
+      targets.push({
+        transportId,
+        participantKey: buildParticipantKey(
+          record.callId,
+          record.userId,
+          record.direction
+        ),
+      });
+    }
+  }
+
+  for (const target of targets) {
+    transportById.delete(target.transportId);
+    participantKeyToTransportId.delete(target.participantKey);
+  }
+
+  return targets.length;
+}

@@ -67,3 +67,27 @@ export function markConsumerResumed(consumerId: string): ConsumerRecord | null {
 
   return record;
 }
+
+export function deleteConsumersByCall(callId: string): number {
+  const targets: Array<{ consumerId: string; participantKey: string }> = [];
+
+  for (const [consumerId, record] of consumersById) {
+    if (record.callId === callId) {
+      targets.push({
+        consumerId,
+        participantKey: buildParticipantKey(
+          record.callId,
+          record.userId,
+          record.producerId
+        ),
+      });
+    }
+  }
+
+  for (const target of targets) {
+    consumersById.delete(target.consumerId);
+    participantKeyToConsumerId.delete(target.participantKey);
+  }
+
+  return targets.length;
+}

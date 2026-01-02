@@ -10,6 +10,7 @@ import {
   createConsumerForParticipant,
   resumeConsumerForParticipant,
 } from "../services/rtcConsumerService.js";
+import { cleanupRtcResourcesForCall } from "../services/rtcCleanupService.js";
 
 const rtcpFeedbackSchema = {
   type: "object",
@@ -253,6 +254,34 @@ const rtcConsumerResumeResponseSchema = {
     resumed: { type: "boolean" },
   },
   required: ["resumed"],
+  additionalProperties: false,
+} as const;
+
+const rtcRoomCleanupParamsSchema = {
+  type: "object",
+  properties: {
+    callId: { type: "string", minLength: 1 },
+  },
+  required: ["callId"],
+  additionalProperties: false,
+} as const;
+
+const rtcRoomCleanupResponseSchema = {
+  type: "object",
+  properties: {
+    cleaned: { type: "boolean" },
+    released: {
+      type: "object",
+      properties: {
+        transports: { type: "number" },
+        producers: { type: "number" },
+        consumers: { type: "number" },
+      },
+      required: ["transports", "producers", "consumers"],
+      additionalProperties: false,
+    },
+  },
+  required: ["cleaned", "released"],
   additionalProperties: false,
 } as const;
 
@@ -565,6 +594,66 @@ export const rtcRoutes: FastifyPluginAsync = async (app) => {
     }
   );
 
+  app.delete(
+    "/rtc/rooms/:callId/cleanup",
+    {
+      schema: {
+        params: rtcRoomCleanupParamsSchema,
+        response: {
+          200: rtcRoomCleanupResponseSchema,
+          401: rtcCapabilitiesErrorSchema,
+          403: rtcCapabilitiesErrorSchema,
+          404: rtcCapabilitiesErrorSchema,
+          500: rtcCapabilitiesErrorSchema,
+        },
+        tags: ["rtc"],
+        description:
+          "RTC-07: Cleanup transports, producers, and consumers for a call",
+      },
+    },
+    async (request, reply) => {
+      if (!request.user) {
+        await reply.status(401).send({
+          status: "error",
+          error: "UNAUTHORIZED",
+          message: "Authentication is required to cleanup RTC rooms.",
+        });
+        return;
+      }
+
+      const params = request.params as { callId: string };
+
+      try {
+        const result = await cleanupRtcResourcesForCall({
+          callId: params.callId,
+          requesterUserId: request.user.id,
+        });
+
+        if (!result.success) {
+          const statusCode = mapRoomCleanupStatus(result.reason);
+          await reply.status(statusCode).send({
+            status: "error",
+            error: result.reason,
+            message: buildRoomCleanupErrorMessage(result.reason),
+          });
+          return;
+        }
+
+        await reply.send({
+          cleaned: true,
+          released: result.released,
+        });
+      } catch (error) {
+        request.log.error(error, "Failed to cleanup RTC room");
+        await reply.status(500).send({
+          status: "error",
+          error: "INTERNAL_ERROR",
+          message: "Failed to cleanup RTC room.",
+        });
+      }
+    }
+  );
+
   app.post(
     "/rtc/transports/:transportId/connect",
     {
@@ -835,5 +924,27 @@ function buildConsumerResumeErrorMessage(
     case "INVALID_STATE":
     default:
       return "Call is not in a state that allows consumer resuming.";
+  }
+}
+
+function mapRoomCleanupStatus(reason: "CALL_NOT_FOUND" | "FORBIDDEN"): number {
+  switch (reason) {
+    case "CALL_NOT_FOUND":
+      return 404;
+    case "FORBIDDEN":
+    default:
+      return 403;
+  }
+}
+
+function buildRoomCleanupErrorMessage(
+  reason: "CALL_NOT_FOUND" | "FORBIDDEN"
+): string {
+  switch (reason) {
+    case "CALL_NOT_FOUND":
+      return "Specified room could not be found.";
+    case "FORBIDDEN":
+    default:
+      return "You are not allowed to cleanup this room.";
   }
 }
