@@ -181,7 +181,7 @@ export const callGatewayRoutes: FastifyPluginAsync = async (app) => {
         }
 
         if (message.type === "call_accept") {
-          if (authUser.role !== "otomo" && authUser.role !== "admin") {
+          if (authUser.role !== "otomo") {
             sendWsError(connection.socket, "FORBIDDEN", {
               message: "Only otomo accounts can accept calls.",
             });
@@ -229,7 +229,7 @@ export const callGatewayRoutes: FastifyPluginAsync = async (app) => {
         }
 
         if (message.type === "call_reject") {
-          if (authUser.role !== "otomo" && authUser.role !== "admin") {
+          if (authUser.role !== "otomo") {
             sendWsError(connection.socket, "FORBIDDEN", {
               message: "Only otomo accounts can reject calls.",
             });
