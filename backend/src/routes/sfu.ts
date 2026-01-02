@@ -2,6 +2,7 @@ import type { FastifyPluginAsync } from "fastify";
 import {
   handlePostSfuCallConnected,
   handlePostSfuHeartbeat,
+  handlePostSfuCallEnd,
 } from "../controllers/sfuController.js";
 
 const callParamsSchema = {
@@ -25,6 +26,20 @@ const heartbeatBodySchema = {
   type: "object",
   properties: {
     timestamp: { type: "string", format: "date-time" },
+  },
+  additionalProperties: false,
+} as const;
+
+const callEndBodySchema = {
+  type: "object",
+  properties: {
+    reason: {
+      type: "string",
+      enum: ["rtp_stopped", "disconnect", "low_balance", "manual"],
+    },
+    timestamp: { type: "string", format: "date-time" },
+    durationSeconds: { type: "number" },
+    totalChargedPoints: { type: "number" },
   },
   additionalProperties: false,
 } as const;
@@ -88,5 +103,24 @@ export const sfuRoutes: FastifyPluginAsync = async (app) => {
       },
     },
     handlePostSfuHeartbeat
+  );
+
+  app.post(
+    "/sfu/calls/:callId/end",
+    {
+      schema: {
+        params: callParamsSchema,
+        body: callEndBodySchema,
+        response: {
+          200: successResponseSchema,
+          400: errorResponseSchema,
+          403: errorResponseSchema,
+          404: errorResponseSchema,
+        },
+        tags: ["sfu"],
+        description: "WS-S07: Finalize call and broadcast call_end",
+      },
+    },
+    handlePostSfuCallEnd
   );
 };

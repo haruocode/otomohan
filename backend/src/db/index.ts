@@ -116,6 +116,12 @@ export type CallStatus =
   | "rejected"
   | "ended";
 
+export type CallEndReason =
+  | "rtp_stopped"
+  | "disconnect"
+  | "low_balance"
+  | "manual";
+
 type CallRecord = {
   callId: string;
   userId: string;
@@ -127,6 +133,7 @@ type CallRecord = {
   billedUnits: number;
   billedPoints: number;
   status: CallStatus;
+  endReason: CallEndReason | null;
 };
 
 type CallBillingUnitRecord = {
@@ -361,6 +368,7 @@ const callHistoryTable: CallRecord[] = [
     billedUnits: 12,
     billedPoints: 1200,
     status: "ended",
+    endReason: "manual",
   },
   {
     callId: "call_20250112_002",
@@ -373,6 +381,7 @@ const callHistoryTable: CallRecord[] = [
     billedUnits: 18,
     billedPoints: 1800,
     status: "ended",
+    endReason: "manual",
   },
   {
     callId: "call_20250115_003",
@@ -385,6 +394,7 @@ const callHistoryTable: CallRecord[] = [
     billedUnits: 10,
     billedPoints: 1000,
     status: "ended",
+    endReason: "manual",
   },
 ];
 
@@ -761,6 +771,7 @@ export async function insertCallRequestRecord(entry: {
     billedUnits: 0,
     billedPoints: 0,
     status: "requesting",
+    endReason: null,
   };
 
   callHistoryTable.push(record);
@@ -799,6 +810,36 @@ export async function finalizeCallRecord(
   record.billedUnits = payload.billedUnits;
   record.billedPoints = payload.billedPoints;
   record.status = "ended";
+  record.endReason = "manual";
+
+  return record;
+}
+
+export async function finalizeCallSessionRecord(
+  callId: string,
+  payload: {
+    endedAt: string;
+    durationSeconds: number;
+    endReason: CallEndReason;
+    billedUnits?: number;
+    billedPoints?: number;
+  }
+): Promise<CallRecord | null> {
+  const record = callHistoryTable.find((entry) => entry.callId === callId);
+  if (!record) {
+    return null;
+  }
+
+  record.endedAt = payload.endedAt;
+  record.durationSeconds = payload.durationSeconds;
+  record.status = "ended";
+  record.endReason = payload.endReason;
+  if (typeof payload.billedUnits === "number") {
+    record.billedUnits = payload.billedUnits;
+  }
+  if (typeof payload.billedPoints === "number") {
+    record.billedPoints = payload.billedPoints;
+  }
 
   return record;
 }

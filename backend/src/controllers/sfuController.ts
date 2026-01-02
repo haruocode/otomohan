@@ -3,8 +3,13 @@ import { markCallConnectedBySfu } from "../services/callRequestService.js";
 import {
   registerRtpHeartbeat,
   startCallBillingTimer,
+  stopCallBillingTimer,
 } from "../services/callBillingTimer.js";
 import { broadcastToUsers } from "../ws/connectionRegistry.js";
+import {
+  finalizeCallSessionAndBroadcast,
+  type CallEndReason,
+} from "../services/callLifecycleService.js";
 
 type CallParams = {
   callId: string;
@@ -16,6 +21,13 @@ type CallConnectedBody = {
 
 type HeartbeatBody = {
   timestamp?: string;
+};
+
+type CallEndBody = {
+  reason?: CallEndReason;
+  timestamp?: string;
+  durationSeconds?: number;
+  totalChargedPoints?: number;
 };
 
 function ensureAdmin(request: FastifyRequest, reply: FastifyReply): boolean {
@@ -146,5 +158,62 @@ export async function handlePostSfuHeartbeat(
     status: "success",
     callId: trimmedCallId,
     heartbeatRegistered: true,
+  });
+}
+
+export async function handlePostSfuCallEnd(
+  request: FastifyRequest,
+  reply: FastifyReply
+) {
+  if (!ensureAdmin(request, reply)) {
+    return;
+  }
+
+  const params = request.params as CallParams;
+  const body = request.body as CallEndBody | undefined;
+  const trimmedCallId = params.callId?.trim();
+  if (!trimmedCallId) {
+    await reply.status(400).send({
+      status: "error",
+      error: "INVALID_CALL_ID",
+      message: "callId is required",
+    });
+    return;
+  }
+
+  const reason: CallEndReason = body?.reason ?? "rtp_stopped";
+  const timestamp = body?.timestamp?.trim();
+
+  stopCallBillingTimer(trimmedCallId, reason);
+
+  const result = await finalizeCallSessionAndBroadcast({
+    callId: trimmedCallId,
+    reason,
+    endedAt: timestamp && timestamp.length ? timestamp : undefined,
+    durationSeconds:
+      typeof body?.durationSeconds === "number"
+        ? body.durationSeconds
+        : undefined,
+    totalChargedPoints:
+      typeof body?.totalChargedPoints === "number"
+        ? body.totalChargedPoints
+        : undefined,
+  });
+
+  if (!result.success) {
+    const statusCode = result.reason === "CALL_NOT_FOUND" ? 404 : 404;
+    await reply.status(statusCode).send({
+      status: "error",
+      error: result.reason,
+      message: "Unable to finalize call",
+    });
+    return;
+  }
+
+  await reply.send({
+    status: "success",
+    callId: trimmedCallId,
+    alreadyEnded: result.alreadyEnded,
+    reason,
   });
 }

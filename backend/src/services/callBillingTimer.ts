@@ -1,6 +1,7 @@
 import { broadcastToUsers } from "../ws/connectionRegistry.js";
 import { getCallById } from "../repositories/callRepository.js";
 import { processBillingTick } from "./callBillingService.js";
+import { finalizeCallSessionAndBroadcast } from "./callLifecycleService.js";
 import { broadcastWalletUpdate } from "./walletUpdateService.js";
 
 const BILLING_INTERVAL_MS = 60_000;
@@ -91,6 +92,15 @@ async function processTimerTick(callId: string) {
 
   if (!isRtpAlive(state)) {
     stopCallBillingTimer(callId, "rtp_timeout");
+    const finalizeResult = await finalizeCallSessionAndBroadcast({
+      callId,
+      reason: "rtp_stopped",
+    });
+    if (!finalizeResult.success) {
+      console.error(
+        `[callBillingTimer] failed to finalize call ${callId} after RTP timeout`
+      );
+    }
     return;
   }
 
@@ -141,6 +151,18 @@ async function processTimerTick(callId: string) {
 
     if (tickResult.status === "ended") {
       stopCallBillingTimer(callId, "balance_depleted");
+      const finalizeResult = await finalizeCallSessionAndBroadcast({
+        callId: state.callId,
+        reason: "low_balance",
+        endedAt: tickResult.timestamp,
+        durationSeconds: tickResult.durationSeconds,
+        totalChargedPoints: tickResult.totalChargedPoints,
+      });
+      if (!finalizeResult.success) {
+        console.error(
+          `[callBillingTimer] failed to finalize call ${callId} after low balance`
+        );
+      }
     }
   } catch (error) {
     console.error(`[callBillingTimer] tick failed for ${callId}`, error);

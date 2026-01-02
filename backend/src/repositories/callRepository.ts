@@ -7,9 +7,11 @@ import {
   findActiveCallForParticipant as findActiveCallForParticipantDb,
   updateCallStatusRecord,
   markCallConnectedRecord,
+  finalizeCallSessionRecord,
   insertCallBillingUnitRecord,
   updateCallBillingProgressRecord,
   type CallStatus,
+  type CallEndReason,
 } from "../db/index.js";
 
 export type CallEntity = {
@@ -23,6 +25,7 @@ export type CallEntity = {
   billedUnits: number;
   billedPoints: number;
   status: CallStatus;
+  endReason: CallEndReason | null;
 };
 
 export async function listCallsForAccount(options: {
@@ -91,6 +94,19 @@ export async function updateCallStatus(callId: string, status: CallStatus) {
 
 export async function markCallConnected(callId: string, connectedAt: string) {
   return markCallConnectedRecord(callId, connectedAt);
+}
+
+export type { CallEndReason };
+
+export async function finalizeCallSession(options: {
+  callId: string;
+  endedAt: string;
+  durationSeconds: number;
+  endReason: CallEndReason;
+  billedUnits?: number;
+  billedPoints?: number;
+}) {
+  return finalizeCallSessionRecord(options.callId, options);
 }
 
 export async function recordCallBillingUnit(entry: {
