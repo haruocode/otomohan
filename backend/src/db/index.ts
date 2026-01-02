@@ -116,11 +116,16 @@ export type CallStatus =
   | "failed"
   | "ended";
 
-export type CallEndReason =
-  | "rtp_stopped"
-  | "disconnect"
-  | "low_balance"
-  | "manual";
+export const CALL_END_REASON_VALUES = [
+  "user_end",
+  "otomo_end",
+  "no_point",
+  "network_lost",
+  "timeout",
+  "system_error",
+] as const;
+
+export type CallEndReason = (typeof CALL_END_REASON_VALUES)[number];
 
 type CallRecord = {
   callId: string;
@@ -368,7 +373,7 @@ const callHistoryTable: CallRecord[] = [
     billedUnits: 12,
     billedPoints: 1200,
     status: "ended",
-    endReason: "manual",
+    endReason: "user_end",
   },
   {
     callId: "call_20250112_002",
@@ -381,7 +386,7 @@ const callHistoryTable: CallRecord[] = [
     billedUnits: 18,
     billedPoints: 1800,
     status: "ended",
-    endReason: "manual",
+    endReason: "user_end",
   },
   {
     callId: "call_20250115_003",
@@ -394,7 +399,7 @@ const callHistoryTable: CallRecord[] = [
     billedUnits: 10,
     billedPoints: 1000,
     status: "ended",
-    endReason: "manual",
+    endReason: "user_end",
   },
 ];
 
@@ -810,7 +815,7 @@ export async function finalizeCallRecord(
   record.billedUnits = payload.billedUnits;
   record.billedPoints = payload.billedPoints;
   record.status = "ended";
-  record.endReason = "manual";
+  record.endReason = "system_error";
 
   return record;
 }

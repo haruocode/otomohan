@@ -91,10 +91,10 @@ async function processTimerTick(callId: string) {
   }
 
   if (!isRtpAlive(state)) {
-    stopCallBillingTimer(callId, "rtp_timeout");
+    stopCallBillingTimer(callId, "network_lost");
     const finalizeResult = await finalizeCallSessionAndBroadcast({
       callId,
-      reason: "rtp_stopped",
+      reason: "network_lost",
     });
     if (!finalizeResult.success) {
       console.error(
@@ -153,7 +153,7 @@ async function processTimerTick(callId: string) {
       stopCallBillingTimer(callId, "balance_depleted");
       const finalizeResult = await finalizeCallSessionAndBroadcast({
         callId: state.callId,
-        reason: "low_balance",
+        reason: "no_point",
         endedAt: tickResult.timestamp,
         durationSeconds: tickResult.durationSeconds,
         totalChargedPoints: tickResult.totalChargedPoints,

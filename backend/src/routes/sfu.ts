@@ -4,6 +4,7 @@ import {
   handlePostSfuHeartbeat,
   handlePostSfuCallEnd,
 } from "../controllers/sfuController.js";
+import { ACCEPTED_CALL_END_REASON_INPUTS } from "../lib/call-end-reason.js";
 
 const callParamsSchema = {
   type: "object",
@@ -35,7 +36,7 @@ const callEndBodySchema = {
   properties: {
     reason: {
       type: "string",
-      enum: ["rtp_stopped", "disconnect", "low_balance", "manual"],
+      enum: ACCEPTED_CALL_END_REASON_INPUTS,
     },
     timestamp: { type: "string", format: "date-time" },
     durationSeconds: { type: "number" },

@@ -10,6 +10,7 @@ import {
   finalizeCallSessionAndBroadcast,
   type CallEndReason,
 } from "../services/callLifecycleService.js";
+import { normalizeCallEndReason } from "../lib/call-end-reason.js";
 
 type CallParams = {
   callId: string;
@@ -24,7 +25,7 @@ type HeartbeatBody = {
 };
 
 type CallEndBody = {
-  reason?: CallEndReason;
+  reason?: string;
   timestamp?: string;
   durationSeconds?: number;
   totalChargedPoints?: number;
@@ -181,7 +182,7 @@ export async function handlePostSfuCallEnd(
     return;
   }
 
-  const reason: CallEndReason = body?.reason ?? "rtp_stopped";
+  const reason: CallEndReason = normalizeCallEndReason(body?.reason);
   const timestamp = body?.timestamp?.trim();
 
   stopCallBillingTimer(trimmedCallId, reason);

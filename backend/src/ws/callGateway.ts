@@ -6,6 +6,7 @@ import {
   acceptCallRequest,
   rejectCallRequest,
 } from "../services/callRequestService.js";
+import { handleCallEndRequestByParticipant } from "../services/callEndRequestService.js";
 import {
   registerConnection,
   unregisterConnection,
@@ -31,10 +32,16 @@ type CallRejectMessage = {
   reason?: string;
 };
 
+type CallEndRequestMessage = {
+  type: "call_end_request";
+  callId: string;
+};
+
 type GatewayMessage =
   | CallRequestMessage
   | CallAcceptMessage
-  | CallRejectMessage;
+  | CallRejectMessage
+  | CallEndRequestMessage;
 
 function parseMessage(raw: RawData): GatewayMessage | null {
   try {
@@ -82,6 +89,20 @@ function parseMessage(raw: RawData): GatewayMessage | null {
         type: "call_reject",
         callId,
         reason,
+      };
+    }
+
+    if (
+      parsed.type === "call_end_request" &&
+      typeof parsed.callId === "string"
+    ) {
+      const callId = parsed.callId.trim();
+      if (!callId) {
+        return null;
+      }
+      return {
+        type: "call_end_request",
+        callId,
       };
     }
 
@@ -271,6 +292,49 @@ export const callGatewayRoutes: FastifyPluginAsync = async (app) => {
             });
           } catch (error) {
             request.log.error(error, "Failed to process call_reject message");
+            sendWsError(connection.socket, "INTERNAL_ERROR", {
+              context: { callId: message.callId },
+            });
+          }
+          return;
+        }
+
+        if (message.type === "call_end_request") {
+          if (authUser.role !== "user" && authUser.role !== "otomo") {
+            sendWsError(connection.socket, "FORBIDDEN", {
+              message: "Only call participants can end calls.",
+            });
+            return;
+          }
+
+          try {
+            const result = await handleCallEndRequestByParticipant({
+              callId: message.callId,
+              requesterUserId: authUser.id,
+            });
+
+            if (!result.success) {
+              const errorCode =
+                result.reason === "CALL_NOT_FOUND"
+                  ? "CALL_NOT_FOUND"
+                  : result.reason === "FORBIDDEN"
+                  ? "FORBIDDEN"
+                  : "INVALID_CALL_STATE";
+              sendWsError(connection.socket, errorCode, {
+                context: { callId: message.callId },
+              });
+              return;
+            }
+
+            sendJson(connection.socket, {
+              type: "call_end_request_ack",
+              callId: result.callId,
+            });
+          } catch (error) {
+            request.log.error(
+              error,
+              "Failed to process call_end_request message"
+            );
             sendWsError(connection.socket, "INTERNAL_ERROR", {
               context: { callId: message.callId },
             });
