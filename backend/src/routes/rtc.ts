@@ -6,6 +6,7 @@ import {
   connectTransportForParticipant,
 } from "../services/rtcTransportService.js";
 import { createProducerForParticipant } from "../services/rtcProducerService.js";
+import { createConsumerForParticipant } from "../services/rtcConsumerService.js";
 
 const rtcpFeedbackSchema = {
   type: "object",
@@ -211,6 +212,29 @@ const rtcProducerResponseSchema = {
   additionalProperties: false,
 } as const;
 
+const rtcConsumerRequestSchema = {
+  type: "object",
+  properties: {
+    callId: { type: "string", minLength: 1 },
+    transportId: { type: "string", minLength: 1 },
+    producerId: { type: "string", minLength: 1 },
+  },
+  required: ["callId", "transportId", "producerId"],
+  additionalProperties: false,
+} as const;
+
+const rtcConsumerResponseSchema = {
+  type: "object",
+  properties: {
+    consumerId: { type: "string" },
+    kind: { type: "string", enum: ["audio"] },
+    rtpParameters: { type: "object" },
+    producerPaused: { type: "boolean" },
+  },
+  required: ["consumerId", "kind", "rtpParameters", "producerPaused"],
+  additionalProperties: false,
+} as const;
+
 export const rtcRoutes: FastifyPluginAsync = async (app) => {
   app.get(
     "/rtc/capabilities",
@@ -395,6 +419,75 @@ export const rtcRoutes: FastifyPluginAsync = async (app) => {
   );
 
   app.post(
+    "/rtc/consumers",
+    {
+      schema: {
+        body: rtcConsumerRequestSchema,
+        response: {
+          201: rtcConsumerResponseSchema,
+          400: rtcCapabilitiesErrorSchema,
+          401: rtcCapabilitiesErrorSchema,
+          403: rtcCapabilitiesErrorSchema,
+          404: rtcCapabilitiesErrorSchema,
+          409: rtcCapabilitiesErrorSchema,
+          500: rtcCapabilitiesErrorSchema,
+        },
+        tags: ["rtc"],
+        description: "RTC-05: Create an audio consumer",
+      },
+    },
+    async (request, reply) => {
+      if (!request.user) {
+        await reply.status(401).send({
+          status: "error",
+          error: "UNAUTHORIZED",
+          message: "Authentication is required to manage RTC consumers.",
+        });
+        return;
+      }
+
+      const body = request.body as {
+        callId: string;
+        transportId: string;
+        producerId: string;
+      };
+
+      try {
+        const result = await createConsumerForParticipant({
+          callId: body.callId,
+          transportId: body.transportId,
+          producerId: body.producerId,
+          requesterUserId: request.user.id,
+        });
+
+        if (!result.success) {
+          const statusCode = mapConsumerStatus(result.reason);
+          await reply.status(statusCode).send({
+            status: "error",
+            error: result.reason,
+            message: buildConsumerErrorMessage(result.reason),
+          });
+          return;
+        }
+
+        await reply.status(201).send({
+          consumerId: result.consumer.consumerId,
+          kind: result.consumer.kind,
+          rtpParameters: result.consumer.rtpParameters,
+          producerPaused: result.consumer.producerPaused,
+        });
+      } catch (error) {
+        request.log.error(error, "Failed to create RTC consumer");
+        await reply.status(500).send({
+          status: "error",
+          error: "INTERNAL_ERROR",
+          message: "Failed to create RTC consumer.",
+        });
+      }
+    }
+  );
+
+  app.post(
     "/rtc/transports/:transportId/connect",
     {
       schema: {
@@ -566,5 +659,59 @@ function buildProducerErrorMessage(
     case "INVALID_STATE":
     default:
       return "Call is not in a state that allows producer creation.";
+  }
+}
+
+function mapConsumerStatus(
+  reason:
+    | "CALL_NOT_FOUND"
+    | "FORBIDDEN"
+    | "INVALID_STATE"
+    | "TRANSPORT_NOT_FOUND"
+    | "PRODUCER_NOT_FOUND"
+    | "TRANSPORT_DIRECTION_MISMATCH"
+    | "TRANSPORT_NOT_CONNECTED"
+): number {
+  switch (reason) {
+    case "CALL_NOT_FOUND":
+    case "TRANSPORT_NOT_FOUND":
+    case "PRODUCER_NOT_FOUND":
+      return 404;
+    case "FORBIDDEN":
+      return 403;
+    case "INVALID_STATE":
+    case "TRANSPORT_DIRECTION_MISMATCH":
+    case "TRANSPORT_NOT_CONNECTED":
+    default:
+      return 409;
+  }
+}
+
+function buildConsumerErrorMessage(
+  reason:
+    | "CALL_NOT_FOUND"
+    | "FORBIDDEN"
+    | "INVALID_STATE"
+    | "TRANSPORT_NOT_FOUND"
+    | "PRODUCER_NOT_FOUND"
+    | "TRANSPORT_DIRECTION_MISMATCH"
+    | "TRANSPORT_NOT_CONNECTED"
+): string {
+  switch (reason) {
+    case "CALL_NOT_FOUND":
+      return "Specified call could not be found.";
+    case "TRANSPORT_NOT_FOUND":
+      return "Specified transport could not be found.";
+    case "PRODUCER_NOT_FOUND":
+      return "Specified producer could not be found.";
+    case "FORBIDDEN":
+      return "You are not allowed to create consumers for this call.";
+    case "TRANSPORT_NOT_CONNECTED":
+      return "Transport must be connected before creating consumers.";
+    case "TRANSPORT_DIRECTION_MISMATCH":
+      return "Transport direction does not support the requested consumer kind.";
+    case "INVALID_STATE":
+    default:
+      return "Call is not in a state that allows consumer creation.";
   }
 }
