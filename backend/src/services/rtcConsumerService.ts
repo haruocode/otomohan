@@ -12,6 +12,8 @@ import {
 import {
   saveConsumer,
   findConsumerForParticipant,
+  findConsumerById,
+  markConsumerResumed,
   type ConsumerRecord,
 } from "../lib/rtc/consumerStore.js";
 
@@ -120,12 +122,74 @@ export async function createConsumerForParticipant(options: {
     kind: producer.kind,
     rtpParameters: buildMockRtpParameters(producer.kind),
     producerPaused: false,
+    consumerPaused: true,
     createdAt: new Date().toISOString(),
   };
 
   saveConsumer(consumer);
 
   return { success: true, consumer, reused: false };
+}
+
+export type ResumeConsumerResult =
+  | { success: true }
+  | {
+      success: false;
+      reason:
+        | "CONSUMER_NOT_FOUND"
+        | "CALL_NOT_FOUND"
+        | "FORBIDDEN"
+        | "INVALID_STATE"
+        | "ALREADY_RESUMED";
+    };
+
+export async function resumeConsumerForParticipant(options: {
+  consumerId: string;
+  requesterUserId: string;
+}): Promise<ResumeConsumerResult> {
+  const trimmedConsumerId = options.consumerId.trim();
+  if (!trimmedConsumerId) {
+    return { success: false, reason: "CONSUMER_NOT_FOUND" };
+  }
+
+  const consumer = findConsumerById(trimmedConsumerId);
+  if (!consumer) {
+    return { success: false, reason: "CONSUMER_NOT_FOUND" };
+  }
+
+  if (consumer.userId !== options.requesterUserId) {
+    return { success: false, reason: "FORBIDDEN" };
+  }
+
+  const call = await getCallById(consumer.callId);
+  if (!call) {
+    return { success: false, reason: "CALL_NOT_FOUND" };
+  }
+
+  if (call.status !== "accepted" && call.status !== "active") {
+    return { success: false, reason: "INVALID_STATE" };
+  }
+
+  const otomo = await findOtomoById(call.otomoId);
+  if (!otomo) {
+    return { success: false, reason: "CALL_NOT_FOUND" };
+  }
+
+  const isParticipant =
+    call.userId === options.requesterUserId ||
+    otomo.ownerUserId === options.requesterUserId;
+
+  if (!isParticipant) {
+    return { success: false, reason: "FORBIDDEN" };
+  }
+
+  if (!consumer.consumerPaused) {
+    return { success: false, reason: "ALREADY_RESUMED" };
+  }
+
+  markConsumerResumed(trimmedConsumerId);
+
+  return { success: true };
 }
 
 function buildMockRtpParameters(kind: ProducerKind) {

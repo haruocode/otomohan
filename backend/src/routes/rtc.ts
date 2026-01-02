@@ -6,7 +6,10 @@ import {
   connectTransportForParticipant,
 } from "../services/rtcTransportService.js";
 import { createProducerForParticipant } from "../services/rtcProducerService.js";
-import { createConsumerForParticipant } from "../services/rtcConsumerService.js";
+import {
+  createConsumerForParticipant,
+  resumeConsumerForParticipant,
+} from "../services/rtcConsumerService.js";
 
 const rtcpFeedbackSchema = {
   type: "object",
@@ -232,6 +235,24 @@ const rtcConsumerResponseSchema = {
     producerPaused: { type: "boolean" },
   },
   required: ["consumerId", "kind", "rtpParameters", "producerPaused"],
+  additionalProperties: false,
+} as const;
+
+const consumerIdParamsSchema = {
+  type: "object",
+  properties: {
+    consumerId: { type: "string", minLength: 1 },
+  },
+  required: ["consumerId"],
+  additionalProperties: false,
+} as const;
+
+const rtcConsumerResumeResponseSchema = {
+  type: "object",
+  properties: {
+    resumed: { type: "boolean" },
+  },
+  required: ["resumed"],
   additionalProperties: false,
 } as const;
 
@@ -488,6 +509,63 @@ export const rtcRoutes: FastifyPluginAsync = async (app) => {
   );
 
   app.post(
+    "/rtc/consumers/:consumerId/resume",
+    {
+      schema: {
+        params: consumerIdParamsSchema,
+        response: {
+          200: rtcConsumerResumeResponseSchema,
+          401: rtcCapabilitiesErrorSchema,
+          403: rtcCapabilitiesErrorSchema,
+          404: rtcCapabilitiesErrorSchema,
+          409: rtcCapabilitiesErrorSchema,
+          500: rtcCapabilitiesErrorSchema,
+        },
+        tags: ["rtc"],
+        description: "RTC-06: Resume an audio consumer",
+      },
+    },
+    async (request, reply) => {
+      if (!request.user) {
+        await reply.status(401).send({
+          status: "error",
+          error: "UNAUTHORIZED",
+          message: "Authentication is required to resume RTC consumers.",
+        });
+        return;
+      }
+
+      const params = request.params as { consumerId: string };
+
+      try {
+        const result = await resumeConsumerForParticipant({
+          consumerId: params.consumerId,
+          requesterUserId: request.user.id,
+        });
+
+        if (!result.success) {
+          const statusCode = mapConsumerResumeStatus(result.reason);
+          await reply.status(statusCode).send({
+            status: "error",
+            error: result.reason,
+            message: buildConsumerResumeErrorMessage(result.reason),
+          });
+          return;
+        }
+
+        await reply.send({ resumed: true });
+      } catch (error) {
+        request.log.error(error, "Failed to resume RTC consumer");
+        await reply.status(500).send({
+          status: "error",
+          error: "INTERNAL_ERROR",
+          message: "Failed to resume RTC consumer.",
+        });
+      }
+    }
+  );
+
+  app.post(
     "/rtc/transports/:transportId/connect",
     {
       schema: {
@@ -713,5 +791,49 @@ function buildConsumerErrorMessage(
     case "INVALID_STATE":
     default:
       return "Call is not in a state that allows consumer creation.";
+  }
+}
+
+function mapConsumerResumeStatus(
+  reason:
+    | "CONSUMER_NOT_FOUND"
+    | "CALL_NOT_FOUND"
+    | "FORBIDDEN"
+    | "INVALID_STATE"
+    | "ALREADY_RESUMED"
+): number {
+  switch (reason) {
+    case "CONSUMER_NOT_FOUND":
+    case "CALL_NOT_FOUND":
+      return 404;
+    case "FORBIDDEN":
+      return 403;
+    case "INVALID_STATE":
+    case "ALREADY_RESUMED":
+    default:
+      return 409;
+  }
+}
+
+function buildConsumerResumeErrorMessage(
+  reason:
+    | "CONSUMER_NOT_FOUND"
+    | "CALL_NOT_FOUND"
+    | "FORBIDDEN"
+    | "INVALID_STATE"
+    | "ALREADY_RESUMED"
+): string {
+  switch (reason) {
+    case "CONSUMER_NOT_FOUND":
+      return "Specified consumer could not be found.";
+    case "CALL_NOT_FOUND":
+      return "Associated call could not be found.";
+    case "FORBIDDEN":
+      return "You are not allowed to resume this consumer.";
+    case "ALREADY_RESUMED":
+      return "Consumer has already been resumed.";
+    case "INVALID_STATE":
+    default:
+      return "Call is not in a state that allows consumer resuming.";
   }
 }

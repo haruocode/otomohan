@@ -9,6 +9,8 @@ export type ConsumerRecord = {
   kind: ProducerKind;
   rtpParameters: unknown;
   producerPaused: boolean;
+  consumerPaused: boolean;
+  resumedAt?: string;
   createdAt: string;
 };
 
@@ -50,4 +52,18 @@ export function findConsumerForParticipant(options: {
     return null;
   }
   return consumersById.get(consumerId) ?? null;
+}
+
+export function markConsumerResumed(consumerId: string): ConsumerRecord | null {
+  const record = consumersById.get(consumerId);
+  if (!record) {
+    return null;
+  }
+
+  if (record.consumerPaused) {
+    record.consumerPaused = false;
+    record.resumedAt = new Date().toISOString();
+  }
+
+  return record;
 }
