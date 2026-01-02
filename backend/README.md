@@ -48,8 +48,33 @@ Copy `.env.example` to `.env` and edit as needed.
 | Variable       | Description                             |
 | -------------- | --------------------------------------- |
 | `PORT`         | Port Fastify should bind to             |
-| `DATABASE_URL` | Placeholder DSN for future DB wiring    |
+| `DATABASE_URL` | Postgres connection string for Drizzle  |
 | `JWT_SECRET`   | Secret used by auth plugin (mocked now) |
+
+## Database & Drizzle ORM
+
+Postgres is now the source of truth for persistence. Drizzle handles schema definition and migrations.
+
+1. Start a local Postgres (Docker example):
+
+```bash
+docker run --name otomohan-postgres -e POSTGRES_PASSWORD=postgres -p 5432:5432 -d postgres:16
+```
+
+2. Set `DATABASE_URL` in `.env` (e.g. `postgres://postgres:postgres@localhost:5432/otomohan`).
+3. Generate SQL from the schema:
+
+```bash
+npm run db:generate
+```
+
+4. Apply migrations to the target database:
+
+```bash
+npm run db:migrate
+```
+
+Schema files live under `src/db/schema/`. The Drizzle client is exported from `src/db/drizzle.ts` and can be injected into repositories as we replace the in-memory mocks.
 
 ## Project layout
 
