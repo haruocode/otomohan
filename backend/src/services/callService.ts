@@ -9,6 +9,7 @@ import {
   findOtomoById,
   updateOtomoStatus,
 } from "../repositories/otomoRepository.js";
+import { broadcastOtomoStatusFromSnapshot } from "./otomoStatusService.js";
 
 export type CallHistoryItem = {
   callId: string;
@@ -281,12 +282,19 @@ export async function forceEndCallForDebug(options: {
     return { success: false, reason: "CALL_NOT_FOUND" };
   }
 
-  await updateOtomoStatus(call.otomoId, {
+  const updatedStatus = await updateOtomoStatus(call.otomoId, {
     isOnline: true,
     isAvailable: true,
     statusMessage: "オンライン待機中（debug end）",
     statusUpdatedAt: endedAt,
   });
+
+  if (updatedStatus) {
+    broadcastOtomoStatusFromSnapshot({
+      otomoId: call.otomoId,
+      snapshot: updatedStatus,
+    });
+  }
 
   return {
     success: true,

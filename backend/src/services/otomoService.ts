@@ -4,6 +4,7 @@ import {
   listOtomoReviews,
   updateOtomoStatus,
 } from "../repositories/otomoRepository.js";
+import { broadcastOtomoStatusFromSnapshot } from "./otomoStatusService.js";
 
 export type OtomoListQuery = {
   isOnline?: boolean;
@@ -244,6 +245,11 @@ export async function updateOtomoStatusEntry(
   if (!updated) {
     return { success: false, reason: "UPDATE_FAILED" };
   }
+
+  broadcastOtomoStatusFromSnapshot({
+    otomoId: payload.otomoId,
+    snapshot: updated,
+  });
 
   return {
     success: true,

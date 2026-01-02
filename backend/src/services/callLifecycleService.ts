@@ -8,6 +8,7 @@ import {
   updateOtomoStatus,
 } from "../repositories/otomoRepository.js";
 import { broadcastToUsers } from "../ws/connectionRegistry.js";
+import { broadcastOtomoStatusFromSnapshot } from "./otomoStatusService.js";
 
 export type CallEndResult =
   | {
@@ -76,12 +77,19 @@ export async function finalizeCallSessionAndBroadcast(options: {
     return { success: false, reason: "CALL_NOT_FOUND" };
   }
 
-  await updateOtomoStatus(otomo.otomoId, {
+  const updatedStatus = await updateOtomoStatus(otomo.otomoId, {
     isOnline: true,
     isAvailable: true,
     statusMessage: "通話終了",
     statusUpdatedAt: endedAt,
   });
+
+  if (updatedStatus) {
+    broadcastOtomoStatusFromSnapshot({
+      otomoId: otomo.otomoId,
+      snapshot: updatedStatus,
+    });
+  }
 
   const payload = {
     callId: finalized.callId,

@@ -11,6 +11,7 @@ import {
   findOtomoById,
   updateOtomoStatus,
 } from "../repositories/otomoRepository.js";
+import { broadcastOtomoStatusFromSnapshot } from "./otomoStatusService.js";
 
 export type CallRequestSuccess = {
   success: true;
@@ -135,12 +136,19 @@ export async function initiateCallRequest(options: {
     startedAt: now,
   });
 
-  await updateOtomoStatus(otomo.otomoId, {
+  const updatedStatus = await updateOtomoStatus(otomo.otomoId, {
     isOnline: true,
     isAvailable: false,
     statusMessage: "通話リクエスト受付中",
     statusUpdatedAt: now,
   });
+
+  if (updatedStatus) {
+    broadcastOtomoStatusFromSnapshot({
+      otomoId: otomo.otomoId,
+      snapshot: updatedStatus,
+    });
+  }
 
   return {
     success: true,
@@ -192,12 +200,19 @@ export async function acceptCallRequest(options: {
   await updateCallStatus(call.callId, "accepted");
 
   const now = new Date();
-  await updateOtomoStatus(otomo.otomoId, {
+  const updatedStatus = await updateOtomoStatus(otomo.otomoId, {
     isOnline: true,
     isAvailable: false,
     statusMessage: "通話接続準備中",
     statusUpdatedAt: now.toISOString(),
   });
+
+  if (updatedStatus) {
+    broadcastOtomoStatusFromSnapshot({
+      otomoId: otomo.otomoId,
+      snapshot: updatedStatus,
+    });
+  }
 
   return {
     success: true,
@@ -243,12 +258,19 @@ export async function rejectCallRequest(options: {
   const timestampIso = now.toISOString();
   await updateCallStatus(call.callId, "rejected");
 
-  await updateOtomoStatus(otomo.otomoId, {
+  const updatedStatus = await updateOtomoStatus(otomo.otomoId, {
     isOnline: true,
     isAvailable: true,
     statusMessage: "通話リクエストを拒否",
     statusUpdatedAt: timestampIso,
   });
+
+  if (updatedStatus) {
+    broadcastOtomoStatusFromSnapshot({
+      otomoId: otomo.otomoId,
+      snapshot: updatedStatus,
+    });
+  }
 
   return {
     success: true,
@@ -295,12 +317,19 @@ export async function markCallConnectedBySfu(options: {
     call.connectedAt = connectedAt;
     call.startedAt = connectedAt;
     call.status = "active";
-    await updateOtomoStatus(otomo.otomoId, {
+    const updatedStatus = await updateOtomoStatus(otomo.otomoId, {
       isOnline: true,
       isAvailable: false,
       statusMessage: "通話中",
       statusUpdatedAt: connectedAt,
     });
+
+    if (updatedStatus) {
+      broadcastOtomoStatusFromSnapshot({
+        otomoId: otomo.otomoId,
+        snapshot: updatedStatus,
+      });
+    }
   }
 
   return {

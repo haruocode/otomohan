@@ -44,3 +44,14 @@ export function broadcastToUsers(userIds: string[], payload: unknown) {
 export function getActiveConnectionCount(userId: string): number {
   return activeConnections.get(userId)?.size ?? 0;
 }
+
+export function broadcastToAll(payload: unknown) {
+  const serialized = JSON.stringify(payload);
+  for (const sockets of activeConnections.values()) {
+    for (const socket of sockets) {
+      if (socket.readyState === socket.OPEN) {
+        socket.send(serialized);
+      }
+    }
+  }
+}
