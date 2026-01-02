@@ -4,8 +4,11 @@ import { findOtomoById } from "../repositories/otomoRepository.js";
 import {
   saveTransport,
   findTransportForParticipant,
+  findTransportById,
+  markTransportConnected,
   type TransportDirection,
   type TransportDescription,
+  type DtlsParameters,
 } from "../lib/rtc/transportStore.js";
 
 const PARTICIPANT_ALLOWED_STATUSES = new Set(["accepted", "active"]);
@@ -70,6 +73,62 @@ export async function createTransportForParticipant(options: {
   return { success: true, transport, reused: false };
 }
 
+export type ConnectTransportResult =
+  | { success: true; transport: TransportDescription }
+  | {
+      success: false;
+      reason:
+        | "TRANSPORT_NOT_FOUND"
+        | "FORBIDDEN"
+        | "ALREADY_CONNECTED"
+        | "CALL_NOT_FOUND"
+        | "INVALID_STATE";
+    };
+
+export async function connectTransportForParticipant(options: {
+  transportId: string;
+  requesterUserId: string;
+  dtlsParameters: DtlsParameters;
+}): Promise<ConnectTransportResult> {
+  const trimmedId = options.transportId.trim();
+  if (!trimmedId) {
+    return { success: false, reason: "TRANSPORT_NOT_FOUND" };
+  }
+
+  const transport = findTransportById(trimmedId);
+  if (!transport) {
+    return { success: false, reason: "TRANSPORT_NOT_FOUND" };
+  }
+
+  if (transport.userId !== options.requesterUserId) {
+    return { success: false, reason: "FORBIDDEN" };
+  }
+
+  if (transport.isConnected) {
+    return { success: false, reason: "ALREADY_CONNECTED" };
+  }
+
+  const call = await getCallById(transport.callId);
+  if (!call) {
+    return { success: false, reason: "CALL_NOT_FOUND" };
+  }
+
+  if (!PARTICIPANT_ALLOWED_STATUSES.has(call.status)) {
+    return { success: false, reason: "INVALID_STATE" };
+  }
+
+  const updated = markTransportConnected({
+    transportId: trimmedId,
+    clientDtlsParameters: options.dtlsParameters,
+  });
+
+  if (!updated) {
+    return { success: false, reason: "TRANSPORT_NOT_FOUND" };
+  }
+
+  return { success: true, transport: updated };
+}
+
 function buildTransportDescription(options: {
   callId: string;
   userId: string;
@@ -108,6 +167,9 @@ function buildTransportDescription(options: {
         },
       ],
     },
+    clientDtlsParameters: null,
+    isConnected: false,
+    connectedAt: null,
   };
 }
 

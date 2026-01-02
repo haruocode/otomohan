@@ -33,6 +33,9 @@ export type TransportDescription = {
   iceParameters: IceParameters;
   iceCandidates: IceCandidate[];
   dtlsParameters: DtlsParameters;
+  clientDtlsParameters: DtlsParameters | null;
+  isConnected: boolean;
+  connectedAt: string | null;
   createdAt: string;
 };
 
@@ -76,4 +79,18 @@ export function findTransportForParticipant(options: {
     return null;
   }
   return transportById.get(transportId) ?? null;
+}
+
+export function markTransportConnected(options: {
+  transportId: string;
+  clientDtlsParameters: DtlsParameters;
+}): TransportDescription | null {
+  const existing = transportById.get(options.transportId);
+  if (!existing) {
+    return null;
+  }
+  existing.clientDtlsParameters = options.clientDtlsParameters;
+  existing.isConnected = true;
+  existing.connectedAt = new Date().toISOString();
+  return existing;
 }

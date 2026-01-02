@@ -1,6 +1,10 @@
 import type { FastifyPluginAsync } from "fastify";
 import { getRouterRtpCapabilities } from "../lib/rtc/routerCapabilities.js";
-import { createTransportForParticipant } from "../services/rtcTransportService.js";
+import type { DtlsParameters } from "../lib/rtc/transportStore.js";
+import {
+  createTransportForParticipant,
+  connectTransportForParticipant,
+} from "../services/rtcTransportService.js";
 
 const rtcpFeedbackSchema = {
   type: "object",
@@ -95,6 +99,30 @@ const rtcTransportRequestSchema = {
   additionalProperties: false,
 } as const;
 
+const dtlsFingerprintSchema = {
+  type: "object",
+  properties: {
+    algorithm: { type: "string" },
+    value: { type: "string" },
+  },
+  required: ["algorithm", "value"],
+  additionalProperties: false,
+} as const;
+
+const dtlsParametersSchema = {
+  type: "object",
+  properties: {
+    role: { type: "string", enum: ["auto", "client", "server"] },
+    fingerprints: {
+      type: "array",
+      minItems: 1,
+      items: dtlsFingerprintSchema,
+    },
+  },
+  required: ["role", "fingerprints"],
+  additionalProperties: false,
+} as const;
+
 const rtcTransportSuccessSchema = {
   type: "object",
   properties: {
@@ -128,28 +156,36 @@ const rtcTransportSuccessSchema = {
         additionalProperties: false,
       },
     },
-    dtlsParameters: {
-      type: "object",
-      properties: {
-        role: { type: "string", enum: ["auto", "client", "server"] },
-        fingerprints: {
-          type: "array",
-          items: {
-            type: "object",
-            properties: {
-              algorithm: { type: "string" },
-              value: { type: "string" },
-            },
-            required: ["algorithm", "value"],
-            additionalProperties: false,
-          },
-        },
-      },
-      required: ["role", "fingerprints"],
-      additionalProperties: false,
-    },
+    dtlsParameters: dtlsParametersSchema,
   },
   required: ["transportId", "iceParameters", "iceCandidates", "dtlsParameters"],
+  additionalProperties: false,
+} as const;
+
+const rtcTransportConnectResponseSchema = {
+  type: "object",
+  properties: {
+    connected: { type: "boolean" },
+  },
+  required: ["connected"],
+  additionalProperties: false,
+} as const;
+
+const transportIdParamsSchema = {
+  type: "object",
+  properties: {
+    transportId: { type: "string", minLength: 1 },
+  },
+  required: ["transportId"],
+  additionalProperties: false,
+} as const;
+
+const rtcTransportConnectBodySchema = {
+  type: "object",
+  properties: {
+    dtlsParameters: dtlsParametersSchema,
+  },
+  required: ["dtlsParameters"],
   additionalProperties: false,
 } as const;
 
@@ -267,6 +303,67 @@ export const rtcRoutes: FastifyPluginAsync = async (app) => {
       }
     }
   );
+
+  app.post(
+    "/rtc/transports/:transportId/connect",
+    {
+      schema: {
+        params: transportIdParamsSchema,
+        body: rtcTransportConnectBodySchema,
+        response: {
+          200: rtcTransportConnectResponseSchema,
+          400: rtcCapabilitiesErrorSchema,
+          401: rtcCapabilitiesErrorSchema,
+          403: rtcCapabilitiesErrorSchema,
+          404: rtcCapabilitiesErrorSchema,
+          409: rtcCapabilitiesErrorSchema,
+          500: rtcCapabilitiesErrorSchema,
+        },
+        tags: ["rtc"],
+        description: "RTC-03: Connect a WebRTC transport via DTLS parameters",
+      },
+    },
+    async (request, reply) => {
+      if (!request.user) {
+        await reply.status(401).send({
+          status: "error",
+          error: "UNAUTHORIZED",
+          message: "Authentication is required to manage RTC transports.",
+        });
+        return;
+      }
+
+      const params = request.params as { transportId: string };
+      const body = request.body as { dtlsParameters: DtlsParameters };
+
+      try {
+        const result = await connectTransportForParticipant({
+          transportId: params.transportId,
+          requesterUserId: request.user.id,
+          dtlsParameters: body.dtlsParameters,
+        });
+
+        if (!result.success) {
+          const statusCode = mapTransportConnectStatus(result.reason);
+          await reply.status(statusCode).send({
+            status: "error",
+            error: result.reason,
+            message: buildTransportConnectErrorMessage(result.reason),
+          });
+          return;
+        }
+
+        await reply.send({ connected: true });
+      } catch (error) {
+        request.log.error(error, "Failed to connect RTC transport");
+        await reply.status(500).send({
+          status: "error",
+          error: "INTERNAL_ERROR",
+          message: "Failed to connect RTC transport.",
+        });
+      }
+    }
+  );
 };
 
 function buildTransportErrorMessage(
@@ -280,5 +377,49 @@ function buildTransportErrorMessage(
     case "INVALID_STATE":
     default:
       return "Call is not in a state that allows transport creation.";
+  }
+}
+
+function mapTransportConnectStatus(
+  reason:
+    | "TRANSPORT_NOT_FOUND"
+    | "FORBIDDEN"
+    | "ALREADY_CONNECTED"
+    | "CALL_NOT_FOUND"
+    | "INVALID_STATE"
+): number {
+  switch (reason) {
+    case "TRANSPORT_NOT_FOUND":
+    case "CALL_NOT_FOUND":
+      return 404;
+    case "FORBIDDEN":
+      return 403;
+    case "ALREADY_CONNECTED":
+    case "INVALID_STATE":
+    default:
+      return 409;
+  }
+}
+
+function buildTransportConnectErrorMessage(
+  reason:
+    | "TRANSPORT_NOT_FOUND"
+    | "FORBIDDEN"
+    | "ALREADY_CONNECTED"
+    | "CALL_NOT_FOUND"
+    | "INVALID_STATE"
+): string {
+  switch (reason) {
+    case "TRANSPORT_NOT_FOUND":
+      return "Specified transport could not be found.";
+    case "CALL_NOT_FOUND":
+      return "Associated call could not be found.";
+    case "FORBIDDEN":
+      return "You are not allowed to connect this transport.";
+    case "ALREADY_CONNECTED":
+      return "Transport is already connected.";
+    case "INVALID_STATE":
+    default:
+      return "Call is not in a state that allows transport connections.";
   }
 }
