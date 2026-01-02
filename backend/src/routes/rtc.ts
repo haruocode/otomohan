@@ -5,6 +5,7 @@ import {
   createTransportForParticipant,
   connectTransportForParticipant,
 } from "../services/rtcTransportService.js";
+import { createProducerForParticipant } from "../services/rtcProducerService.js";
 
 const rtcpFeedbackSchema = {
   type: "object",
@@ -189,6 +190,27 @@ const rtcTransportConnectBodySchema = {
   additionalProperties: false,
 } as const;
 
+const rtcProducerRequestSchema = {
+  type: "object",
+  properties: {
+    callId: { type: "string", minLength: 1 },
+    transportId: { type: "string", minLength: 1 },
+    kind: { type: "string", enum: ["audio"] },
+    rtpParameters: { type: "object" },
+  },
+  required: ["callId", "transportId", "kind", "rtpParameters"],
+  additionalProperties: false,
+} as const;
+
+const rtcProducerResponseSchema = {
+  type: "object",
+  properties: {
+    producerId: { type: "string" },
+  },
+  required: ["producerId"],
+  additionalProperties: false,
+} as const;
+
 export const rtcRoutes: FastifyPluginAsync = async (app) => {
   app.get(
     "/rtc/capabilities",
@@ -299,6 +321,74 @@ export const rtcRoutes: FastifyPluginAsync = async (app) => {
           status: "error",
           error: "INTERNAL_ERROR",
           message: "Failed to create RTC transport.",
+        });
+      }
+    }
+  );
+
+  app.post(
+    "/rtc/producers",
+    {
+      schema: {
+        body: rtcProducerRequestSchema,
+        response: {
+          201: rtcProducerResponseSchema,
+          400: rtcCapabilitiesErrorSchema,
+          401: rtcCapabilitiesErrorSchema,
+          403: rtcCapabilitiesErrorSchema,
+          404: rtcCapabilitiesErrorSchema,
+          409: rtcCapabilitiesErrorSchema,
+          500: rtcCapabilitiesErrorSchema,
+        },
+        tags: ["rtc"],
+        description: "RTC-04: Create an audio producer",
+      },
+    },
+    async (request, reply) => {
+      if (!request.user) {
+        await reply.status(401).send({
+          status: "error",
+          error: "UNAUTHORIZED",
+          message: "Authentication is required to manage RTC producers.",
+        });
+        return;
+      }
+
+      const body = request.body as {
+        callId: string;
+        transportId: string;
+        kind: "audio";
+        rtpParameters: unknown;
+      };
+
+      try {
+        const result = await createProducerForParticipant({
+          callId: body.callId,
+          transportId: body.transportId,
+          kind: body.kind,
+          rtpParameters: body.rtpParameters,
+          requesterUserId: request.user.id,
+        });
+
+        if (!result.success) {
+          const statusCode = mapProducerStatus(result.reason);
+          await reply.status(statusCode).send({
+            status: "error",
+            error: result.reason,
+            message: buildProducerErrorMessage(result.reason),
+          });
+          return;
+        }
+
+        await reply.status(201).send({
+          producerId: result.producer.producerId,
+        });
+      } catch (error) {
+        request.log.error(error, "Failed to create RTC producer");
+        await reply.status(500).send({
+          status: "error",
+          error: "INTERNAL_ERROR",
+          message: "Failed to create RTC producer.",
         });
       }
     }
@@ -421,5 +511,60 @@ function buildTransportConnectErrorMessage(
     case "INVALID_STATE":
     default:
       return "Call is not in a state that allows transport connections.";
+  }
+}
+
+function mapProducerStatus(
+  reason:
+    | "CALL_NOT_FOUND"
+    | "FORBIDDEN"
+    | "INVALID_STATE"
+    | "TRANSPORT_NOT_FOUND"
+    | "TRANSPORT_DIRECTION_MISMATCH"
+    | "TRANSPORT_NOT_CONNECTED"
+    | "UNSUPPORTED_KIND"
+): number {
+  switch (reason) {
+    case "CALL_NOT_FOUND":
+    case "TRANSPORT_NOT_FOUND":
+      return 404;
+    case "FORBIDDEN":
+      return 403;
+    case "UNSUPPORTED_KIND":
+      return 400;
+    case "INVALID_STATE":
+    case "TRANSPORT_DIRECTION_MISMATCH":
+    case "TRANSPORT_NOT_CONNECTED":
+    default:
+      return 409;
+  }
+}
+
+function buildProducerErrorMessage(
+  reason:
+    | "CALL_NOT_FOUND"
+    | "FORBIDDEN"
+    | "INVALID_STATE"
+    | "TRANSPORT_NOT_FOUND"
+    | "TRANSPORT_DIRECTION_MISMATCH"
+    | "TRANSPORT_NOT_CONNECTED"
+    | "UNSUPPORTED_KIND"
+): string {
+  switch (reason) {
+    case "CALL_NOT_FOUND":
+      return "Specified call could not be found.";
+    case "TRANSPORT_NOT_FOUND":
+      return "Specified transport could not be found.";
+    case "FORBIDDEN":
+      return "You are not allowed to create producers for this call.";
+    case "TRANSPORT_NOT_CONNECTED":
+      return "Transport must be connected before creating producers.";
+    case "TRANSPORT_DIRECTION_MISMATCH":
+      return "Transport direction does not support the requested producer kind.";
+    case "UNSUPPORTED_KIND":
+      return "Requested producer kind is not supported.";
+    case "INVALID_STATE":
+    default:
+      return "Call is not in a state that allows producer creation.";
   }
 }
