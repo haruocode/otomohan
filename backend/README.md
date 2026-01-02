@@ -29,6 +29,7 @@ This directory hosts a Fastify + TypeScript backend that will gradually replace 
 - `CALL-04 POST /calls/debug/end` (force-end a call for local debugging)
 - `WS-C01 call_request` (WebSocket event for initiating a call request)
 - `WS-S02 call_accepted` (WebSocket push informing the caller that an otomo accepted)
+- `WS-S03 call_rejected` (WebSocket push informing the caller that an otomo rejected)
 
 ## Scripts
 

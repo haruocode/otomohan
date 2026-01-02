@@ -53,6 +53,22 @@ export type CallAcceptFailure = {
 
 export type CallAcceptResult = CallAcceptSuccess | CallAcceptFailure;
 
+export type CallRejectSuccess = {
+  success: true;
+  callId: string;
+  callerUserId: string;
+  otomoId: string;
+  reason: string;
+  timestamp: string;
+};
+
+export type CallRejectFailure = {
+  success: false;
+  reason: "CALL_NOT_FOUND" | "FORBIDDEN" | "INVALID_STATE";
+};
+
+export type CallRejectResult = CallRejectSuccess | CallRejectFailure;
+
 export async function initiateCallRequest(options: {
   callId: string;
   callerId: string;
@@ -173,5 +189,58 @@ export async function acceptCallRequest(options: {
     callId: call.callId,
     callerUserId: call.userId,
     timestamp: Math.floor(now.getTime() / 1000),
+  };
+}
+
+export async function rejectCallRequest(options: {
+  callId: string;
+  responderUserId: string;
+  reason?: string;
+}): Promise<CallRejectResult> {
+  const trimmedCallId = options.callId.trim();
+  if (!trimmedCallId) {
+    return { success: false, reason: "CALL_NOT_FOUND" };
+  }
+
+  const call = await getCallById(trimmedCallId);
+  if (!call) {
+    return { success: false, reason: "CALL_NOT_FOUND" };
+  }
+
+  const otomo = await findOtomoById(call.otomoId);
+  if (!otomo) {
+    return { success: false, reason: "CALL_NOT_FOUND" };
+  }
+
+  if (otomo.ownerUserId !== options.responderUserId) {
+    return { success: false, reason: "FORBIDDEN" };
+  }
+
+  if (call.status === "ended" || call.status === "rejected") {
+    return { success: false, reason: "INVALID_STATE" };
+  }
+
+  if (call.status !== "requesting" && call.status !== "ringing") {
+    return { success: false, reason: "INVALID_STATE" };
+  }
+
+  const now = new Date();
+  const timestampIso = now.toISOString();
+  await updateCallStatus(call.callId, "rejected");
+
+  await updateOtomoStatus(otomo.otomoId, {
+    isOnline: true,
+    isAvailable: true,
+    statusMessage: "通話リクエストを拒否",
+    statusUpdatedAt: timestampIso,
+  });
+
+  return {
+    success: true,
+    callId: call.callId,
+    callerUserId: call.userId,
+    otomoId: otomo.otomoId,
+    reason: options.reason?.trim() || "manual_reject",
+    timestamp: timestampIso,
   };
 }

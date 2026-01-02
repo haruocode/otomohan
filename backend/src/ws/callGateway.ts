@@ -4,6 +4,7 @@ import WebSocket, { type RawData } from "ws";
 import {
   initiateCallRequest,
   acceptCallRequest,
+  rejectCallRequest,
 } from "../services/callRequestService.js";
 
 const activeConnections = new Map<string, Set<WebSocket>>();
@@ -48,7 +49,16 @@ type CallAcceptMessage = {
   callId: string;
 };
 
-type GatewayMessage = CallRequestMessage | CallAcceptMessage;
+type CallRejectMessage = {
+  type: "call_reject";
+  callId: string;
+  reason?: string;
+};
+
+type GatewayMessage =
+  | CallRequestMessage
+  | CallAcceptMessage
+  | CallRejectMessage;
 
 function parseMessage(raw: RawData): GatewayMessage | null {
   try {
@@ -82,6 +92,20 @@ function parseMessage(raw: RawData): GatewayMessage | null {
       return {
         type: "call_accept",
         callId,
+      };
+    }
+
+    if (parsed.type === "call_reject" && typeof parsed.callId === "string") {
+      const callId = parsed.callId.trim();
+      if (!callId) {
+        return null;
+      }
+      const reason =
+        typeof parsed.reason === "string" ? parsed.reason.trim() : undefined;
+      return {
+        type: "call_reject",
+        callId,
+        reason,
       };
     }
 
@@ -219,6 +243,61 @@ export const callGatewayRoutes: FastifyPluginAsync = async (app) => {
             });
           } catch (error) {
             request.log.error(error, "Failed to process call_accept message");
+            sendJson(connection.socket, {
+              type: "error",
+              error: "SERVER_ERROR",
+            });
+          }
+          return;
+        }
+
+        if (message.type === "call_reject") {
+          if (authUser.role !== "otomo" && authUser.role !== "admin") {
+            sendJson(connection.socket, {
+              type: "error",
+              error: "FORBIDDEN",
+            });
+            return;
+          }
+
+          try {
+            const result = await rejectCallRequest({
+              callId: message.callId,
+              responderUserId: authUser.id,
+              reason: message.reason,
+            });
+
+            if (!result.success) {
+              const errorCode =
+                result.reason === "CALL_NOT_FOUND"
+                  ? "CALL_NOT_FOUND"
+                  : result.reason === "FORBIDDEN"
+                  ? "FORBIDDEN"
+                  : "INVALID_CALL_STATE";
+              sendJson(connection.socket, {
+                type: "error",
+                error: errorCode,
+              });
+              return;
+            }
+
+            sendJson(connection.socket, {
+              type: "call_reject_ack",
+              callId: result.callId,
+              status: "idle",
+            });
+
+            broadcastToUser(result.callerUserId, {
+              type: "call_rejected",
+              payload: {
+                callId: result.callId,
+                otomoId: result.otomoId,
+                reason: result.reason,
+                timestamp: result.timestamp,
+              },
+            });
+          } catch (error) {
+            request.log.error(error, "Failed to process call_reject message");
             sendJson(connection.socket, {
               type: "error",
               error: "SERVER_ERROR",

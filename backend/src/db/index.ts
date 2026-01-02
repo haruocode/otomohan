@@ -113,6 +113,7 @@ export type CallStatus =
   | "ringing"
   | "accepted"
   | "active"
+  | "rejected"
   | "ended";
 
 type CallRecord = {
@@ -726,6 +727,7 @@ export async function findActiveCallForParticipant(
     callHistoryTable.find(
       (record) =>
         record.status !== "ended" &&
+        record.status !== "rejected" &&
         (record.userId === participantId || record.otomoId === participantId)
     ) ?? null
   );
