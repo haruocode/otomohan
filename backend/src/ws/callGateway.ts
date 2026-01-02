@@ -1,7 +1,10 @@
 import type { FastifyPluginAsync } from "fastify";
 import type { SocketStream } from "@fastify/websocket";
 import WebSocket, { type RawData } from "ws";
-import { initiateCallRequest } from "../services/callRequestService.js";
+import {
+  initiateCallRequest,
+  acceptCallRequest,
+} from "../services/callRequestService.js";
 
 const activeConnections = new Map<string, Set<WebSocket>>();
 
@@ -40,11 +43,21 @@ type CallRequestMessage = {
   callId: string;
 };
 
-function parseMessage(raw: RawData): CallRequestMessage | null {
+type CallAcceptMessage = {
+  type: "call_accept";
+  callId: string;
+};
+
+type GatewayMessage = CallRequestMessage | CallAcceptMessage;
+
+function parseMessage(raw: RawData): GatewayMessage | null {
   try {
     const parsed = JSON.parse(raw.toString());
+    if (!parsed || typeof parsed.type !== "string") {
+      return null;
+    }
+
     if (
-      parsed &&
       parsed.type === "call_request" &&
       typeof parsed.toUserId === "string" &&
       typeof parsed.callId === "string"
@@ -60,6 +73,18 @@ function parseMessage(raw: RawData): CallRequestMessage | null {
         callId,
       };
     }
+
+    if (parsed.type === "call_accept" && typeof parsed.callId === "string") {
+      const callId = parsed.callId.trim();
+      if (!callId) {
+        return null;
+      }
+      return {
+        type: "call_accept",
+        callId,
+      };
+    }
+
     return null;
   } catch {
     return null;
@@ -84,68 +109,122 @@ export const callGatewayRoutes: FastifyPluginAsync = async (app) => {
         if (!message) {
           sendJson(connection.socket, {
             type: "error",
-            error: "INVALID_CALL_REQUEST",
+            error: "INVALID_WS_MESSAGE",
           });
           return;
         }
 
-        try {
-          const result = await initiateCallRequest({
-            callId: message.callId,
-            callerId: authUser.id,
-            targetUserId: message.toUserId,
-          });
+        if (message.type === "call_request") {
+          try {
+            const result = await initiateCallRequest({
+              callId: message.callId,
+              callerId: authUser.id,
+              targetUserId: message.toUserId,
+            });
 
-          if (!result.success) {
-            if (result.reason === "OTOMO_OFFLINE") {
-              sendJson(connection.socket, {
-                type: "call_rejected",
-                reason: "offline",
-              });
-              return;
-            }
-            if (result.reason === "OTOMO_BUSY") {
-              sendJson(connection.socket, {
-                type: "call_rejected",
-                reason: "busy",
-              });
-              return;
-            }
-            if (result.reason === "CALLER_BUSY") {
+            if (!result.success) {
+              if (result.reason === "OTOMO_OFFLINE") {
+                sendJson(connection.socket, {
+                  type: "call_rejected",
+                  reason: "offline",
+                });
+                return;
+              }
+              if (result.reason === "OTOMO_BUSY") {
+                sendJson(connection.socket, {
+                  type: "call_rejected",
+                  reason: "busy",
+                });
+                return;
+              }
+              if (result.reason === "CALLER_BUSY") {
+                sendJson(connection.socket, {
+                  type: "error",
+                  error: "CALLER_BUSY",
+                });
+                return;
+              }
               sendJson(connection.socket, {
                 type: "error",
-                error: "CALLER_BUSY",
+                error: result.reason,
               });
               return;
             }
+
+            sendJson(connection.socket, {
+              type: "call_request_ack",
+              callId: result.callId,
+              status: "requesting",
+            });
+
+            broadcastToUser(result.target.ownerUserId, {
+              type: "incoming_call",
+              callId: result.callId,
+              fromUserId: result.caller.id,
+              fromUserName: result.caller.name,
+              fromUserAvatar: result.caller.avatar,
+              otomoId: result.target.otomoId,
+              otomoDisplayName: result.target.displayName,
+            });
+          } catch (error) {
+            request.log.error(error, "Failed to process call_request message");
             sendJson(connection.socket, {
               type: "error",
-              error: result.reason,
+              error: "SERVER_ERROR",
+            });
+          }
+          return;
+        }
+
+        if (message.type === "call_accept") {
+          if (authUser.role !== "otomo" && authUser.role !== "admin") {
+            sendJson(connection.socket, {
+              type: "error",
+              error: "FORBIDDEN",
             });
             return;
           }
 
-          sendJson(connection.socket, {
-            type: "call_request_ack",
-            callId: result.callId,
-            status: "requesting",
-          });
+          try {
+            const result = await acceptCallRequest({
+              callId: message.callId,
+              responderUserId: authUser.id,
+            });
 
-          broadcastToUser(result.target.ownerUserId, {
-            type: "incoming_call",
-            callId: result.callId,
-            fromUserId: result.caller.id,
-            fromUserName: result.caller.name,
-            fromUserAvatar: result.caller.avatar,
-            otomoId: result.target.otomoId,
-            otomoDisplayName: result.target.displayName,
-          });
-        } catch (error) {
-          request.log.error(error, "Failed to process call_request message");
-          sendJson(connection.socket, {
-            type: "error",
-            error: "SERVER_ERROR",
-          });
+            if (!result.success) {
+              const errorCode =
+                result.reason === "CALL_NOT_FOUND"
+                  ? "CALL_NOT_FOUND"
+                  : result.reason === "FORBIDDEN"
+                  ? "FORBIDDEN"
+                  : "INVALID_CALL_STATE";
+
+              sendJson(connection.socket, {
+                type: "error",
+                error: errorCode,
+              });
+              return;
+            }
+
+            sendJson(connection.socket, {
+              type: "call_accept_ack",
+              callId: result.callId,
+              status: "connecting",
+            });
+
+            broadcastToUser(result.callerUserId, {
+              type: "call_accepted",
+              callId: result.callId,
+              timestamp: result.timestamp,
+            });
+          } catch (error) {
+            request.log.error(error, "Failed to process call_accept message");
+            sendJson(connection.socket, {
+              type: "error",
+              error: "SERVER_ERROR",
+            });
+          }
+          return;
         }
       });
 

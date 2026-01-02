@@ -28,6 +28,7 @@ This directory hosts a Fastify + TypeScript backend that will gradually replace 
 - `CALL-03 GET /calls/{id}/billing` (fetch per-minute billing units only)
 - `CALL-04 POST /calls/debug/end` (force-end a call for local debugging)
 - `WS-C01 call_request` (WebSocket event for initiating a call request)
+- `WS-S02 call_accepted` (WebSocket push informing the caller that an otomo accepted)
 
 ## Scripts
 

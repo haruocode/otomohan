@@ -5,6 +5,8 @@ import {
   finalizeCallRecord,
   insertCallRequestRecord,
   findActiveCallForParticipant as findActiveCallForParticipantDb,
+  updateCallStatusRecord,
+  type CallStatus,
 } from "../db/index.js";
 
 export type CallEntity = {
@@ -16,6 +18,7 @@ export type CallEntity = {
   durationSeconds: number;
   billedUnits: number;
   billedPoints: number;
+  status: CallStatus;
 };
 
 export async function listCallsForAccount(options: {
@@ -76,4 +79,8 @@ export async function createPendingCallRecord(entry: {
 
 export async function findActiveCallForParticipant(participantId: string) {
   return findActiveCallForParticipantDb(participantId);
+}
+
+export async function updateCallStatus(callId: string, status: CallStatus) {
+  return updateCallStatusRecord(callId, status);
 }

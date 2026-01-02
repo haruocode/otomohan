@@ -108,7 +108,12 @@ type WalletUsageViewRecord = WalletUsageRecord & {
   otomoName: string;
 };
 
-type CallStatus = "requesting" | "ringing" | "active" | "ended";
+export type CallStatus =
+  | "requesting"
+  | "ringing"
+  | "accepted"
+  | "active"
+  | "ended";
 
 type CallRecord = {
   callId: string;
@@ -746,6 +751,19 @@ export async function finalizeCallRecord(
   record.billedPoints = payload.billedPoints;
   record.status = "ended";
 
+  return record;
+}
+
+export async function updateCallStatusRecord(
+  callId: string,
+  status: CallStatus
+): Promise<CallRecord | null> {
+  const record = callHistoryTable.find((entry) => entry.callId === callId);
+  if (!record) {
+    return null;
+  }
+
+  record.status = status;
   return record;
 }
 
