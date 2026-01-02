@@ -6,6 +6,7 @@ import {
   insertCallRequestRecord,
   findActiveCallForParticipant as findActiveCallForParticipantDb,
   updateCallStatusRecord,
+  markCallConnectedRecord,
   type CallStatus,
 } from "../db/index.js";
 
@@ -15,6 +16,7 @@ export type CallEntity = {
   otomoId: string;
   startedAt: string;
   endedAt: string;
+  connectedAt: string | null;
   durationSeconds: number;
   billedUnits: number;
   billedPoints: number;
@@ -83,4 +85,8 @@ export async function findActiveCallForParticipant(participantId: string) {
 
 export async function updateCallStatus(callId: string, status: CallStatus) {
   return updateCallStatusRecord(callId, status);
+}
+
+export async function markCallConnected(callId: string, connectedAt: string) {
+  return markCallConnectedRecord(callId, connectedAt);
 }

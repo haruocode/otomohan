@@ -122,6 +122,7 @@ type CallRecord = {
   otomoId: string;
   startedAt: string;
   endedAt: string;
+  connectedAt: string | null;
   durationSeconds: number;
   billedUnits: number;
   billedPoints: number;
@@ -355,6 +356,7 @@ const callHistoryTable: CallRecord[] = [
     otomoId: "otomo_001",
     startedAt: "2025-01-10T12:03:20Z",
     endedAt: "2025-01-10T12:15:20Z",
+    connectedAt: "2025-01-10T12:03:20Z",
     durationSeconds: 720,
     billedUnits: 12,
     billedPoints: 1200,
@@ -366,6 +368,7 @@ const callHistoryTable: CallRecord[] = [
     otomoId: "otomo_002",
     startedAt: "2025-01-12T21:00:00Z",
     endedAt: "2025-01-12T21:18:00Z",
+    connectedAt: "2025-01-12T21:00:00Z",
     durationSeconds: 1080,
     billedUnits: 18,
     billedPoints: 1800,
@@ -377,6 +380,7 @@ const callHistoryTable: CallRecord[] = [
     otomoId: "otomo_003",
     startedAt: "2025-01-15T09:30:00Z",
     endedAt: "2025-01-15T09:40:00Z",
+    connectedAt: "2025-01-15T09:30:00Z",
     durationSeconds: 600,
     billedUnits: 10,
     billedPoints: 1000,
@@ -710,6 +714,7 @@ export async function insertCallRequestRecord(entry: {
     otomoId: entry.otomoId,
     startedAt: now,
     endedAt: now,
+    connectedAt: null,
     durationSeconds: 0,
     billedUnits: 0,
     billedPoints: 0,
@@ -753,6 +758,21 @@ export async function finalizeCallRecord(
   record.billedPoints = payload.billedPoints;
   record.status = "ended";
 
+  return record;
+}
+
+export async function markCallConnectedRecord(
+  callId: string,
+  connectedAt: string
+): Promise<CallRecord | null> {
+  const record = callHistoryTable.find((entry) => entry.callId === callId);
+  if (!record) {
+    return null;
+  }
+
+  record.connectedAt = connectedAt;
+  record.startedAt = connectedAt;
+  record.status = "active";
   return record;
 }
 

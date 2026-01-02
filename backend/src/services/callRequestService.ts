@@ -3,6 +3,7 @@ import {
   createPendingCallRecord,
   findActiveCallForParticipant,
   updateCallStatus,
+  markCallConnected,
 } from "../repositories/callRepository.js";
 import { getUserById } from "../repositories/userRepository.js";
 import {
@@ -68,6 +69,18 @@ export type CallRejectFailure = {
 };
 
 export type CallRejectResult = CallRejectSuccess | CallRejectFailure;
+
+export type CallConnectedResult =
+  | {
+      success: true;
+      callId: string;
+      userId: string;
+      otomoId: string;
+      otomoOwnerUserId: string;
+      connectedAt: string;
+      method: "sfu_rtp_detected";
+    }
+  | { success: false; reason: "CALL_NOT_FOUND" | "INVALID_STATE" };
 
 export async function initiateCallRequest(options: {
   callId: string;
@@ -242,5 +255,58 @@ export async function rejectCallRequest(options: {
     otomoId: otomo.otomoId,
     reason: options.reason?.trim() || "manual_reject",
     timestamp: timestampIso,
+  };
+}
+
+export async function markCallConnectedBySfu(options: {
+  callId: string;
+  method?: "sfu_rtp_detected";
+}): Promise<CallConnectedResult> {
+  const trimmedCallId = options.callId.trim();
+  if (!trimmedCallId) {
+    return { success: false, reason: "CALL_NOT_FOUND" };
+  }
+
+  const call = await getCallById(trimmedCallId);
+  if (!call) {
+    return { success: false, reason: "CALL_NOT_FOUND" };
+  }
+
+  if (call.status === "ended" || call.status === "rejected") {
+    return { success: false, reason: "INVALID_STATE" };
+  }
+
+  if (call.status !== "accepted" && call.status !== "active") {
+    return { success: false, reason: "INVALID_STATE" };
+  }
+
+  const otomo = await findOtomoById(call.otomoId);
+  if (!otomo) {
+    return { success: false, reason: "CALL_NOT_FOUND" };
+  }
+
+  const connectedAt = call.connectedAt ?? new Date().toISOString();
+
+  if (!call.connectedAt) {
+    await markCallConnected(call.callId, connectedAt);
+    call.connectedAt = connectedAt;
+    call.startedAt = connectedAt;
+    call.status = "active";
+    await updateOtomoStatus(otomo.otomoId, {
+      isOnline: true,
+      isAvailable: false,
+      statusMessage: "通話中",
+      statusUpdatedAt: connectedAt,
+    });
+  }
+
+  return {
+    success: true,
+    callId: call.callId,
+    userId: call.userId,
+    otomoId: call.otomoId,
+    otomoOwnerUserId: otomo.ownerUserId,
+    connectedAt,
+    method: options.method ?? "sfu_rtp_detected",
   };
 }
