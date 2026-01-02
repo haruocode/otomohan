@@ -114,6 +114,13 @@ export const callGatewayRoutes: FastifyPluginAsync = async (app) => {
         }
 
         if (message.type === "call_request") {
+          if (authUser.role !== "user" && authUser.role !== "admin") {
+            sendWsError(connection.socket, "FORBIDDEN", {
+              message: "Only user accounts can initiate calls.",
+            });
+            return;
+          }
+
           try {
             const result = await initiateCallRequest({
               callId: message.callId,
@@ -122,6 +129,22 @@ export const callGatewayRoutes: FastifyPluginAsync = async (app) => {
             });
 
             if (!result.success) {
+              if (result.reason === "OTOMO_OFFLINE") {
+                sendJson(connection.socket, {
+                  type: "call_rejected",
+                  reason: "offline",
+                });
+                return;
+              }
+
+              if (result.reason === "OTOMO_BUSY") {
+                sendJson(connection.socket, {
+                  type: "call_rejected",
+                  reason: "busy",
+                });
+                return;
+              }
+
               const context = {
                 callId: message.callId,
                 targetUserId: message.toUserId,
