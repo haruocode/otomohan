@@ -37,7 +37,7 @@ export async function processBillingTick(options: {
     return { success: false, reason: "CALL_NOT_FOUND" };
   }
 
-  if (call.status === "ended" || call.status === "rejected") {
+  if (call.status === "ended" || call.status === "failed") {
     return { success: false, reason: "INVALID_STATE" };
   }
 

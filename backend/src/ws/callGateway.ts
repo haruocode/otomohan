@@ -259,17 +259,15 @@ export const callGatewayRoutes: FastifyPluginAsync = async (app) => {
             sendJson(connection.socket, {
               type: "call_reject_ack",
               callId: result.callId,
-              status: "idle",
+              reason: result.reason,
             });
 
             broadcastToUser(result.callerUserId, {
               type: "call_rejected",
-              payload: {
-                callId: result.callId,
-                otomoId: result.otomoId,
-                reason: result.reason,
-                timestamp: result.timestamp,
-              },
+              callId: result.callId,
+              otomoId: result.otomoId,
+              reason: result.reason,
+              timestamp: result.timestamp,
             });
           } catch (error) {
             request.log.error(error, "Failed to process call_reject message");

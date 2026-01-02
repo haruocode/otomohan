@@ -107,7 +107,7 @@ async function processTimerTick(callId: string) {
   state.processing = true;
   try {
     const call = await getCallById(callId);
-    if (!call || call.status === "ended" || call.status === "rejected") {
+    if (!call || call.status === "ended" || call.status === "failed") {
       stopCallBillingTimer(callId, "call_inactive");
       return;
     }

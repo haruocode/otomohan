@@ -13,6 +13,16 @@ import {
 } from "../repositories/otomoRepository.js";
 import { broadcastOtomoStatusFromSnapshot } from "./otomoStatusService.js";
 
+export const CALL_REJECT_REASONS = [
+  "busy",
+  "manual_decline",
+  "away",
+  "timeout",
+  "system_error",
+] as const;
+
+export type CallRejectReason = (typeof CALL_REJECT_REASONS)[number];
+
 export type CallRequestSuccess = {
   success: true;
   callId: string;
@@ -60,7 +70,7 @@ export type CallRejectSuccess = {
   callId: string;
   callerUserId: string;
   otomoId: string;
-  reason: string;
+  reason: CallRejectReason;
   timestamp: string;
 };
 
@@ -246,7 +256,7 @@ export async function rejectCallRequest(options: {
     return { success: false, reason: "FORBIDDEN" };
   }
 
-  if (call.status === "ended" || call.status === "rejected") {
+  if (call.status === "ended" || call.status === "failed") {
     return { success: false, reason: "INVALID_STATE" };
   }
 
@@ -254,9 +264,10 @@ export async function rejectCallRequest(options: {
     return { success: false, reason: "INVALID_STATE" };
   }
 
+  const normalizedReason = normalizeCallRejectReason(options.reason);
   const now = new Date();
   const timestampIso = now.toISOString();
-  await updateCallStatus(call.callId, "rejected");
+  await updateCallStatus(call.callId, "failed");
 
   const updatedStatus = await updateOtomoStatus(otomo.otomoId, {
     isOnline: true,
@@ -277,9 +288,22 @@ export async function rejectCallRequest(options: {
     callId: call.callId,
     callerUserId: call.userId,
     otomoId: otomo.otomoId,
-    reason: options.reason?.trim() || "manual_reject",
+    reason: normalizedReason,
     timestamp: timestampIso,
   };
+}
+
+function normalizeCallRejectReason(reason?: string): CallRejectReason {
+  if (!reason) {
+    return "manual_decline";
+  }
+
+  const trimmed = reason.trim().toLowerCase();
+  if (CALL_REJECT_REASONS.includes(trimmed as CallRejectReason)) {
+    return trimmed as CallRejectReason;
+  }
+
+  return "manual_decline";
 }
 
 export async function markCallConnectedBySfu(options: {
@@ -296,7 +320,7 @@ export async function markCallConnectedBySfu(options: {
     return { success: false, reason: "CALL_NOT_FOUND" };
   }
 
-  if (call.status === "ended" || call.status === "rejected") {
+  if (call.status === "ended" || call.status === "failed") {
     return { success: false, reason: "INVALID_STATE" };
   }
 
