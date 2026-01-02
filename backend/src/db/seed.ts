@@ -29,9 +29,9 @@ async function resetTables() {
 }
 
 async function seedUsers() {
-  const now = new Date().toISOString();
+  const now = new Date();
 
-  await db.insert(users).values([
+  const userRows = [
     {
       id: "user-123",
       name: "Taro",
@@ -62,24 +62,24 @@ async function seedUsers() {
       createdAt: now,
       updatedAt: now,
     },
-  ]);
+  ] satisfies Array<typeof users.$inferInsert>;
 
-  await db.insert(userNotificationSettings).values([
-    {
-      userId: "user-123",
-      incomingCall: true,
-      callSummary: true,
-      walletAlert: true,
-      marketing: false,
-      updatedAt: now,
-    },
-  ]);
+  await db.insert(users).values(userRows);
+
+  await db.insert(userNotificationSettings).values({
+    userId: "user-123",
+    incomingCall: true,
+    callSummary: true,
+    walletAlert: true,
+    marketing: false,
+    updatedAt: now,
+  });
 }
 
 async function seedWallet() {
-  const now = new Date().toISOString();
+  const now = new Date();
 
-  await db.insert(walletPlans).values([
+  const planRows = [
     {
       id: "plan_basic",
       title: "Basic Charge",
@@ -110,79 +110,73 @@ async function seedWallet() {
       isActive: true,
       createdAt: now,
     },
-  ]);
+  ] satisfies Array<typeof walletPlans.$inferInsert>;
 
-  await db.insert(walletBalances).values([
-    {
-      userId: "user-123",
-      balance: 1200,
-      updatedAt: now,
-    },
-  ]);
+  await db.insert(walletPlans).values(planRows);
 
-  await db.insert(walletCharges).values([
-    {
-      userId: "user-123",
-      planId: "plan_plus",
-      paymentId: "pay_demo_001",
-      amountYen: 1000,
-      grantedPoints: 1100,
-      bonusPoints: 100,
-      createdAt: now,
-    },
-  ]);
+  await db.insert(walletBalances).values({
+    userId: "user-123",
+    balance: 1200,
+    updatedAt: now,
+  });
+
+  await db.insert(walletCharges).values({
+    userId: "user-123",
+    planId: "plan_plus",
+    paymentId: "pay_demo_001",
+    amountYen: 1000,
+    grantedPoints: 1100,
+    bonusPoints: 100,
+    createdAt: now,
+  });
 }
 
 async function seedOtomo() {
-  const now = new Date().toISOString();
+  const now = new Date();
 
-  await db.insert(otomoProfiles).values([
-    {
-      id: "otomo_001",
-      ownerUserId: "otomo-owner-001",
-      displayName: "Misaki",
-      profileImageUrl: "https://cdn.local/otomo/otomo_001.png",
-      age: 25,
-      gender: "female",
-      introduction: "Friendly otomo ready for local testing.",
-      tags: ["healing", "listener"],
-      genres: ["talk", "consult"],
-      statusMessage: "Waiting for requests",
-      isOnline: true,
-      isAvailable: true,
-      pricePerMinute: 120,
-      rating: "4.8",
-      reviewCount: 54,
-      statusUpdatedAt: now,
-      schedule: [
-        { dayOfWeek: "monday", start: "20:00", end: "23:00" },
-        { dayOfWeek: "thursday", start: "21:00", end: "23:30" },
-      ],
-    },
-  ]);
+  await db.insert(otomoProfiles).values({
+    id: "otomo_001",
+    ownerUserId: "otomo-owner-001",
+    displayName: "Misaki",
+    profileImageUrl: "https://cdn.local/otomo/otomo_001.png",
+    age: 25,
+    gender: "female",
+    introduction: "Friendly otomo ready for local testing.",
+    tags: ["healing", "listener"],
+    genres: ["talk", "consult"],
+    statusMessage: "Waiting for requests",
+    isOnline: true,
+    isAvailable: true,
+    pricePerMinute: 120,
+    rating: "4.8",
+    reviewCount: 54,
+    statusUpdatedAt: now,
+    schedule: [
+      { dayOfWeek: "monday", start: "20:00", end: "23:00" },
+      { dayOfWeek: "thursday", start: "21:00", end: "23:30" },
+    ],
+  });
 }
 
 async function seedCalls() {
-  const start = new Date("2025-01-10T12:03:20Z").toISOString();
-  const end = new Date("2025-01-10T12:15:20Z").toISOString();
+  const start = new Date("2025-01-10T12:03:20Z");
+  const end = new Date("2025-01-10T12:15:20Z");
 
-  await db.insert(calls).values([
-    {
-      id: "call_demo_001",
-      userId: "user-123",
-      otomoId: "otomo_001",
-      startedAt: start,
-      connectedAt: start,
-      endedAt: end,
-      durationSeconds: 720,
-      billedUnits: 12,
-      billedPoints: 1200,
-      status: "ended",
-      endReason: "user_end",
-    },
-  ]);
+  await db.insert(calls).values({
+    id: "call_demo_001",
+    userId: "user-123",
+    otomoId: "otomo_001",
+    startedAt: start,
+    connectedAt: start,
+    endedAt: end,
+    durationSeconds: 720,
+    billedUnits: 12,
+    billedPoints: 1200,
+    status: "ended",
+    endReason: "user_end",
+  });
 
-  await db.insert(callBillingUnits).values([
+  const billingRows = [
     {
       callId: "call_demo_001",
       minuteIndex: 0,
@@ -193,20 +187,20 @@ async function seedCalls() {
       callId: "call_demo_001",
       minuteIndex: 1,
       chargedPoints: 100,
-      timestamp: new Date("2025-01-10T12:04:20Z").toISOString(),
+      timestamp: new Date("2025-01-10T12:04:20Z"),
     },
-  ]);
+  ] satisfies Array<typeof callBillingUnits.$inferInsert>;
 
-  await db.insert(walletUsages).values([
-    {
-      userId: "user-123",
-      callId: "call_demo_001",
-      otomoId: "otomo_001",
-      usedPoints: 240,
-      durationMinutes: 2,
-      createdAt: end,
-    },
-  ]);
+  await db.insert(callBillingUnits).values(billingRows);
+
+  await db.insert(walletUsages).values({
+    userId: "user-123",
+    callId: "call_demo_001",
+    otomoId: "otomo_001",
+    usedPoints: 240,
+    durationMinutes: 2,
+    createdAt: end,
+  });
 }
 
 async function main() {
