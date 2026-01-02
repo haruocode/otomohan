@@ -26,6 +26,7 @@ import { walletPurchaseHistoryRoutes } from "./routes/wallet/purchase-history.js
 import { walletUsageRoutes } from "./routes/wallet/usage.js";
 import { callGatewayRoutes } from "./ws/callGateway.js";
 import { sfuRoutes } from "./routes/sfu.js";
+import { rtcRoutes } from "./routes/rtc.js";
 
 export function buildApp() {
   const app = Fastify({
@@ -61,6 +62,7 @@ export function buildApp() {
   app.register(walletChargeRoutes);
   app.register(walletPurchaseHistoryRoutes);
   app.register(walletUsageRoutes);
+  app.register(rtcRoutes);
   app.register(sfuRoutes);
   app.register(callGatewayRoutes);
 
