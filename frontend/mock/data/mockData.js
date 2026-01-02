@@ -169,8 +169,9 @@ export const otomoList = [
   },
 ]
 
-const minutesFromNow = (minutes) =>
-  new Date(Date.now() + minutes * 60_000).toISOString()
+function minutesFromNow(minutes) {
+  return new Date(Date.now() + minutes * 60_000).toISOString()
+}
 
 const daysAgoIso = (days) =>
   new Date(Date.now() - days * 86_400_000).toISOString()
