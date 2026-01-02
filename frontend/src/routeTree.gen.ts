@@ -10,18 +10,38 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WalletRouteImport } from './routes/wallet'
-import { Route as HistoryRouteImport } from './routes/history'
-import { Route as HistoryCallIdRouteImport } from './routes/history.$callId'
-import { Route as IndexRouteImport } from './routes/index'
+import { Route as SignupRouteImport } from './routes/signup'
+import { Route as OtomoScheduleRouteImport } from './routes/otomo-schedule'
+import { Route as OtomoReviewsRouteImport } from './routes/otomo-reviews'
+import { Route as OtomoHomeRouteImport } from './routes/otomo-home'
 import { Route as MypageRouteImport } from './routes/mypage'
-import { Route as MypageEditRouteImport } from './routes/mypage.edit'
-import { Route as MypagePasswordRouteImport } from './routes/mypage.password'
-import { Route as MypageSettingsRouteImport } from './routes/mypage.settings'
-import { Route as MypageBlockListRouteImport } from './routes/mypage.block-list'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as HistoryRouteImport } from './routes/history'
+import { Route as IndexRouteImport } from './routes/index'
 import { Route as WalletChargeRouteImport } from './routes/wallet.charge'
 import { Route as OtomoOtomoIdRouteImport } from './routes/otomo.$otomoId'
+import { Route as OtomoDashboardRevenueRouteImport } from './routes/otomo-dashboard.revenue'
+import { Route as OtomoCallSummaryRouteImport } from './routes/otomo-call.summary'
+import { Route as OtomoCallIncomingRouteImport } from './routes/otomo-call.incoming'
+import { Route as OtomoCallActiveRouteImport } from './routes/otomo-call.active'
+import { Route as MypageSettingsRouteImport } from './routes/mypage.settings'
+import { Route as MypagePasswordRouteImport } from './routes/mypage.password'
+import { Route as MypageEditRouteImport } from './routes/mypage.edit'
+import { Route as MypageBlockListRouteImport } from './routes/mypage.block-list'
+import { Route as HistoryCallIdRouteImport } from './routes/history.$callId'
 import { Route as DemoTanstackQueryRouteImport } from './routes/demo/tanstack-query'
 import { Route as CallCallIdRouteImport } from './routes/call.$callId'
+import { Route as AdminUsersRouteImport } from './routes/admin.users'
+import { Route as AdminTrafficRouteImport } from './routes/admin.traffic'
+import { Route as AdminReviewsRouteImport } from './routes/admin.reviews'
+import { Route as AdminReportsRouteImport } from './routes/admin.reports'
+import { Route as AdminPointsRouteImport } from './routes/admin.points'
+import { Route as AdminOtomoRouteImport } from './routes/admin.otomo'
+import { Route as AdminNotificationsRouteImport } from './routes/admin.notifications'
+import { Route as AdminLoginRouteImport } from './routes/admin.login'
+import { Route as AdminCallsRouteImport } from './routes/admin.calls'
+import { Route as AdminAuditRouteImport } from './routes/admin.audit'
+import { Route as MypageLegalDocRouteImport } from './routes/mypage.legal.$doc'
 import { Route as DemoStartServerFuncsRouteImport } from './routes/demo/start.server-funcs'
 import { Route as DemoStartApiRequestRouteImport } from './routes/demo/start.api-request'
 import { Route as DemoApiTqTodosRouteImport } from './routes/demo/api.tq-todos'
@@ -31,34 +51,30 @@ import { Route as DemoStartSsrIndexRouteImport } from './routes/demo/start.ssr.i
 import { Route as DemoStartSsrSpaModeRouteImport } from './routes/demo/start.ssr.spa-mode'
 import { Route as DemoStartSsrFullSsrRouteImport } from './routes/demo/start.ssr.full-ssr'
 import { Route as DemoStartSsrDataOnlyRouteImport } from './routes/demo/start.ssr.data-only'
-import { Route as OtomoHomeRouteImport } from './routes/otomo-home'
-import { Route as OtomoCallIncomingRouteImport } from './routes/otomo-call.incoming'
-import { Route as OtomoCallActiveRouteImport } from './routes/otomo-call.active'
-import { Route as OtomoCallSummaryRouteImport } from './routes/otomo-call.summary'
-import { Route as OtomoDashboardRevenueRouteImport } from './routes/otomo-dashboard.revenue'
-import { Route as OtomoScheduleRouteImport } from './routes/otomo-schedule'
-import { Route as OtomoReviewsRouteImport } from './routes/otomo-reviews'
-import { Route as AdminLoginRouteImport } from './routes/admin.login'
-import { Route as AdminUsersRouteImport } from './routes/admin.users'
 
 const WalletRoute = WalletRouteImport.update({
   id: '/wallet',
   path: '/wallet',
   getParentRoute: () => rootRouteImport,
 } as any)
-const HistoryRoute = HistoryRouteImport.update({
-  id: '/history',
-  path: '/history',
+const SignupRoute = SignupRouteImport.update({
+  id: '/signup',
+  path: '/signup',
   getParentRoute: () => rootRouteImport,
 } as any)
-const HistoryCallIdRoute = HistoryCallIdRouteImport.update({
-  id: '/history/$callId',
-  path: '/history/$callId',
+const OtomoScheduleRoute = OtomoScheduleRouteImport.update({
+  id: '/otomo-schedule',
+  path: '/otomo-schedule',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const OtomoReviewsRoute = OtomoReviewsRouteImport.update({
+  id: '/otomo-reviews',
+  path: '/otomo-reviews',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OtomoHomeRoute = OtomoHomeRouteImport.update({
+  id: '/otomo-home',
+  path: '/otomo-home',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MypageRoute = MypageRouteImport.update({
@@ -66,24 +82,19 @@ const MypageRoute = MypageRouteImport.update({
   path: '/mypage',
   getParentRoute: () => rootRouteImport,
 } as any)
-const MypageEditRoute = MypageEditRouteImport.update({
-  id: '/mypage/edit',
-  path: '/mypage/edit',
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
-const MypagePasswordRoute = MypagePasswordRouteImport.update({
-  id: '/mypage/password',
-  path: '/mypage/password',
+const HistoryRoute = HistoryRouteImport.update({
+  id: '/history',
+  path: '/history',
   getParentRoute: () => rootRouteImport,
 } as any)
-const MypageSettingsRoute = MypageSettingsRouteImport.update({
-  id: '/mypage/settings',
-  path: '/mypage/settings',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const MypageBlockListRoute = MypageBlockListRouteImport.update({
-  id: '/mypage/block-list',
-  path: '/mypage/block-list',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const WalletChargeRoute = WalletChargeRouteImport.update({
@@ -96,6 +107,51 @@ const OtomoOtomoIdRoute = OtomoOtomoIdRouteImport.update({
   path: '/otomo/$otomoId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OtomoDashboardRevenueRoute = OtomoDashboardRevenueRouteImport.update({
+  id: '/otomo-dashboard/revenue',
+  path: '/otomo-dashboard/revenue',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OtomoCallSummaryRoute = OtomoCallSummaryRouteImport.update({
+  id: '/otomo-call/summary',
+  path: '/otomo-call/summary',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OtomoCallIncomingRoute = OtomoCallIncomingRouteImport.update({
+  id: '/otomo-call/incoming',
+  path: '/otomo-call/incoming',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OtomoCallActiveRoute = OtomoCallActiveRouteImport.update({
+  id: '/otomo-call/active',
+  path: '/otomo-call/active',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MypageSettingsRoute = MypageSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => MypageRoute,
+} as any)
+const MypagePasswordRoute = MypagePasswordRouteImport.update({
+  id: '/password',
+  path: '/password',
+  getParentRoute: () => MypageRoute,
+} as any)
+const MypageEditRoute = MypageEditRouteImport.update({
+  id: '/edit',
+  path: '/edit',
+  getParentRoute: () => MypageRoute,
+} as any)
+const MypageBlockListRoute = MypageBlockListRouteImport.update({
+  id: '/block-list',
+  path: '/block-list',
+  getParentRoute: () => MypageRoute,
+} as any)
+const HistoryCallIdRoute = HistoryCallIdRouteImport.update({
+  id: '/$callId',
+  path: '/$callId',
+  getParentRoute: () => HistoryRoute,
+} as any)
 const DemoTanstackQueryRoute = DemoTanstackQueryRouteImport.update({
   id: '/demo/tanstack-query',
   path: '/demo/tanstack-query',
@@ -105,6 +161,61 @@ const CallCallIdRoute = CallCallIdRouteImport.update({
   id: '/call/$callId',
   path: '/call/$callId',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AdminUsersRoute = AdminUsersRouteImport.update({
+  id: '/admin/users',
+  path: '/admin/users',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminTrafficRoute = AdminTrafficRouteImport.update({
+  id: '/admin/traffic',
+  path: '/admin/traffic',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminReviewsRoute = AdminReviewsRouteImport.update({
+  id: '/admin/reviews',
+  path: '/admin/reviews',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminReportsRoute = AdminReportsRouteImport.update({
+  id: '/admin/reports',
+  path: '/admin/reports',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminPointsRoute = AdminPointsRouteImport.update({
+  id: '/admin/points',
+  path: '/admin/points',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminOtomoRoute = AdminOtomoRouteImport.update({
+  id: '/admin/otomo',
+  path: '/admin/otomo',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminNotificationsRoute = AdminNotificationsRouteImport.update({
+  id: '/admin/notifications',
+  path: '/admin/notifications',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminLoginRoute = AdminLoginRouteImport.update({
+  id: '/admin/login',
+  path: '/admin/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminCallsRoute = AdminCallsRouteImport.update({
+  id: '/admin/calls',
+  path: '/admin/calls',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminAuditRoute = AdminAuditRouteImport.update({
+  id: '/admin/audit',
+  path: '/admin/audit',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MypageLegalDocRoute = MypageLegalDocRouteImport.update({
+  id: '/legal/$doc',
+  path: '/legal/$doc',
+  getParentRoute: () => MypageRoute,
 } as any)
 const DemoStartServerFuncsRoute = DemoStartServerFuncsRouteImport.update({
   id: '/demo/start/server-funcs',
@@ -151,80 +262,46 @@ const DemoStartSsrDataOnlyRoute = DemoStartSsrDataOnlyRouteImport.update({
   path: '/demo/start/ssr/data-only',
   getParentRoute: () => rootRouteImport,
 } as any)
-const OtomoHomeRoute = OtomoHomeRouteImport.update({
-  id: '/otomo-home',
-  path: '/otomo-home',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const OtomoCallIncomingRoute = OtomoCallIncomingRouteImport.update({
-  id: '/otomo-call/incoming',
-  path: '/otomo-call/incoming',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const OtomoCallActiveRoute = OtomoCallActiveRouteImport.update({
-  id: '/otomo-call/active',
-  path: '/otomo-call/active',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const OtomoCallSummaryRoute = OtomoCallSummaryRouteImport.update({
-  id: '/otomo-call/summary',
-  path: '/otomo-call/summary',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const OtomoDashboardRevenueRoute = OtomoDashboardRevenueRouteImport.update({
-  id: '/otomo-dashboard/revenue',
-  path: '/otomo-dashboard/revenue',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const OtomoScheduleRoute = OtomoScheduleRouteImport.update({
-  id: '/otomo-schedule',
-  path: '/otomo-schedule',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const OtomoReviewsRoute = OtomoReviewsRouteImport.update({
-  id: '/otomo-reviews',
-  path: '/otomo-reviews',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminLoginRoute = AdminLoginRouteImport.update({
-  id: '/admin/login',
-  path: '/admin/login',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminUsersRoute = AdminUsersRouteImport.update({
-  id: '/admin/users',
-  path: '/admin/users',
-  getParentRoute: () => rootRouteImport,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/mypage': typeof MypageRoute
-  '/mypage/edit': typeof MypageEditRoute
-  '/mypage/settings': typeof MypageSettingsRoute
-  '/mypage/password': typeof MypagePasswordRoute
-  '/mypage/block-list': typeof MypageBlockListRoute
-  '/history': typeof HistoryRoute
-  '/history/$callId': typeof HistoryCallIdRoute
+  '/history': typeof HistoryRouteWithChildren
+  '/login': typeof LoginRoute
+  '/mypage': typeof MypageRouteWithChildren
+  '/otomo-home': typeof OtomoHomeRoute
+  '/otomo-reviews': typeof OtomoReviewsRoute
+  '/otomo-schedule': typeof OtomoScheduleRoute
+  '/signup': typeof SignupRoute
   '/wallet': typeof WalletRouteWithChildren
+  '/admin/audit': typeof AdminAuditRoute
+  '/admin/calls': typeof AdminCallsRoute
+  '/admin/login': typeof AdminLoginRoute
+  '/admin/notifications': typeof AdminNotificationsRoute
+  '/admin/otomo': typeof AdminOtomoRoute
+  '/admin/points': typeof AdminPointsRoute
+  '/admin/reports': typeof AdminReportsRoute
+  '/admin/reviews': typeof AdminReviewsRoute
+  '/admin/traffic': typeof AdminTrafficRoute
+  '/admin/users': typeof AdminUsersRoute
   '/call/$callId': typeof CallCallIdRouteWithChildren
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
+  '/history/$callId': typeof HistoryCallIdRoute
+  '/mypage/block-list': typeof MypageBlockListRoute
+  '/mypage/edit': typeof MypageEditRoute
+  '/mypage/password': typeof MypagePasswordRoute
+  '/mypage/settings': typeof MypageSettingsRoute
+  '/otomo-call/active': typeof OtomoCallActiveRoute
+  '/otomo-call/incoming': typeof OtomoCallIncomingRoute
+  '/otomo-call/summary': typeof OtomoCallSummaryRoute
+  '/otomo-dashboard/revenue': typeof OtomoDashboardRevenueRoute
   '/otomo/$otomoId': typeof OtomoOtomoIdRoute
   '/wallet/charge': typeof WalletChargeRoute
   '/call/$callId/summary': typeof CallCallIdSummaryRoute
-  '/otomo-home': typeof OtomoHomeRoute
-  '/otomo-call/incoming': typeof OtomoCallIncomingRoute
-  '/otomo-call/active': typeof OtomoCallActiveRoute
-  '/otomo-call/summary': typeof OtomoCallSummaryRoute
-  '/otomo-dashboard/revenue': typeof OtomoDashboardRevenueRoute
-  '/otomo-schedule': typeof OtomoScheduleRoute
-  '/otomo-reviews': typeof OtomoReviewsRoute
-  '/admin/login': typeof AdminLoginRoute
-  '/admin/users': typeof AdminUsersRoute
   '/demo/api/names': typeof DemoApiNamesRoute
   '/demo/api/tq-todos': typeof DemoApiTqTodosRoute
   '/demo/start/api-request': typeof DemoStartApiRequestRoute
   '/demo/start/server-funcs': typeof DemoStartServerFuncsRoute
+  '/mypage/legal/$doc': typeof MypageLegalDocRoute
   '/demo/start/ssr/data-only': typeof DemoStartSsrDataOnlyRoute
   '/demo/start/ssr/full-ssr': typeof DemoStartSsrFullSsrRoute
   '/demo/start/ssr/spa-mode': typeof DemoStartSsrSpaModeRoute
@@ -232,32 +309,43 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/mypage': typeof MypageRoute
-  '/mypage/edit': typeof MypageEditRoute
-  '/mypage/settings': typeof MypageSettingsRoute
-  '/mypage/password': typeof MypagePasswordRoute
-  '/mypage/block-list': typeof MypageBlockListRoute
-  '/history': typeof HistoryRoute
-  '/history/$callId': typeof HistoryCallIdRoute
+  '/history': typeof HistoryRouteWithChildren
+  '/login': typeof LoginRoute
+  '/mypage': typeof MypageRouteWithChildren
+  '/otomo-home': typeof OtomoHomeRoute
+  '/otomo-reviews': typeof OtomoReviewsRoute
+  '/otomo-schedule': typeof OtomoScheduleRoute
+  '/signup': typeof SignupRoute
   '/wallet': typeof WalletRouteWithChildren
+  '/admin/audit': typeof AdminAuditRoute
+  '/admin/calls': typeof AdminCallsRoute
+  '/admin/login': typeof AdminLoginRoute
+  '/admin/notifications': typeof AdminNotificationsRoute
+  '/admin/otomo': typeof AdminOtomoRoute
+  '/admin/points': typeof AdminPointsRoute
+  '/admin/reports': typeof AdminReportsRoute
+  '/admin/reviews': typeof AdminReviewsRoute
+  '/admin/traffic': typeof AdminTrafficRoute
+  '/admin/users': typeof AdminUsersRoute
   '/call/$callId': typeof CallCallIdRouteWithChildren
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
+  '/history/$callId': typeof HistoryCallIdRoute
+  '/mypage/block-list': typeof MypageBlockListRoute
+  '/mypage/edit': typeof MypageEditRoute
+  '/mypage/password': typeof MypagePasswordRoute
+  '/mypage/settings': typeof MypageSettingsRoute
+  '/otomo-call/active': typeof OtomoCallActiveRoute
+  '/otomo-call/incoming': typeof OtomoCallIncomingRoute
+  '/otomo-call/summary': typeof OtomoCallSummaryRoute
+  '/otomo-dashboard/revenue': typeof OtomoDashboardRevenueRoute
   '/otomo/$otomoId': typeof OtomoOtomoIdRoute
   '/wallet/charge': typeof WalletChargeRoute
   '/call/$callId/summary': typeof CallCallIdSummaryRoute
-  '/otomo-home': typeof OtomoHomeRoute
-  '/otomo-call/incoming': typeof OtomoCallIncomingRoute
-  '/otomo-call/active': typeof OtomoCallActiveRoute
-  '/otomo-call/summary': typeof OtomoCallSummaryRoute
-  '/otomo-dashboard/revenue': typeof OtomoDashboardRevenueRoute
-  '/otomo-schedule': typeof OtomoScheduleRoute
-  '/otomo-reviews': typeof OtomoReviewsRoute
-  '/admin/login': typeof AdminLoginRoute
-  '/admin/users': typeof AdminUsersRoute
   '/demo/api/names': typeof DemoApiNamesRoute
   '/demo/api/tq-todos': typeof DemoApiTqTodosRoute
   '/demo/start/api-request': typeof DemoStartApiRequestRoute
   '/demo/start/server-funcs': typeof DemoStartServerFuncsRoute
+  '/mypage/legal/$doc': typeof MypageLegalDocRoute
   '/demo/start/ssr/data-only': typeof DemoStartSsrDataOnlyRoute
   '/demo/start/ssr/full-ssr': typeof DemoStartSsrFullSsrRoute
   '/demo/start/ssr/spa-mode': typeof DemoStartSsrSpaModeRoute
@@ -266,32 +354,43 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/mypage': typeof MypageRoute
-  '/mypage/edit': typeof MypageEditRoute
-  '/mypage/settings': typeof MypageSettingsRoute
-  '/mypage/password': typeof MypagePasswordRoute
-  '/mypage/block-list': typeof MypageBlockListRoute
-  '/history': typeof HistoryRoute
-  '/history/$callId': typeof HistoryCallIdRoute
+  '/history': typeof HistoryRouteWithChildren
+  '/login': typeof LoginRoute
+  '/mypage': typeof MypageRouteWithChildren
+  '/otomo-home': typeof OtomoHomeRoute
+  '/otomo-reviews': typeof OtomoReviewsRoute
+  '/otomo-schedule': typeof OtomoScheduleRoute
+  '/signup': typeof SignupRoute
   '/wallet': typeof WalletRouteWithChildren
+  '/admin/audit': typeof AdminAuditRoute
+  '/admin/calls': typeof AdminCallsRoute
+  '/admin/login': typeof AdminLoginRoute
+  '/admin/notifications': typeof AdminNotificationsRoute
+  '/admin/otomo': typeof AdminOtomoRoute
+  '/admin/points': typeof AdminPointsRoute
+  '/admin/reports': typeof AdminReportsRoute
+  '/admin/reviews': typeof AdminReviewsRoute
+  '/admin/traffic': typeof AdminTrafficRoute
+  '/admin/users': typeof AdminUsersRoute
   '/call/$callId': typeof CallCallIdRouteWithChildren
   '/demo/tanstack-query': typeof DemoTanstackQueryRoute
+  '/history/$callId': typeof HistoryCallIdRoute
+  '/mypage/block-list': typeof MypageBlockListRoute
+  '/mypage/edit': typeof MypageEditRoute
+  '/mypage/password': typeof MypagePasswordRoute
+  '/mypage/settings': typeof MypageSettingsRoute
+  '/otomo-call/active': typeof OtomoCallActiveRoute
+  '/otomo-call/incoming': typeof OtomoCallIncomingRoute
+  '/otomo-call/summary': typeof OtomoCallSummaryRoute
+  '/otomo-dashboard/revenue': typeof OtomoDashboardRevenueRoute
   '/otomo/$otomoId': typeof OtomoOtomoIdRoute
   '/wallet/charge': typeof WalletChargeRoute
   '/call/$callId/summary': typeof CallCallIdSummaryRoute
-  '/otomo-home': typeof OtomoHomeRoute
-  '/otomo-call/incoming': typeof OtomoCallIncomingRoute
-  '/otomo-call/active': typeof OtomoCallActiveRoute
-  '/otomo-call/summary': typeof OtomoCallSummaryRoute
-  '/otomo-dashboard/revenue': typeof OtomoDashboardRevenueRoute
-  '/otomo-schedule': typeof OtomoScheduleRoute
-  '/otomo-reviews': typeof OtomoReviewsRoute
-  '/admin/login': typeof AdminLoginRoute
-  '/admin/users': typeof AdminUsersRoute
   '/demo/api/names': typeof DemoApiNamesRoute
   '/demo/api/tq-todos': typeof DemoApiTqTodosRoute
   '/demo/start/api-request': typeof DemoStartApiRequestRoute
   '/demo/start/server-funcs': typeof DemoStartServerFuncsRoute
+  '/mypage/legal/$doc': typeof MypageLegalDocRoute
   '/demo/start/ssr/data-only': typeof DemoStartSsrDataOnlyRoute
   '/demo/start/ssr/full-ssr': typeof DemoStartSsrFullSsrRoute
   '/demo/start/ssr/spa-mode': typeof DemoStartSsrSpaModeRoute
@@ -301,40 +400,43 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/mypage'
-    | '/mypage/edit'
-    | '/mypage/settings'
-    | '/mypage/password'
-    | '/mypage/block-list'
     | '/history'
-    | '/history/$callId'
+    | '/login'
+    | '/mypage'
+    | '/otomo-home'
+    | '/otomo-reviews'
+    | '/otomo-schedule'
+    | '/signup'
     | '/wallet'
+    | '/admin/audit'
+    | '/admin/calls'
+    | '/admin/login'
+    | '/admin/notifications'
+    | '/admin/otomo'
+    | '/admin/points'
+    | '/admin/reports'
+    | '/admin/reviews'
+    | '/admin/traffic'
+    | '/admin/users'
     | '/call/$callId'
     | '/demo/tanstack-query'
+    | '/history/$callId'
+    | '/mypage/block-list'
+    | '/mypage/edit'
+    | '/mypage/password'
+    | '/mypage/settings'
+    | '/otomo-call/active'
+    | '/otomo-call/incoming'
+    | '/otomo-call/summary'
+    | '/otomo-dashboard/revenue'
     | '/otomo/$otomoId'
     | '/wallet/charge'
     | '/call/$callId/summary'
-    | '/otomo-home'
-    | '/otomo-call/incoming'
-    | '/otomo-call/active'
-    | '/otomo-call/summary'
-    | '/otomo-dashboard/revenue'
-    | '/otomo-schedule'
-    | '/otomo-reviews'
-    | '/admin/login'
-    | '/admin/users'
     | '/demo/api/names'
     | '/demo/api/tq-todos'
     | '/demo/start/api-request'
     | '/demo/start/server-funcs'
-  '/otomo-call/summary':
-    | {
-        id: '/otomo-call/summary'
-        path: '/otomo-call/summary'
-        fullPath: '/otomo-call/summary'
-        preLoaderRoute: typeof OtomoCallSummaryRouteImport
-        parentRoute: typeof rootRouteImport
-      }
+    | '/mypage/legal/$doc'
     | '/demo/start/ssr/data-only'
     | '/demo/start/ssr/full-ssr'
     | '/demo/start/ssr/spa-mode'
@@ -342,32 +444,43 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/mypage'
-    | '/mypage/edit'
-    | '/mypage/settings'
-    | '/mypage/password'
-    | '/mypage/block-list'
     | '/history'
-    | '/history/$callId'
+    | '/login'
+    | '/mypage'
+    | '/otomo-home'
+    | '/otomo-reviews'
+    | '/otomo-schedule'
+    | '/signup'
     | '/wallet'
+    | '/admin/audit'
+    | '/admin/calls'
+    | '/admin/login'
+    | '/admin/notifications'
+    | '/admin/otomo'
+    | '/admin/points'
+    | '/admin/reports'
+    | '/admin/reviews'
+    | '/admin/traffic'
+    | '/admin/users'
     | '/call/$callId'
     | '/demo/tanstack-query'
+    | '/history/$callId'
+    | '/mypage/block-list'
+    | '/mypage/edit'
+    | '/mypage/password'
+    | '/mypage/settings'
+    | '/otomo-call/active'
+    | '/otomo-call/incoming'
+    | '/otomo-call/summary'
+    | '/otomo-dashboard/revenue'
     | '/otomo/$otomoId'
     | '/wallet/charge'
     | '/call/$callId/summary'
-    | '/otomo-home'
-    | '/otomo-call/incoming'
-    | '/otomo-call/active'
-    | '/otomo-call/summary'
-    | '/otomo-dashboard/revenue'
-    | '/otomo-schedule'
-    | '/otomo-reviews'
-    | '/admin/login'
-    | '/admin/users'
     | '/demo/api/names'
     | '/demo/api/tq-todos'
     | '/demo/start/api-request'
     | '/demo/start/server-funcs'
+    | '/mypage/legal/$doc'
     | '/demo/start/ssr/data-only'
     | '/demo/start/ssr/full-ssr'
     | '/demo/start/ssr/spa-mode'
@@ -375,32 +488,43 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
-    | '/mypage'
-    | '/mypage/edit'
-    | '/mypage/settings'
-    | '/mypage/password'
-    | '/mypage/block-list'
     | '/history'
-    | '/history/$callId'
+    | '/login'
+    | '/mypage'
+    | '/otomo-home'
+    | '/otomo-reviews'
+    | '/otomo-schedule'
+    | '/signup'
     | '/wallet'
+    | '/admin/audit'
+    | '/admin/calls'
+    | '/admin/login'
+    | '/admin/notifications'
+    | '/admin/otomo'
+    | '/admin/points'
+    | '/admin/reports'
+    | '/admin/reviews'
+    | '/admin/traffic'
+    | '/admin/users'
     | '/call/$callId'
     | '/demo/tanstack-query'
+    | '/history/$callId'
+    | '/mypage/block-list'
+    | '/mypage/edit'
+    | '/mypage/password'
+    | '/mypage/settings'
+    | '/otomo-call/active'
+    | '/otomo-call/incoming'
+    | '/otomo-call/summary'
+    | '/otomo-dashboard/revenue'
     | '/otomo/$otomoId'
     | '/wallet/charge'
     | '/call/$callId/summary'
-    | '/otomo-home'
-    | '/otomo-call/incoming'
-    | '/otomo-call/active'
-    | '/otomo-call/summary'
-    | '/otomo-dashboard/revenue'
-    | '/otomo-schedule'
-    | '/otomo-reviews'
-    | '/admin/login'
-    | '/admin/users'
     | '/demo/api/names'
     | '/demo/api/tq-todos'
     | '/demo/start/api-request'
     | '/demo/start/server-funcs'
+    | '/mypage/legal/$doc'
     | '/demo/start/ssr/data-only'
     | '/demo/start/ssr/full-ssr'
     | '/demo/start/ssr/spa-mode'
@@ -409,16 +533,30 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  MypageRoute: typeof MypageRoute
-  MypageEditRoute: typeof MypageEditRoute
-  MypageSettingsRoute: typeof MypageSettingsRoute
-  MypagePasswordRoute: typeof MypagePasswordRoute
-  MypageBlockListRoute: typeof MypageBlockListRoute
-  HistoryRoute: typeof HistoryRoute
-  HistoryCallIdRoute: typeof HistoryCallIdRoute
+  HistoryRoute: typeof HistoryRouteWithChildren
+  LoginRoute: typeof LoginRoute
+  MypageRoute: typeof MypageRouteWithChildren
+  OtomoHomeRoute: typeof OtomoHomeRoute
+  OtomoReviewsRoute: typeof OtomoReviewsRoute
+  OtomoScheduleRoute: typeof OtomoScheduleRoute
+  SignupRoute: typeof SignupRoute
   WalletRoute: typeof WalletRouteWithChildren
+  AdminAuditRoute: typeof AdminAuditRoute
+  AdminCallsRoute: typeof AdminCallsRoute
+  AdminLoginRoute: typeof AdminLoginRoute
+  AdminNotificationsRoute: typeof AdminNotificationsRoute
+  AdminOtomoRoute: typeof AdminOtomoRoute
+  AdminPointsRoute: typeof AdminPointsRoute
+  AdminReportsRoute: typeof AdminReportsRoute
+  AdminReviewsRoute: typeof AdminReviewsRoute
+  AdminTrafficRoute: typeof AdminTrafficRoute
+  AdminUsersRoute: typeof AdminUsersRoute
   CallCallIdRoute: typeof CallCallIdRouteWithChildren
   DemoTanstackQueryRoute: typeof DemoTanstackQueryRoute
+  OtomoCallActiveRoute: typeof OtomoCallActiveRoute
+  OtomoCallIncomingRoute: typeof OtomoCallIncomingRoute
+  OtomoCallSummaryRoute: typeof OtomoCallSummaryRoute
+  OtomoDashboardRevenueRoute: typeof OtomoDashboardRevenueRoute
   OtomoOtomoIdRoute: typeof OtomoOtomoIdRoute
   DemoApiNamesRoute: typeof DemoApiNamesRoute
   DemoApiTqTodosRoute: typeof DemoApiTqTodosRoute
@@ -428,15 +566,6 @@ export interface RootRouteChildren {
   DemoStartSsrFullSsrRoute: typeof DemoStartSsrFullSsrRoute
   DemoStartSsrSpaModeRoute: typeof DemoStartSsrSpaModeRoute
   DemoStartSsrIndexRoute: typeof DemoStartSsrIndexRoute
-  OtomoHomeRoute: typeof OtomoHomeRoute
-  OtomoCallIncomingRoute: typeof OtomoCallIncomingRoute
-  OtomoCallActiveRoute: typeof OtomoCallActiveRoute
-  OtomoCallSummaryRoute: typeof OtomoCallSummaryRoute
-  OtomoDashboardRevenueRoute: typeof OtomoDashboardRevenueRoute
-  OtomoScheduleRoute: typeof OtomoScheduleRoute
-  OtomoReviewsRoute: typeof OtomoReviewsRoute
-  AdminLoginRoute: typeof AdminLoginRoute
-  AdminUsersRoute: typeof AdminUsersRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -448,11 +577,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WalletRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/signup': {
+      id: '/signup'
+      path: '/signup'
+      fullPath: '/signup'
+      preLoaderRoute: typeof SignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/otomo-schedule': {
+      id: '/otomo-schedule'
+      path: '/otomo-schedule'
+      fullPath: '/otomo-schedule'
+      preLoaderRoute: typeof OtomoScheduleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/otomo-reviews': {
+      id: '/otomo-reviews'
+      path: '/otomo-reviews'
+      fullPath: '/otomo-reviews'
+      preLoaderRoute: typeof OtomoReviewsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/otomo-home': {
+      id: '/otomo-home'
+      path: '/otomo-home'
+      fullPath: '/otomo-home'
+      preLoaderRoute: typeof OtomoHomeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/mypage': {
@@ -462,25 +612,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MypageRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/mypage/edit': {
-      id: '/mypage/edit'
-      path: '/mypage/edit'
-      fullPath: '/mypage/edit'
-      preLoaderRoute: typeof MypageEditRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/mypage/settings': {
-      id: '/mypage/settings'
-      path: '/mypage/settings'
-      fullPath: '/mypage/settings'
-      preLoaderRoute: typeof MypageSettingsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/mypage/block-list': {
-      id: '/mypage/block-list'
-      path: '/mypage/block-list'
-      fullPath: '/mypage/block-list'
-      preLoaderRoute: typeof MypageBlockListRouteImport
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/history': {
@@ -490,11 +626,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof HistoryRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/history/$callId': {
-      id: '/history/$callId'
-      path: '/history/$callId'
-      fullPath: '/history/$callId'
-      preLoaderRoute: typeof HistoryCallIdRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/wallet/charge': {
@@ -511,6 +647,69 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OtomoOtomoIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/otomo-dashboard/revenue': {
+      id: '/otomo-dashboard/revenue'
+      path: '/otomo-dashboard/revenue'
+      fullPath: '/otomo-dashboard/revenue'
+      preLoaderRoute: typeof OtomoDashboardRevenueRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/otomo-call/summary': {
+      id: '/otomo-call/summary'
+      path: '/otomo-call/summary'
+      fullPath: '/otomo-call/summary'
+      preLoaderRoute: typeof OtomoCallSummaryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/otomo-call/incoming': {
+      id: '/otomo-call/incoming'
+      path: '/otomo-call/incoming'
+      fullPath: '/otomo-call/incoming'
+      preLoaderRoute: typeof OtomoCallIncomingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/otomo-call/active': {
+      id: '/otomo-call/active'
+      path: '/otomo-call/active'
+      fullPath: '/otomo-call/active'
+      preLoaderRoute: typeof OtomoCallActiveRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mypage/settings': {
+      id: '/mypage/settings'
+      path: '/settings'
+      fullPath: '/mypage/settings'
+      preLoaderRoute: typeof MypageSettingsRouteImport
+      parentRoute: typeof MypageRoute
+    }
+    '/mypage/password': {
+      id: '/mypage/password'
+      path: '/password'
+      fullPath: '/mypage/password'
+      preLoaderRoute: typeof MypagePasswordRouteImport
+      parentRoute: typeof MypageRoute
+    }
+    '/mypage/edit': {
+      id: '/mypage/edit'
+      path: '/edit'
+      fullPath: '/mypage/edit'
+      preLoaderRoute: typeof MypageEditRouteImport
+      parentRoute: typeof MypageRoute
+    }
+    '/mypage/block-list': {
+      id: '/mypage/block-list'
+      path: '/block-list'
+      fullPath: '/mypage/block-list'
+      preLoaderRoute: typeof MypageBlockListRouteImport
+      parentRoute: typeof MypageRoute
+    }
+    '/history/$callId': {
+      id: '/history/$callId'
+      path: '/$callId'
+      fullPath: '/history/$callId'
+      preLoaderRoute: typeof HistoryCallIdRouteImport
+      parentRoute: typeof HistoryRoute
+    }
     '/demo/tanstack-query': {
       id: '/demo/tanstack-query'
       path: '/demo/tanstack-query'
@@ -524,6 +723,83 @@ declare module '@tanstack/react-router' {
       fullPath: '/call/$callId'
       preLoaderRoute: typeof CallCallIdRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/admin/users': {
+      id: '/admin/users'
+      path: '/admin/users'
+      fullPath: '/admin/users'
+      preLoaderRoute: typeof AdminUsersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/traffic': {
+      id: '/admin/traffic'
+      path: '/admin/traffic'
+      fullPath: '/admin/traffic'
+      preLoaderRoute: typeof AdminTrafficRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/reviews': {
+      id: '/admin/reviews'
+      path: '/admin/reviews'
+      fullPath: '/admin/reviews'
+      preLoaderRoute: typeof AdminReviewsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/reports': {
+      id: '/admin/reports'
+      path: '/admin/reports'
+      fullPath: '/admin/reports'
+      preLoaderRoute: typeof AdminReportsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/points': {
+      id: '/admin/points'
+      path: '/admin/points'
+      fullPath: '/admin/points'
+      preLoaderRoute: typeof AdminPointsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/otomo': {
+      id: '/admin/otomo'
+      path: '/admin/otomo'
+      fullPath: '/admin/otomo'
+      preLoaderRoute: typeof AdminOtomoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/notifications': {
+      id: '/admin/notifications'
+      path: '/admin/notifications'
+      fullPath: '/admin/notifications'
+      preLoaderRoute: typeof AdminNotificationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/login': {
+      id: '/admin/login'
+      path: '/admin/login'
+      fullPath: '/admin/login'
+      preLoaderRoute: typeof AdminLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/calls': {
+      id: '/admin/calls'
+      path: '/admin/calls'
+      fullPath: '/admin/calls'
+      preLoaderRoute: typeof AdminCallsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/audit': {
+      id: '/admin/audit'
+      path: '/admin/audit'
+      fullPath: '/admin/audit'
+      preLoaderRoute: typeof AdminAuditRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mypage/legal/$doc': {
+      id: '/mypage/legal/$doc'
+      path: '/legal/$doc'
+      fullPath: '/mypage/legal/$doc'
+      preLoaderRoute: typeof MypageLegalDocRouteImport
+      parentRoute: typeof MypageRoute
     }
     '/demo/start/server-funcs': {
       id: '/demo/start/server-funcs'
@@ -588,71 +864,38 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DemoStartSsrDataOnlyRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/otomo-home': {
-      id: '/otomo-home'
-      path: '/otomo-home'
-      fullPath: '/otomo-home'
-      preLoaderRoute: typeof OtomoHomeRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/otomo-call/incoming': {
-      id: '/otomo-call/incoming'
-      path: '/otomo-call/incoming'
-      fullPath: '/otomo-call/incoming'
-      preLoaderRoute: typeof OtomoCallIncomingRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/otomo-call/active': {
-      id: '/otomo-call/active'
-      path: '/otomo-call/active'
-      fullPath: '/otomo-call/active'
-      preLoaderRoute: typeof OtomoCallActiveRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/otomo-call/summary': {
-      id: '/otomo-call/summary'
-      path: '/otomo-call/summary'
-      fullPath: '/otomo-call/summary'
-      preLoaderRoute: typeof OtomoCallSummaryRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/otomo-schedule': {
-      id: '/otomo-schedule'
-      path: '/otomo-schedule'
-      fullPath: '/otomo-schedule'
-      preLoaderRoute: typeof OtomoScheduleRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/otomo-reviews': {
-      id: '/otomo-reviews'
-      path: '/otomo-reviews'
-      fullPath: '/otomo-reviews'
-      preLoaderRoute: typeof OtomoReviewsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/otomo-dashboard/revenue': {
-      id: '/otomo-dashboard/revenue'
-      path: '/otomo-dashboard/revenue'
-      fullPath: '/otomo-dashboard/revenue'
-      preLoaderRoute: typeof OtomoDashboardRevenueRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin/login': {
-      id: '/admin/login'
-      path: '/admin/login'
-      fullPath: '/admin/login'
-      preLoaderRoute: typeof AdminLoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin/users': {
-      id: '/admin/users'
-      path: '/admin/users'
-      fullPath: '/admin/users'
-      preLoaderRoute: typeof AdminUsersRouteImport
-      parentRoute: typeof rootRouteImport
-    }
   }
 }
+
+interface HistoryRouteChildren {
+  HistoryCallIdRoute: typeof HistoryCallIdRoute
+}
+
+const HistoryRouteChildren: HistoryRouteChildren = {
+  HistoryCallIdRoute: HistoryCallIdRoute,
+}
+
+const HistoryRouteWithChildren =
+  HistoryRoute._addFileChildren(HistoryRouteChildren)
+
+interface MypageRouteChildren {
+  MypageBlockListRoute: typeof MypageBlockListRoute
+  MypageEditRoute: typeof MypageEditRoute
+  MypagePasswordRoute: typeof MypagePasswordRoute
+  MypageSettingsRoute: typeof MypageSettingsRoute
+  MypageLegalDocRoute: typeof MypageLegalDocRoute
+}
+
+const MypageRouteChildren: MypageRouteChildren = {
+  MypageBlockListRoute: MypageBlockListRoute,
+  MypageEditRoute: MypageEditRoute,
+  MypagePasswordRoute: MypagePasswordRoute,
+  MypageSettingsRoute: MypageSettingsRoute,
+  MypageLegalDocRoute: MypageLegalDocRoute,
+}
+
+const MypageRouteWithChildren =
+  MypageRoute._addFileChildren(MypageRouteChildren)
 
 interface WalletRouteChildren {
   WalletChargeRoute: typeof WalletChargeRoute
@@ -679,15 +922,30 @@ const CallCallIdRouteWithChildren = CallCallIdRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  MypageRoute: MypageRoute,
-  MypageEditRoute: MypageEditRoute,
-  MypageSettingsRoute: MypageSettingsRoute,
-  MypageBlockListRoute: MypageBlockListRoute,
-  HistoryRoute: HistoryRoute,
-  HistoryCallIdRoute: HistoryCallIdRoute,
+  HistoryRoute: HistoryRouteWithChildren,
+  LoginRoute: LoginRoute,
+  MypageRoute: MypageRouteWithChildren,
+  OtomoHomeRoute: OtomoHomeRoute,
+  OtomoReviewsRoute: OtomoReviewsRoute,
+  OtomoScheduleRoute: OtomoScheduleRoute,
+  SignupRoute: SignupRoute,
   WalletRoute: WalletRouteWithChildren,
+  AdminAuditRoute: AdminAuditRoute,
+  AdminCallsRoute: AdminCallsRoute,
+  AdminLoginRoute: AdminLoginRoute,
+  AdminNotificationsRoute: AdminNotificationsRoute,
+  AdminOtomoRoute: AdminOtomoRoute,
+  AdminPointsRoute: AdminPointsRoute,
+  AdminReportsRoute: AdminReportsRoute,
+  AdminReviewsRoute: AdminReviewsRoute,
+  AdminTrafficRoute: AdminTrafficRoute,
+  AdminUsersRoute: AdminUsersRoute,
   CallCallIdRoute: CallCallIdRouteWithChildren,
   DemoTanstackQueryRoute: DemoTanstackQueryRoute,
+  OtomoCallActiveRoute: OtomoCallActiveRoute,
+  OtomoCallIncomingRoute: OtomoCallIncomingRoute,
+  OtomoCallSummaryRoute: OtomoCallSummaryRoute,
+  OtomoDashboardRevenueRoute: OtomoDashboardRevenueRoute,
   OtomoOtomoIdRoute: OtomoOtomoIdRoute,
   DemoApiNamesRoute: DemoApiNamesRoute,
   DemoApiTqTodosRoute: DemoApiTqTodosRoute,
@@ -697,15 +955,6 @@ const rootRouteChildren: RootRouteChildren = {
   DemoStartSsrFullSsrRoute: DemoStartSsrFullSsrRoute,
   DemoStartSsrSpaModeRoute: DemoStartSsrSpaModeRoute,
   DemoStartSsrIndexRoute: DemoStartSsrIndexRoute,
-  OtomoHomeRoute: OtomoHomeRoute,
-  OtomoCallIncomingRoute: OtomoCallIncomingRoute,
-  OtomoCallActiveRoute: OtomoCallActiveRoute,
-  OtomoCallSummaryRoute: OtomoCallSummaryRoute,
-  OtomoDashboardRevenueRoute: OtomoDashboardRevenueRoute,
-  OtomoScheduleRoute: OtomoScheduleRoute,
-  OtomoReviewsRoute: OtomoReviewsRoute,
-  AdminLoginRoute: AdminLoginRoute,
-  AdminUsersRoute: AdminUsersRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

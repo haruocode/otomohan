@@ -1930,7 +1930,7 @@ export interface AdminPointAdjustmentPayload {
   operator?: string
 }
 
-const ADMIN_POINTS_DELAY_MS = 620
+const ADMIN_POINT_LEDGER_DELAY_MS = 620
 
 type AdminPointLedgerRecord = {
   profile: {
@@ -2314,7 +2314,7 @@ const buildPointDashboard = (
 export async function fetchAdminPointDashboard(
   filters: AdminPointSearchFilters,
 ): Promise<AdminPointDashboard> {
-  await waitForMock(ADMIN_POINTS_DELAY_MS)
+  await waitForMock(ADMIN_POINT_LEDGER_DELAY_MS)
   const normalized = normalizePointFilters(filters)
   if (!normalized) {
     throw new Error('検索条件を1つ以上入力してください')
@@ -2355,7 +2355,7 @@ const applyAdminPointAdjustment = async (
   direction: 'add' | 'subtract',
   payload: AdminPointAdjustmentPayload,
 ): Promise<AdminPointDashboard> => {
-  await waitForMock(ADMIN_POINTS_DELAY_MS)
+  await waitForMock(ADMIN_POINT_LEDGER_DELAY_MS)
   const record = findPointLedgerOrThrow(userId)
   const trimmedReason = payload.reason.trim()
   const amount = Math.floor(payload.amount)
@@ -3130,7 +3130,7 @@ export interface UpdateAdminUserPointsPayload {
   operator?: string
 }
 
-const ADMIN_POINTS_DELAY_MS = 360
+const ADMIN_USER_POINTS_DELAY_MS = 360
 
 const adminUserPointSnapshots: Partial<
   Record<string, AdminUserPointSnapshots>
@@ -3256,7 +3256,7 @@ const adminUserPointHistory: Partial<
 export async function fetchAdminUserPoints(
   userId: string,
 ): Promise<AdminUserPointSnapshots> {
-  await waitForMock(ADMIN_POINTS_DELAY_MS)
+  await waitForMock(ADMIN_USER_POINTS_DELAY_MS)
   const snapshot = adminUserPointSnapshots[userId]
   if (!snapshot) {
     throw new Error('該当ユーザーのポイント情報が見つかりません')
@@ -3267,7 +3267,7 @@ export async function fetchAdminUserPoints(
 export async function fetchAdminUserPointHistory(
   userId: string,
 ): Promise<AdminUserPointHistoryResponse> {
-  await waitForMock(ADMIN_POINTS_DELAY_MS)
+  await waitForMock(ADMIN_USER_POINTS_DELAY_MS)
   const history = adminUserPointHistory[userId]
   if (!history) {
     return { purchases: [], usage: [], adminLogs: [] }
@@ -3282,7 +3282,7 @@ export async function fetchAdminUserPointHistory(
 export async function updateAdminUserPoints(
   payload: UpdateAdminUserPointsPayload,
 ): Promise<AdminUserPointSnapshots> {
-  await waitForMock(ADMIN_POINTS_DELAY_MS)
+  await waitForMock(ADMIN_USER_POINTS_DELAY_MS)
   const snapshot = adminUserPointSnapshots[payload.userId]
   if (!snapshot) {
     throw new Error('ユーザーが見つかりません')

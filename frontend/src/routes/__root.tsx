@@ -37,8 +37,8 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
       },
     ],
   }),
-
   shellComponent: RootDocument,
+  notFoundComponent: NotFoundFallback,
 })
 
 function RootDocument({ children }: { children: React.ReactNode }) {
@@ -64,5 +64,19 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <Scripts />
       </body>
     </html>
+  )
+}
+
+function NotFoundFallback() {
+  return (
+    <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-slate-950 px-6 text-center text-slate-100">
+      <p className="text-sm uppercase tracking-[0.3em] text-slate-500">
+        Lost in transit
+      </p>
+      <h1 className="text-3xl font-semibold">ページが見つかりません</h1>
+      <p className="max-w-md text-base text-slate-300">
+        URL が正しいか確認するか、管理画面のメニューへ戻ってください。
+      </p>
+    </div>
   )
 }
