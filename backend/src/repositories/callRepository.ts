@@ -3,6 +3,8 @@ import {
   fetchCallById,
   fetchCallBillingUnits,
   finalizeCallRecord,
+  insertCallRequestRecord,
+  findActiveCallForParticipant as findActiveCallForParticipantDb,
 } from "../db/index.js";
 
 export type CallEntity = {
@@ -61,4 +63,17 @@ export async function finalizeCallDebugTotals(options: {
     billedUnits: options.billedUnits,
     billedPoints: options.billedPoints,
   });
+}
+
+export async function createPendingCallRecord(entry: {
+  callId: string;
+  userId: string;
+  otomoId: string;
+  startedAt?: string;
+}) {
+  return insertCallRequestRecord(entry);
+}
+
+export async function findActiveCallForParticipant(participantId: string) {
+  return findActiveCallForParticipantDb(participantId);
 }

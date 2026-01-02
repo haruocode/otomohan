@@ -5,6 +5,7 @@ import {
   fetchOtomoReviews,
   type OtomoReviewFilters,
   updateOtomoStatusRecord,
+  fetchOtomoByOwnerUserId,
 } from "../db/index.js";
 
 export async function listOtomo(filters: OtomoListFilters) {
@@ -13,6 +14,10 @@ export async function listOtomo(filters: OtomoListFilters) {
 
 export async function findOtomoById(otomoId: string) {
   return fetchOtomoById(otomoId);
+}
+
+export async function findOtomoByOwnerUserId(ownerUserId: string) {
+  return fetchOtomoByOwnerUserId(ownerUserId);
 }
 
 export async function listOtomoReviews(

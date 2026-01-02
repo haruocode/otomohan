@@ -1,6 +1,7 @@
 import Fastify from "fastify";
 import sensible from "fastify-sensible";
 import multipart from "@fastify/multipart";
+import websocketPlugin from "@fastify/websocket";
 import authPlugin from "./plugins/auth.js";
 import { userMeRoutes } from "./routes/user/me.js";
 import { userProfileRoutes } from "./routes/user/profile.js";
@@ -23,6 +24,7 @@ import { walletPlansRoutes } from "./routes/wallet/plans.js";
 import { walletChargeRoutes } from "./routes/wallet/charge.js";
 import { walletPurchaseHistoryRoutes } from "./routes/wallet/purchase-history.js";
 import { walletUsageRoutes } from "./routes/wallet/usage.js";
+import { callGatewayRoutes } from "./ws/callGateway.js";
 
 export function buildApp() {
   const app = Fastify({
@@ -36,6 +38,7 @@ export function buildApp() {
     },
   });
   app.register(authPlugin);
+  app.register(websocketPlugin);
   app.register(authSignupRoutes);
   app.register(authLoginRoutes);
   app.register(authLogoutRoutes);
@@ -57,6 +60,7 @@ export function buildApp() {
   app.register(walletChargeRoutes);
   app.register(walletPurchaseHistoryRoutes);
   app.register(walletUsageRoutes);
+  app.register(callGatewayRoutes);
 
   app.get("/health", async () => ({ status: "ok" }));
 

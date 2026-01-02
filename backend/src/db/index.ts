@@ -108,6 +108,8 @@ type WalletUsageViewRecord = WalletUsageRecord & {
   otomoName: string;
 };
 
+type CallStatus = "requesting" | "ringing" | "active" | "ended";
+
 type CallRecord = {
   callId: string;
   userId: string;
@@ -117,6 +119,7 @@ type CallRecord = {
   durationSeconds: number;
   billedUnits: number;
   billedPoints: number;
+  status: CallStatus;
 };
 
 type CallBillingUnitRecord = {
@@ -349,6 +352,7 @@ const callHistoryTable: CallRecord[] = [
     durationSeconds: 720,
     billedUnits: 12,
     billedPoints: 1200,
+    status: "ended",
   },
   {
     callId: "call_20250112_002",
@@ -359,6 +363,7 @@ const callHistoryTable: CallRecord[] = [
     durationSeconds: 1080,
     billedUnits: 18,
     billedPoints: 1800,
+    status: "ended",
   },
   {
     callId: "call_20250115_003",
@@ -369,6 +374,7 @@ const callHistoryTable: CallRecord[] = [
     durationSeconds: 600,
     billedUnits: 10,
     billedPoints: 1000,
+    status: "ended",
   },
 ];
 
@@ -685,6 +691,41 @@ export async function fetchCallBillingUnits(
     .sort((a, b) => a.minuteIndex - b.minuteIndex);
 }
 
+export async function insertCallRequestRecord(entry: {
+  callId: string;
+  userId: string;
+  otomoId: string;
+  startedAt?: string;
+}): Promise<CallRecord> {
+  const now = entry.startedAt ?? new Date().toISOString();
+  const record: CallRecord = {
+    callId: entry.callId,
+    userId: entry.userId,
+    otomoId: entry.otomoId,
+    startedAt: now,
+    endedAt: now,
+    durationSeconds: 0,
+    billedUnits: 0,
+    billedPoints: 0,
+    status: "requesting",
+  };
+
+  callHistoryTable.push(record);
+  return record;
+}
+
+export async function findActiveCallForParticipant(
+  participantId: string
+): Promise<CallRecord | null> {
+  return (
+    callHistoryTable.find(
+      (record) =>
+        record.status !== "ended" &&
+        (record.userId === participantId || record.otomoId === participantId)
+    ) ?? null
+  );
+}
+
 export async function finalizeCallRecord(
   callId: string,
   payload: {
@@ -703,6 +744,7 @@ export async function finalizeCallRecord(
   record.durationSeconds = payload.durationSeconds;
   record.billedUnits = payload.billedUnits;
   record.billedPoints = payload.billedPoints;
+  record.status = "ended";
 
   return record;
 }
@@ -834,6 +876,14 @@ export async function fetchOtomoById(
   otomoId: string
 ): Promise<OtomoRecord | null> {
   return otomoTable.find((record) => record.otomoId === otomoId) ?? null;
+}
+
+export async function fetchOtomoByOwnerUserId(
+  ownerUserId: string
+): Promise<OtomoRecord | null> {
+  return (
+    otomoTable.find((record) => record.ownerUserId === ownerUserId) ?? null
+  );
 }
 
 export async function updateOtomoStatusRecord(
