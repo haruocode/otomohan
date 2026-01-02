@@ -39,6 +39,9 @@ npm run dev      # start Fastify with ts-node-dev
 npm run build    # emit compiled JS to dist/
 npm start        # run compiled server
 npm run lint     # eslint over src
+npm run db:generate # emit SQL from Drizzle schema
+npm run db:migrate  # apply migrations
+npm run db:seed     # insert baseline data
 ```
 
 ## Environment
@@ -55,10 +58,10 @@ Copy `.env.example` to `.env` and edit as needed.
 
 Postgres is now the source of truth for persistence. Drizzle handles schema definition and migrations.
 
-1. Start a local Postgres (Docker example):
+1. Start a local Postgres container (compose file lives in `backend/docker-compose.yml`):
 
 ```bash
-docker run --name otomohan-postgres -e POSTGRES_PASSWORD=postgres -p 5432:5432 -d postgres:16
+docker compose up -d postgres
 ```
 
 2. Set `DATABASE_URL` in `.env` (e.g. `postgres://postgres:postgres@localhost:5432/otomohan`).
@@ -72,6 +75,12 @@ npm run db:generate
 
 ```bash
 npm run db:migrate
+```
+
+5. Seed the database with demo data for local testing:
+
+```bash
+npm run db:seed
 ```
 
 Schema files live under `src/db/schema/`. The Drizzle client is exported from `src/db/drizzle.ts` and can be injected into repositories as we replace the in-memory mocks.
