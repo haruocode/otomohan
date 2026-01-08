@@ -155,360 +155,138 @@ type RefreshTokenRecord = {
   expiresAt: string;
 };
 
-const usersTable: Record<string, UserRecord> = {
-  "user-123": {
-    id: "user-123",
-    name: "たろう",
-    email: "taro@example.com",
-    avatar_url: "/avatars/user-123.png",
-    bio: "よろしくお願いします！",
-    gender: "male",
-    birthday: "1995-03-10",
-    balance: 1200,
-    password_hash:
-      "$2b$10$r5g2bHujNKJMkBz7OpHSxO/XrXhsat1qNvrcvxKl6nQe.iTMfPCY2",
-    is_deleted: false,
-    createdAt: "2024-12-01T12:00:00Z",
-  },
-};
-
-const otomoTable: OtomoRecord[] = [
-  {
-    otomoId: "otomo_001",
-    ownerUserId: "otomo-user-001",
-    displayName: "みさき",
-    profileImageUrl: "https://cdn.otomohan.local/otomo/001.jpg",
-    age: 25,
-    gender: "female",
-    genres: ["healing", "talk", "consult"],
-    introduction: "はじめまして、みさきです。のんびりお話ししましょう。",
-    tags: ["癒し系", "傾聴", "お姉さんタイプ"],
-    isOnline: true,
-    isAvailable: true,
-    statusMessage: "待機中です！",
-    statusUpdatedAt: "2025-01-10T11:00:00Z",
-    pricePerMinute: 120,
-    rating: 4.8,
-    reviewCount: 54,
-    reviews: [
-      {
-        reviewId: "rev_001",
-        userDisplayName: "たかはるさん",
-        score: 5,
-        comment: "優しく話を聞いてくれました！",
-        createdAt: "2025-01-10T12:00:00Z",
-      },
-      {
-        reviewId: "rev_002",
-        userDisplayName: "まゆさん",
-        score: 4,
-        comment: "癒やされました。またお願いしたいです。",
-        createdAt: "2025-01-05T15:00:00Z",
-      },
-    ],
-    schedule: [
-      { dayOfWeek: "monday", start: "20:00", end: "23:00" },
-      { dayOfWeek: "tuesday", start: "21:00", end: "22:00" },
-      { dayOfWeek: "thursday", start: "20:00", end: "23:00" },
-    ],
-  },
-  {
-    otomoId: "otomo_002",
-    ownerUserId: "otomo-user-002",
-    displayName: "ゆうと",
-    profileImageUrl: "https://cdn.otomohan.local/otomo/002.jpg",
-    age: 28,
-    gender: "male",
-    genres: ["consult", "advice"],
-    introduction: "キャリア相談や愚痴聞きもお任せください。",
-    tags: ["論理的", "相談役"],
-    isOnline: false,
-    isAvailable: false,
-    statusMessage: "休憩中です",
-    statusUpdatedAt: "2025-01-12T09:00:00Z",
-    pricePerMinute: 100,
-    rating: 4.5,
-    reviewCount: 30,
-    reviews: [
-      {
-        reviewId: "rev_010",
-        userDisplayName: "しゅん",
-        score: 5,
-        comment: "的確なアドバイスで助かりました。",
-        createdAt: "2025-02-12T10:00:00Z",
-      },
-    ],
-    schedule: [
-      { dayOfWeek: "wednesday", start: "19:00", end: "22:00" },
-      { dayOfWeek: "saturday", start: "10:00", end: "15:00" },
-    ],
-  },
-  {
-    otomoId: "otomo_003",
-    ownerUserId: "otomo-user-003",
-    displayName: "さくら",
-    profileImageUrl: "https://cdn.otomohan.local/otomo/003.jpg",
-    age: 32,
-    gender: "female",
-    genres: ["talk", "support"],
-    introduction: "聞き上手とよく言われます。安心してお話ください。",
-    tags: ["サポート", "落ち着き"],
-    isOnline: true,
-    isAvailable: false,
-    statusMessage: "通話中です",
-    statusUpdatedAt: "2025-01-13T20:30:00Z",
-    pricePerMinute: 140,
-    rating: 4.9,
-    reviewCount: 120,
-    reviews: [
-      {
-        reviewId: "rev_020",
-        userDisplayName: "みか",
-        score: 5,
-        comment: "落ち着いた雰囲気で癒やされました。",
-        createdAt: "2025-03-01T08:30:00Z",
-      },
-    ],
-    schedule: [
-      { dayOfWeek: "friday", start: "21:00", end: "24:00" },
-      { dayOfWeek: "sunday", start: "18:00", end: "21:00" },
-    ],
-  },
-];
-
-const userSettingsTable: Record<
-  string,
-  {
-    notifications: NotificationSettingsRecord;
-  }
-> = {
-  "user-123": {
-    notifications: {
-      incomingCall: true,
-      callSummary: true,
-      walletAlert: true,
-      marketing: false,
-    },
-  },
-};
-
-const walletTable: Record<string, WalletRecord> = {
-  "user-123": {
-    userId: "user-123",
-    balance: 1200,
-    updatedAt: "2025-01-15T12:00:00Z",
-  },
-};
-
-const walletPlansTable: WalletPlanRecord[] = [
-  {
-    planId: "plan_001",
-    title: "お手軽チャージ",
-    price: 500,
-    points: 500,
-    bonusPoints: 0,
-    description: "気軽にチャージできる入門プラン",
-    isActive: true,
-  },
-  {
-    planId: "plan_002",
-    title: "おすすめプラン",
-    price: 1000,
-    points: 1000,
-    bonusPoints: 100,
-    description: "ちょっとお得なボーナス付きプラン",
-    isActive: true,
-  },
-  {
-    planId: "plan_003",
-    title: "たっぷりプラン",
-    price: 3000,
-    points: 3000,
-    bonusPoints: 500,
-    description: "長く話したい人におすすめの大容量プラン",
-    isActive: true,
-  },
-];
-
-const walletHistoryTable: WalletHistoryRecord[] = [];
-const walletUsageTable: WalletUsageRecord[] = [
-  {
-    usageId: "usage_001",
-    userId: "user-123",
-    callId: "call_20250115_01",
-    otomoId: "otomo_001",
-    usedPoints: 240,
-    durationMinutes: 2,
-    createdAt: "2025-01-15T12:00:00Z",
-  },
-  {
-    usageId: "usage_002",
-    userId: "user-123",
-    callId: "call_20250116_01",
-    otomoId: "otomo_002",
-    usedPoints: 360,
-    durationMinutes: 3,
-    createdAt: "2025-01-16T10:30:00Z",
-  },
-  {
-    usageId: "usage_003",
-    userId: "user-123",
-    callId: "call_20250118_01",
-    otomoId: "otomo_003",
-    usedPoints: 420,
-    durationMinutes: 3,
-    createdAt: "2025-01-18T21:45:00Z",
-  },
-];
-
-const callHistoryTable: CallRecord[] = [
-  {
-    callId: "call_20250110_001",
-    userId: "user-123",
-    otomoId: "otomo_001",
-    startedAt: "2025-01-10T12:03:20Z",
-    endedAt: "2025-01-10T12:15:20Z",
-    connectedAt: "2025-01-10T12:03:20Z",
-    durationSeconds: 720,
-    billedUnits: 12,
-    billedPoints: 1200,
-    status: "ended",
-    endReason: "user_end",
-  },
-  {
-    callId: "call_20250112_002",
-    userId: "user-123",
-    otomoId: "otomo_002",
-    startedAt: "2025-01-12T21:00:00Z",
-    endedAt: "2025-01-12T21:18:00Z",
-    connectedAt: "2025-01-12T21:00:00Z",
-    durationSeconds: 1080,
-    billedUnits: 18,
-    billedPoints: 1800,
-    status: "ended",
-    endReason: "user_end",
-  },
-  {
-    callId: "call_20250115_003",
-    userId: "user-123",
-    otomoId: "otomo_003",
-    startedAt: "2025-01-15T09:30:00Z",
-    endedAt: "2025-01-15T09:40:00Z",
-    connectedAt: "2025-01-15T09:30:00Z",
-    durationSeconds: 600,
-    billedUnits: 10,
-    billedPoints: 1000,
-    status: "ended",
-    endReason: "user_end",
-  },
-];
-
-const callBillingUnitsTable: CallBillingUnitRecord[] = [
-  {
-    unitId: "unit_call_20250110_001_00",
-    callId: "call_20250110_001",
-    minuteIndex: 0,
-    chargedPoints: 100,
-    timestamp: "2025-01-10T12:04:20Z",
-  },
-  {
-    unitId: "unit_call_20250110_001_01",
-    callId: "call_20250110_001",
-    minuteIndex: 1,
-    chargedPoints: 100,
-    timestamp: "2025-01-10T12:05:20Z",
-  },
-  {
-    unitId: "unit_call_20250110_001_11",
-    callId: "call_20250110_001",
-    minuteIndex: 11,
-    chargedPoints: 100,
-    timestamp: "2025-01-10T12:15:20Z",
-  },
-  {
-    unitId: "unit_call_20250112_002_00",
-    callId: "call_20250112_002",
-    minuteIndex: 0,
-    chargedPoints: 100,
-    timestamp: "2025-01-12T21:01:00Z",
-  },
-  {
-    unitId: "unit_call_20250112_002_05",
-    callId: "call_20250112_002",
-    minuteIndex: 5,
-    chargedPoints: 100,
-    timestamp: "2025-01-12T21:06:00Z",
-  },
-  {
-    unitId: "unit_call_20250112_002_17",
-    callId: "call_20250112_002",
-    minuteIndex: 17,
-    chargedPoints: 100,
-    timestamp: "2025-01-12T21:18:00Z",
-  },
-  {
-    unitId: "unit_call_20250115_003_00",
-    callId: "call_20250115_003",
-    minuteIndex: 0,
-    chargedPoints: 100,
-    timestamp: "2025-01-15T09:31:00Z",
-  },
-  {
-    unitId: "unit_call_20250115_003_05",
-    callId: "call_20250115_003",
-    minuteIndex: 5,
-    chargedPoints: 100,
-    timestamp: "2025-01-15T09:36:00Z",
-  },
-  {
-    unitId: "unit_call_20250115_003_09",
-    callId: "call_20250115_003",
-    minuteIndex: 9,
-    chargedPoints: 100,
-    timestamp: "2025-01-15T09:40:00Z",
-  },
-];
-
-const refreshTokenTable: RefreshTokenRecord[] = [];
-
 export async function upsertRefreshTokenRecord(entry: {
   userId: string;
   token: string;
   expiresAt: string;
 }): Promise<RefreshTokenRecord> {
-  const existingIndex = refreshTokenTable.findIndex(
-    (record) => record.userId === entry.userId
-  );
-  if (existingIndex !== -1) {
-    refreshTokenTable.splice(existingIndex, 1);
-  }
-  const record: RefreshTokenRecord = { ...entry };
-  refreshTokenTable.push(record);
-  return record;
+  const { db } = await import("./drizzle.js");
+  const { refreshTokens } = await import("./schema/index.js");
+  const { eq } = await import("drizzle-orm");
+
+  // 既存のトークンを削除
+  await db.delete(refreshTokens).where(eq(refreshTokens.userId, entry.userId));
+
+  // 新しいトークンを挿入
+  const [token] = await db
+    .insert(refreshTokens)
+    .values({
+      token: entry.token,
+      userId: entry.userId,
+      expiresAt: new Date(entry.expiresAt),
+    })
+    .returning({
+      token: refreshTokens.token,
+      userId: refreshTokens.userId,
+      expiresAt: refreshTokens.expiresAt,
+    });
+
+  return {
+    token: token.token,
+    userId: token.userId,
+    expiresAt: token.expiresAt.toISOString(),
+  };
 }
 
 export async function fetchRefreshTokenRecord(
   token: string
 ): Promise<RefreshTokenRecord | null> {
-  return refreshTokenTable.find((record) => record.token === token) ?? null;
+  const { db } = await import("./drizzle.js");
+  const { refreshTokens } = await import("./schema/index.js");
+  const { eq } = await import("drizzle-orm");
+
+  const [refreshToken] = await db
+    .select({
+      token: refreshTokens.token,
+      userId: refreshTokens.userId,
+      expiresAt: refreshTokens.expiresAt,
+    })
+    .from(refreshTokens)
+    .where(eq(refreshTokens.token, token))
+    .limit(1);
+
+  if (!refreshToken) {
+    return null;
+  }
+
+  return {
+    token: refreshToken.token,
+    userId: refreshToken.userId,
+    expiresAt: refreshToken.expiresAt.toISOString(),
+  };
 }
 
 export async function fetchUserById(id: string): Promise<UserRecord | null> {
-  const record = usersTable[id];
-  if (!record || record.is_deleted) {
+  const { db } = await import("./drizzle.js");
+  const { users } = await import("./schema/index.js");
+  const { eq } = await import("drizzle-orm");
+
+  const [user] = await db
+    .select({
+      id: users.id,
+      name: users.name,
+      email: users.email,
+      avatar_url: users.avatarUrl,
+      bio: users.bio,
+      gender: users.gender,
+      birthday: users.birthday,
+      balance: users.balance,
+      password_hash: users.passwordHash,
+      is_deleted: users.isDeleted,
+      createdAt: users.createdAt,
+    })
+    .from(users)
+    .where(eq(users.id, id))
+    .limit(1);
+
+  if (!user || user.is_deleted) {
     return null;
   }
-  return record;
+
+  return {
+    ...user,
+    gender: user.gender as "male" | "female" | "other" | null,
+    birthday: user.birthday?.toISOString().split("T")[0] ?? null,
+    createdAt: user.createdAt.toISOString(),
+  };
 }
 
 export async function fetchUserByEmail(
   email: string
 ): Promise<UserRecord | null> {
+  const { db } = await import("./drizzle.js");
+  const { users } = await import("./schema/index.js");
+  const { eq, and } = await import("drizzle-orm");
+
   const normalized = email.trim().toLowerCase();
-  const record = Object.values(usersTable).find(
-    (entry) => entry.email === normalized && !entry.is_deleted
-  );
-  return record ?? null;
+  const [user] = await db
+    .select({
+      id: users.id,
+      name: users.name,
+      email: users.email,
+      avatar_url: users.avatarUrl,
+      bio: users.bio,
+      gender: users.gender,
+      birthday: users.birthday,
+      balance: users.balance,
+      password_hash: users.passwordHash,
+      is_deleted: users.isDeleted,
+      createdAt: users.createdAt,
+    })
+    .from(users)
+    .where(and(eq(users.email, normalized), eq(users.isDeleted, false)))
+    .limit(1);
+
+  if (!user) {
+    return null;
+  }
+
+  return {
+    ...user,
+    gender: user.gender as "male" | "female" | "other" | null,
+    birthday: user.birthday?.toISOString().split("T")[0] ?? null,
+    createdAt: user.createdAt.toISOString(),
+  };
 }
 
 export async function insertUserRecord(entry: {
@@ -516,84 +294,207 @@ export async function insertUserRecord(entry: {
   email: string;
   passwordHash: string;
 }): Promise<UserRecord> {
-  const id = randomUUID();
-  const now = new Date().toISOString();
-  const record: UserRecord = {
-    id,
-    name: entry.name,
-    email: entry.email.trim().toLowerCase(),
-    avatar_url: null,
-    bio: "",
-    gender: null,
-    birthday: null,
-    balance: 0,
-    password_hash: entry.passwordHash,
-    is_deleted: false,
-    createdAt: now,
-  };
+  const { db } = await import("./drizzle.js");
+  const { users } = await import("./schema/index.js");
 
-  usersTable[id] = record;
-  return record;
+  const id = randomUUID();
+  const [user] = await db
+    .insert(users)
+    .values({
+      id,
+      name: entry.name,
+      email: entry.email.trim().toLowerCase(),
+      passwordHash: entry.passwordHash,
+      avatarUrl: null,
+      bio: "",
+      gender: null,
+      birthday: null,
+      balance: 0,
+      isDeleted: false,
+    })
+    .returning({
+      id: users.id,
+      name: users.name,
+      email: users.email,
+      avatar_url: users.avatarUrl,
+      bio: users.bio,
+      gender: users.gender,
+      birthday: users.birthday,
+      balance: users.balance,
+      password_hash: users.passwordHash,
+      is_deleted: users.isDeleted,
+      createdAt: users.createdAt,
+    });
+
+  return {
+    ...user,
+    gender: user.gender as "male" | "female" | "other" | null,
+    birthday: user.birthday?.toISOString().split("T")[0] ?? null,
+    createdAt: user.createdAt.toISOString(),
+  };
 }
 
 export async function fetchUserNotifications(userId: string) {
-  return userSettingsTable[userId]?.notifications ?? null;
+  const { db } = await import("./drizzle.js");
+  const { userNotificationSettings } = await import("./schema/index.js");
+  const { eq } = await import("drizzle-orm");
+
+  const [settings] = await db
+    .select({
+      incomingCall: userNotificationSettings.incomingCall,
+      callSummary: userNotificationSettings.callSummary,
+      walletAlert: userNotificationSettings.walletAlert,
+      marketing: userNotificationSettings.marketing,
+    })
+    .from(userNotificationSettings)
+    .where(eq(userNotificationSettings.userId, userId))
+    .limit(1);
+
+  return settings ?? null;
 }
 
 export async function fetchWalletByUserId(
   userId: string
 ): Promise<WalletRecord | null> {
-  return walletTable[userId] ?? null;
+  const { db } = await import("./drizzle.js");
+  const { walletBalances } = await import("./schema/index.js");
+  const { eq } = await import("drizzle-orm");
+
+  const [wallet] = await db
+    .select({
+      userId: walletBalances.userId,
+      balance: walletBalances.balance,
+      updatedAt: walletBalances.updatedAt,
+    })
+    .from(walletBalances)
+    .where(eq(walletBalances.userId, userId))
+    .limit(1);
+
+  if (!wallet) {
+    return null;
+  }
+
+  return {
+    userId: wallet.userId,
+    balance: wallet.balance,
+    updatedAt: wallet.updatedAt.toISOString(),
+  };
 }
 
 export async function fetchActiveWalletPlans(): Promise<WalletPlanRecord[]> {
-  return walletPlansTable
-    .filter((plan) => plan.isActive)
-    .sort((a, b) => {
-      if (a.price === b.price) {
-        return a.planId.localeCompare(b.planId);
-      }
-      return a.price - b.price;
-    });
+  const { db } = await import("./drizzle.js");
+  const { walletPlans } = await import("./schema/index.js");
+  const { eq, asc } = await import("drizzle-orm");
+
+  const plans = await db
+    .select({
+      planId: walletPlans.id,
+      title: walletPlans.title,
+      price: walletPlans.priceYen,
+      points: walletPlans.points,
+      bonusPoints: walletPlans.bonusPoints,
+      description: walletPlans.description,
+      isActive: walletPlans.isActive,
+    })
+    .from(walletPlans)
+    .where(eq(walletPlans.isActive, true))
+    .orderBy(asc(walletPlans.priceYen), asc(walletPlans.id));
+
+  return plans.map((plan) => ({
+    planId: plan.planId,
+    title: plan.title,
+    price: plan.price,
+    points: plan.points,
+    bonusPoints: plan.bonusPoints,
+    description: plan.description ?? "",
+    isActive: plan.isActive,
+  }));
 }
 
 export async function fetchWalletPlanById(
   planId: string
 ): Promise<WalletPlanRecord | null> {
-  const plan = walletPlansTable.find(
-    (entry) => entry.planId === planId && entry.isActive
-  );
-  return plan ?? null;
+  const { db } = await import("./drizzle.js");
+  const { walletPlans } = await import("./schema/index.js");
+  const { eq, and } = await import("drizzle-orm");
+
+  const [plan] = await db
+    .select({
+      planId: walletPlans.id,
+      title: walletPlans.title,
+      price: walletPlans.priceYen,
+      points: walletPlans.points,
+      bonusPoints: walletPlans.bonusPoints,
+      description: walletPlans.description,
+      isActive: walletPlans.isActive,
+    })
+    .from(walletPlans)
+    .where(and(eq(walletPlans.id, planId), eq(walletPlans.isActive, true)))
+    .limit(1);
+
+  if (!plan) {
+    return null;
+  }
+
+  return {
+    planId: plan.planId,
+    title: plan.title,
+    price: plan.price,
+    points: plan.points,
+    bonusPoints: plan.bonusPoints,
+    description: plan.description ?? "",
+    isActive: plan.isActive,
+  };
 }
 
 export async function incrementWalletBalanceRecord(
   userId: string,
   deltaPoints: number
 ): Promise<WalletRecord> {
-  const now = new Date().toISOString();
-  let wallet = walletTable[userId];
-  if (!wallet) {
-    wallet = {
+  const { db } = await import("./drizzle.js");
+  const { walletBalances } = await import("./schema/index.js");
+  const { sql } = await import("drizzle-orm");
+
+  // upsert: 存在すれば更新、なければ挿入
+  const [wallet] = await db
+    .insert(walletBalances)
+    .values({
       userId,
-      balance: 0,
-      updatedAt: now,
-    };
-  }
+      balance: deltaPoints,
+      updatedAt: new Date(),
+    })
+    .onConflictDoUpdate({
+      target: walletBalances.userId,
+      set: {
+        balance: sql`${walletBalances.balance} + ${deltaPoints}`,
+        updatedAt: new Date(),
+      },
+    })
+    .returning({
+      userId: walletBalances.userId,
+      balance: walletBalances.balance,
+      updatedAt: walletBalances.updatedAt,
+    });
 
-  wallet.balance += deltaPoints;
-  wallet.updatedAt = now;
-  walletTable[userId] = wallet;
-
-  const userRecord = usersTable[userId];
-  if (userRecord) {
-    userRecord.balance = wallet.balance;
-  }
-
-  return wallet;
+  return {
+    userId: wallet.userId,
+    balance: wallet.balance,
+    updatedAt: wallet.updatedAt.toISOString(),
+  };
 }
 
 export async function isPaymentAlreadyProcessed(paymentId: string) {
-  return walletHistoryTable.some((record) => record.paymentId === paymentId);
+  const { db } = await import("./drizzle.js");
+  const { walletCharges } = await import("./schema/index.js");
+  const { eq } = await import("drizzle-orm");
+
+  const [charge] = await db
+    .select({ id: walletCharges.id })
+    .from(walletCharges)
+    .where(eq(walletCharges.paymentId, paymentId))
+    .limit(1);
+
+  return !!charge;
 }
 
 export async function insertWalletHistoryRecord(entry: {
@@ -604,14 +505,40 @@ export async function insertWalletHistoryRecord(entry: {
   points: number;
   bonusPoints: number;
 }): Promise<WalletHistoryRecord> {
-  const record: WalletHistoryRecord = {
-    historyId: randomUUID(),
-    createdAt: new Date().toISOString(),
-    ...entry,
-  };
+  const { db } = await import("./drizzle.js");
+  const { walletCharges } = await import("./schema/index.js");
 
-  walletHistoryTable.push(record);
-  return record;
+  const [charge] = await db
+    .insert(walletCharges)
+    .values({
+      userId: entry.userId,
+      planId: entry.planId,
+      paymentId: entry.paymentId,
+      amountYen: entry.amount,
+      grantedPoints: entry.points,
+      bonusPoints: entry.bonusPoints,
+    })
+    .returning({
+      historyId: walletCharges.id,
+      userId: walletCharges.userId,
+      planId: walletCharges.planId,
+      paymentId: walletCharges.paymentId,
+      amount: walletCharges.amountYen,
+      points: walletCharges.grantedPoints,
+      bonusPoints: walletCharges.bonusPoints,
+      createdAt: walletCharges.createdAt,
+    });
+
+  return {
+    historyId: charge.historyId,
+    userId: charge.userId,
+    planId: charge.planId ?? "",
+    paymentId: charge.paymentId ?? "",
+    amount: charge.amount,
+    points: charge.points,
+    bonusPoints: charge.bonusPoints,
+    createdAt: charge.createdAt.toISOString(),
+  };
 }
 
 export async function fetchWalletHistoryForUser(options: {
@@ -620,26 +547,54 @@ export async function fetchWalletHistoryForUser(options: {
   offset: number;
   sort: "newest" | "oldest";
 }): Promise<{ items: WalletHistoryViewRecord[]; total: number }> {
-  const { userId, limit, offset, sort } = options;
-  const records = walletHistoryTable.filter((entry) => entry.userId === userId);
-  const total = records.length;
-  const sorted = [...records].sort((a, b) => {
-    const aTime = new Date(a.createdAt).getTime();
-    const bTime = new Date(b.createdAt).getTime();
-    return sort === "oldest" ? aTime - bTime : bTime - aTime;
-  });
+  const { db } = await import("./drizzle.js");
+  const { walletCharges, walletPlans } = await import("./schema/index.js");
+  const { eq, asc, desc, count } = await import("drizzle-orm");
 
+  const { userId, limit, offset, sort } = options;
   const safeOffset = Math.max(offset, 0);
   const safeLimit = Math.max(limit, 0);
-  const paged = sorted.slice(safeOffset, safeOffset + safeLimit);
 
-  const planTitleMap = new Map(
-    walletPlansTable.map((plan) => [plan.planId, plan.title])
-  );
+  // 総数を取得
+  const [{ value: total }] = await db
+    .select({ value: count() })
+    .from(walletCharges)
+    .where(eq(walletCharges.userId, userId));
 
-  const items = paged.map((record) => ({
-    ...record,
-    planTitle: planTitleMap.get(record.planId) ?? "不明なプラン",
+  // データを取得
+  const orderBy =
+    sort === "oldest"
+      ? asc(walletCharges.createdAt)
+      : desc(walletCharges.createdAt);
+  const charges = await db
+    .select({
+      historyId: walletCharges.id,
+      userId: walletCharges.userId,
+      planId: walletCharges.planId,
+      paymentId: walletCharges.paymentId,
+      amount: walletCharges.amountYen,
+      points: walletCharges.grantedPoints,
+      bonusPoints: walletCharges.bonusPoints,
+      createdAt: walletCharges.createdAt,
+      planTitle: walletPlans.title,
+    })
+    .from(walletCharges)
+    .leftJoin(walletPlans, eq(walletCharges.planId, walletPlans.id))
+    .where(eq(walletCharges.userId, userId))
+    .orderBy(orderBy)
+    .limit(safeLimit)
+    .offset(safeOffset);
+
+  const items = charges.map((charge) => ({
+    historyId: charge.historyId,
+    userId: charge.userId,
+    planId: charge.planId ?? "",
+    paymentId: charge.paymentId ?? "",
+    amount: charge.amount,
+    points: charge.points,
+    bonusPoints: charge.bonusPoints,
+    createdAt: charge.createdAt.toISOString(),
+    planTitle: charge.planTitle ?? "不明なプラン",
   }));
 
   return { items, total };
@@ -652,30 +607,60 @@ export async function fetchWalletUsageForUser(options: {
   sort: "newest" | "oldest";
   otomoId?: string;
 }): Promise<{ items: WalletUsageViewRecord[]; total: number }> {
+  const { db } = await import("./drizzle.js");
+  const { walletUsages, otomoProfiles } = await import("./schema/index.js");
+  const { eq, and, asc, desc, count } = await import("drizzle-orm");
+
   const { userId, limit, offset, sort, otomoId } = options;
-  let records = walletUsageTable.filter((entry) => entry.userId === userId);
-  if (otomoId) {
-    records = records.filter((entry) => entry.otomoId === otomoId);
-  }
-
-  const total = records.length;
-  const sorted = [...records].sort((a, b) => {
-    const aTime = new Date(a.createdAt).getTime();
-    const bTime = new Date(b.createdAt).getTime();
-    return sort === "oldest" ? aTime - bTime : bTime - aTime;
-  });
-
   const safeOffset = Math.max(offset, 0);
   const safeLimit = Math.max(limit, 0);
-  const paged = sorted.slice(safeOffset, safeOffset + safeLimit);
 
-  const otomoNameMap = new Map(
-    otomoTable.map((otomo) => [otomo.otomoId, otomo.displayName])
-  );
+  // WHERE条件を構築
+  const conditions = [eq(walletUsages.userId, userId)];
+  if (otomoId) {
+    conditions.push(eq(walletUsages.otomoId, otomoId));
+  }
+  const whereClause =
+    conditions.length > 1 ? and(...conditions) : conditions[0];
 
-  const items = paged.map((record) => ({
-    ...record,
-    otomoName: otomoNameMap.get(record.otomoId) ?? "不明なおとも",
+  // 総数を取得
+  const [{ value: total }] = await db
+    .select({ value: count() })
+    .from(walletUsages)
+    .where(whereClause);
+
+  // データを取得
+  const orderBy =
+    sort === "oldest"
+      ? asc(walletUsages.createdAt)
+      : desc(walletUsages.createdAt);
+  const usages = await db
+    .select({
+      usageId: walletUsages.id,
+      userId: walletUsages.userId,
+      callId: walletUsages.callId,
+      otomoId: walletUsages.otomoId,
+      usedPoints: walletUsages.usedPoints,
+      durationMinutes: walletUsages.durationMinutes,
+      createdAt: walletUsages.createdAt,
+      otomoName: otomoProfiles.displayName,
+    })
+    .from(walletUsages)
+    .leftJoin(otomoProfiles, eq(walletUsages.otomoId, otomoProfiles.id))
+    .where(whereClause)
+    .orderBy(orderBy)
+    .limit(safeLimit)
+    .offset(safeOffset);
+
+  const items = usages.map((usage) => ({
+    usageId: usage.usageId,
+    userId: usage.userId,
+    callId: usage.callId,
+    otomoId: usage.otomoId,
+    usedPoints: usage.usedPoints,
+    durationMinutes: usage.durationMinutes,
+    createdAt: usage.createdAt.toISOString(),
+    otomoName: usage.otomoName ?? "不明なおとも",
   }));
 
   return { items, total };
@@ -687,33 +672,132 @@ export async function fetchCallsForParticipant(options: {
   limit: number;
   offset: number;
 }): Promise<{ items: CallRecord[]; total: number }> {
+  const { db } = await import("./drizzle.js");
+  const { calls } = await import("./schema/index.js");
+  const { eq, desc, count } = await import("drizzle-orm");
+
   const safeLimit = Math.max(options.limit, 0);
   const safeOffset = Math.max(options.offset, 0);
-  const filtered = callHistoryTable.filter((record) =>
+
+  const whereClause =
     options.participantType === "user"
-      ? record.userId === options.participantId
-      : record.otomoId === options.participantId
-  );
-  const total = filtered.length;
-  const sorted = [...filtered].sort(
-    (a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime()
-  );
-  const items = sorted.slice(safeOffset, safeOffset + safeLimit);
+      ? eq(calls.userId, options.participantId)
+      : eq(calls.otomoId, options.participantId);
+
+  // 総数を取得
+  const [{ value: total }] = await db
+    .select({ value: count() })
+    .from(calls)
+    .where(whereClause);
+
+  // データを取得
+  const callRecords = await db
+    .select({
+      callId: calls.id,
+      userId: calls.userId,
+      otomoId: calls.otomoId,
+      startedAt: calls.startedAt,
+      endedAt: calls.endedAt,
+      connectedAt: calls.connectedAt,
+      durationSeconds: calls.durationSeconds,
+      billedUnits: calls.billedUnits,
+      billedPoints: calls.billedPoints,
+      status: calls.status,
+      endReason: calls.endReason,
+    })
+    .from(calls)
+    .where(whereClause)
+    .orderBy(desc(calls.startedAt))
+    .limit(safeLimit)
+    .offset(safeOffset);
+
+  const items = callRecords.map((call) => ({
+    callId: call.callId,
+    userId: call.userId,
+    otomoId: call.otomoId,
+    startedAt: call.startedAt.toISOString(),
+    endedAt: call.endedAt?.toISOString() ?? call.startedAt.toISOString(),
+    connectedAt: call.connectedAt?.toISOString() ?? null,
+    durationSeconds: call.durationSeconds,
+    billedUnits: call.billedUnits,
+    billedPoints: call.billedPoints,
+    status: call.status as CallStatus,
+    endReason: call.endReason as CallEndReason | null,
+  }));
+
   return { items, total };
 }
 
 export async function fetchCallById(
   callId: string
 ): Promise<CallRecord | null> {
-  return callHistoryTable.find((record) => record.callId === callId) ?? null;
+  const { db } = await import("./drizzle.js");
+  const { calls } = await import("./schema/index.js");
+  const { eq } = await import("drizzle-orm");
+
+  const [call] = await db
+    .select({
+      callId: calls.id,
+      userId: calls.userId,
+      otomoId: calls.otomoId,
+      startedAt: calls.startedAt,
+      endedAt: calls.endedAt,
+      connectedAt: calls.connectedAt,
+      durationSeconds: calls.durationSeconds,
+      billedUnits: calls.billedUnits,
+      billedPoints: calls.billedPoints,
+      status: calls.status,
+      endReason: calls.endReason,
+    })
+    .from(calls)
+    .where(eq(calls.id, callId))
+    .limit(1);
+
+  if (!call) {
+    return null;
+  }
+
+  return {
+    callId: call.callId,
+    userId: call.userId,
+    otomoId: call.otomoId,
+    startedAt: call.startedAt.toISOString(),
+    endedAt: call.endedAt?.toISOString() ?? call.startedAt.toISOString(),
+    connectedAt: call.connectedAt?.toISOString() ?? null,
+    durationSeconds: call.durationSeconds,
+    billedUnits: call.billedUnits,
+    billedPoints: call.billedPoints,
+    status: call.status as CallStatus,
+    endReason: call.endReason as CallEndReason | null,
+  };
 }
 
 export async function fetchCallBillingUnits(
   callId: string
 ): Promise<CallBillingUnitRecord[]> {
-  return callBillingUnitsTable
-    .filter((unit) => unit.callId === callId)
-    .sort((a, b) => a.minuteIndex - b.minuteIndex);
+  const { db } = await import("./drizzle.js");
+  const { callBillingUnits } = await import("./schema/index.js");
+  const { eq, asc } = await import("drizzle-orm");
+
+  const units = await db
+    .select({
+      unitId: callBillingUnits.id,
+      callId: callBillingUnits.callId,
+      minuteIndex: callBillingUnits.minuteIndex,
+      chargedPoints: callBillingUnits.chargedPoints,
+      timestamp: callBillingUnits.timestamp,
+    })
+    .from(callBillingUnits)
+    .where(eq(callBillingUnits.callId, callId))
+    .orderBy(asc(callBillingUnits.minuteIndex));
+
+  return units.map((unit) => ({
+    unitId: unit.unitId,
+    callId: unit.callId,
+    minuteIndex: unit.minuteIndex,
+    chargedPoints: unit.chargedPoints,
+    timestamp: unit.timestamp.toISOString(),
+  }));
 }
 
 export async function insertCallBillingUnitRecord(entry: {
@@ -722,15 +806,32 @@ export async function insertCallBillingUnitRecord(entry: {
   chargedPoints: number;
   timestamp: string;
 }): Promise<CallBillingUnitRecord> {
-  const record: CallBillingUnitRecord = {
-    unitId: randomUUID(),
-    callId: entry.callId,
-    minuteIndex: entry.minuteIndex,
-    chargedPoints: entry.chargedPoints,
-    timestamp: entry.timestamp,
+  const { db } = await import("./drizzle.js");
+  const { callBillingUnits } = await import("./schema/index.js");
+
+  const [unit] = await db
+    .insert(callBillingUnits)
+    .values({
+      callId: entry.callId,
+      minuteIndex: entry.minuteIndex,
+      chargedPoints: entry.chargedPoints,
+      timestamp: new Date(entry.timestamp),
+    })
+    .returning({
+      unitId: callBillingUnits.id,
+      callId: callBillingUnits.callId,
+      minuteIndex: callBillingUnits.minuteIndex,
+      chargedPoints: callBillingUnits.chargedPoints,
+      timestamp: callBillingUnits.timestamp,
+    });
+
+  return {
+    unitId: unit.unitId,
+    callId: unit.callId,
+    minuteIndex: unit.minuteIndex,
+    chargedPoints: unit.chargedPoints,
+    timestamp: unit.timestamp.toISOString(),
   };
-  callBillingUnitsTable.push(record);
-  return record;
 }
 
 export async function updateCallBillingProgressRecord(
@@ -742,20 +843,50 @@ export async function updateCallBillingProgressRecord(
     endedAt: string;
   }
 ): Promise<CallRecord | null> {
-  const record = callHistoryTable.find((entry) => entry.callId === callId);
-  if (!record) {
+  const { db } = await import("./drizzle.js");
+  const { calls } = await import("./schema/index.js");
+  const { eq, sql } = await import("drizzle-orm");
+
+  const [call] = await db
+    .update(calls)
+    .set({
+      billedUnits: sql`GREATEST(${calls.billedUnits}, ${payload.billedUnits})`,
+      billedPoints: sql`${calls.billedPoints} + ${payload.billedPointsDelta}`,
+      durationSeconds: sql`GREATEST(${calls.durationSeconds}, ${payload.durationSeconds})`,
+      endedAt: new Date(payload.endedAt),
+    })
+    .where(eq(calls.id, callId))
+    .returning({
+      callId: calls.id,
+      userId: calls.userId,
+      otomoId: calls.otomoId,
+      startedAt: calls.startedAt,
+      endedAt: calls.endedAt,
+      connectedAt: calls.connectedAt,
+      durationSeconds: calls.durationSeconds,
+      billedUnits: calls.billedUnits,
+      billedPoints: calls.billedPoints,
+      status: calls.status,
+      endReason: calls.endReason,
+    });
+
+  if (!call) {
     return null;
   }
 
-  record.billedUnits = Math.max(record.billedUnits, payload.billedUnits);
-  record.billedPoints += payload.billedPointsDelta;
-  record.durationSeconds = Math.max(
-    record.durationSeconds,
-    payload.durationSeconds
-  );
-  record.endedAt = payload.endedAt;
-
-  return record;
+  return {
+    callId: call.callId,
+    userId: call.userId,
+    otomoId: call.otomoId,
+    startedAt: call.startedAt.toISOString(),
+    endedAt: call.endedAt?.toISOString() ?? call.startedAt.toISOString(),
+    connectedAt: call.connectedAt?.toISOString() ?? null,
+    durationSeconds: call.durationSeconds,
+    billedUnits: call.billedUnits,
+    billedPoints: call.billedPoints,
+    status: call.status as CallStatus,
+    endReason: call.endReason as CallEndReason | null,
+  };
 }
 
 export async function insertCallRequestRecord(entry: {
@@ -764,36 +895,101 @@ export async function insertCallRequestRecord(entry: {
   otomoId: string;
   startedAt?: string;
 }): Promise<CallRecord> {
-  const now = entry.startedAt ?? new Date().toISOString();
-  const record: CallRecord = {
-    callId: entry.callId,
-    userId: entry.userId,
-    otomoId: entry.otomoId,
-    startedAt: now,
-    endedAt: now,
-    connectedAt: null,
-    durationSeconds: 0,
-    billedUnits: 0,
-    billedPoints: 0,
-    status: "requesting",
-    endReason: null,
-  };
+  const { db } = await import("./drizzle.js");
+  const { calls } = await import("./schema/index.js");
 
-  callHistoryTable.push(record);
-  return record;
+  const now = entry.startedAt ? new Date(entry.startedAt) : new Date();
+  const [call] = await db
+    .insert(calls)
+    .values({
+      id: entry.callId,
+      userId: entry.userId,
+      otomoId: entry.otomoId,
+      startedAt: now,
+      endedAt: now,
+      connectedAt: null,
+      durationSeconds: 0,
+      billedUnits: 0,
+      billedPoints: 0,
+      status: "requesting",
+      endReason: null,
+    })
+    .returning({
+      callId: calls.id,
+      userId: calls.userId,
+      otomoId: calls.otomoId,
+      startedAt: calls.startedAt,
+      endedAt: calls.endedAt,
+      connectedAt: calls.connectedAt,
+      durationSeconds: calls.durationSeconds,
+      billedUnits: calls.billedUnits,
+      billedPoints: calls.billedPoints,
+      status: calls.status,
+      endReason: calls.endReason,
+    });
+
+  return {
+    callId: call.callId,
+    userId: call.userId,
+    otomoId: call.otomoId,
+    startedAt: call.startedAt.toISOString(),
+    endedAt: call.endedAt?.toISOString() ?? call.startedAt.toISOString(),
+    connectedAt: call.connectedAt?.toISOString() ?? null,
+    durationSeconds: call.durationSeconds,
+    billedUnits: call.billedUnits,
+    billedPoints: call.billedPoints,
+    status: call.status as CallStatus,
+    endReason: call.endReason as CallEndReason | null,
+  };
 }
 
 export async function findActiveCallForParticipant(
   participantId: string
 ): Promise<CallRecord | null> {
-  return (
-    callHistoryTable.find(
-      (record) =>
-        record.status !== "ended" &&
-        record.status !== "failed" &&
-        (record.userId === participantId || record.otomoId === participantId)
-    ) ?? null
-  );
+  const { db } = await import("./drizzle.js");
+  const { calls } = await import("./schema/index.js");
+  const { eq, or, and, notInArray } = await import("drizzle-orm");
+
+  const [call] = await db
+    .select({
+      callId: calls.id,
+      userId: calls.userId,
+      otomoId: calls.otomoId,
+      startedAt: calls.startedAt,
+      endedAt: calls.endedAt,
+      connectedAt: calls.connectedAt,
+      durationSeconds: calls.durationSeconds,
+      billedUnits: calls.billedUnits,
+      billedPoints: calls.billedPoints,
+      status: calls.status,
+      endReason: calls.endReason,
+    })
+    .from(calls)
+    .where(
+      and(
+        notInArray(calls.status, ["ended", "failed"]),
+        or(eq(calls.userId, participantId), eq(calls.otomoId, participantId))
+      )
+    )
+    .limit(1);
+
+  if (!call) {
+    return null;
+  }
+
+  return {
+    callId: call.callId,
+    userId: call.userId,
+    otomoId: call.otomoId,
+    startedAt: call.startedAt.toISOString(),
+    endedAt: call.endedAt?.toISOString() ?? call.startedAt.toISOString(),
+    connectedAt: call.connectedAt?.toISOString() ?? null,
+    durationSeconds: call.durationSeconds,
+    billedUnits: call.billedUnits,
+    billedPoints: call.billedPoints,
+    status: call.status as CallStatus,
+    endReason: call.endReason as CallEndReason | null,
+  };
 }
 
 export async function finalizeCallRecord(
@@ -805,19 +1001,52 @@ export async function finalizeCallRecord(
     billedPoints: number;
   }
 ): Promise<CallRecord | null> {
-  const record = callHistoryTable.find((entry) => entry.callId === callId);
-  if (!record) {
+  const { db } = await import("./drizzle.js");
+  const { calls } = await import("./schema/index.js");
+  const { eq } = await import("drizzle-orm");
+
+  const [call] = await db
+    .update(calls)
+    .set({
+      endedAt: new Date(payload.endedAt),
+      durationSeconds: payload.durationSeconds,
+      billedUnits: payload.billedUnits,
+      billedPoints: payload.billedPoints,
+      status: "ended",
+      endReason: "system_error",
+    })
+    .where(eq(calls.id, callId))
+    .returning({
+      callId: calls.id,
+      userId: calls.userId,
+      otomoId: calls.otomoId,
+      startedAt: calls.startedAt,
+      endedAt: calls.endedAt,
+      connectedAt: calls.connectedAt,
+      durationSeconds: calls.durationSeconds,
+      billedUnits: calls.billedUnits,
+      billedPoints: calls.billedPoints,
+      status: calls.status,
+      endReason: calls.endReason,
+    });
+
+  if (!call) {
     return null;
   }
 
-  record.endedAt = payload.endedAt;
-  record.durationSeconds = payload.durationSeconds;
-  record.billedUnits = payload.billedUnits;
-  record.billedPoints = payload.billedPoints;
-  record.status = "ended";
-  record.endReason = "system_error";
-
-  return record;
+  return {
+    callId: call.callId,
+    userId: call.userId,
+    otomoId: call.otomoId,
+    startedAt: call.startedAt.toISOString(),
+    endedAt: call.endedAt?.toISOString() ?? call.startedAt.toISOString(),
+    connectedAt: call.connectedAt?.toISOString() ?? null,
+    durationSeconds: call.durationSeconds,
+    billedUnits: call.billedUnits,
+    billedPoints: call.billedPoints,
+    status: call.status as CallStatus,
+    endReason: call.endReason as CallEndReason | null,
+  };
 }
 
 export async function finalizeCallSessionRecord(
@@ -830,125 +1059,321 @@ export async function finalizeCallSessionRecord(
     billedPoints?: number;
   }
 ): Promise<CallRecord | null> {
-  const record = callHistoryTable.find((entry) => entry.callId === callId);
-  if (!record) {
+  const { db } = await import("./drizzle.js");
+  const { calls } = await import("./schema/index.js");
+  const { eq } = await import("drizzle-orm");
+
+  const updateData: Record<string, unknown> = {
+    endedAt: new Date(payload.endedAt),
+    durationSeconds: payload.durationSeconds,
+    status: "ended",
+    endReason: payload.endReason,
+  };
+
+  if (typeof payload.billedUnits === "number") {
+    updateData.billedUnits = payload.billedUnits;
+  }
+  if (typeof payload.billedPoints === "number") {
+    updateData.billedPoints = payload.billedPoints;
+  }
+
+  const [call] = await db
+    .update(calls)
+    .set(updateData)
+    .where(eq(calls.id, callId))
+    .returning({
+      callId: calls.id,
+      userId: calls.userId,
+      otomoId: calls.otomoId,
+      startedAt: calls.startedAt,
+      endedAt: calls.endedAt,
+      connectedAt: calls.connectedAt,
+      durationSeconds: calls.durationSeconds,
+      billedUnits: calls.billedUnits,
+      billedPoints: calls.billedPoints,
+      status: calls.status,
+      endReason: calls.endReason,
+    });
+
+  if (!call) {
     return null;
   }
 
-  record.endedAt = payload.endedAt;
-  record.durationSeconds = payload.durationSeconds;
-  record.status = "ended";
-  record.endReason = payload.endReason;
-  if (typeof payload.billedUnits === "number") {
-    record.billedUnits = payload.billedUnits;
-  }
-  if (typeof payload.billedPoints === "number") {
-    record.billedPoints = payload.billedPoints;
-  }
-
-  return record;
+  return {
+    callId: call.callId,
+    userId: call.userId,
+    otomoId: call.otomoId,
+    startedAt: call.startedAt.toISOString(),
+    endedAt: call.endedAt?.toISOString() ?? call.startedAt.toISOString(),
+    connectedAt: call.connectedAt?.toISOString() ?? null,
+    durationSeconds: call.durationSeconds,
+    billedUnits: call.billedUnits,
+    billedPoints: call.billedPoints,
+    status: call.status as CallStatus,
+    endReason: call.endReason as CallEndReason | null,
+  };
 }
 
 export async function markCallConnectedRecord(
   callId: string,
   connectedAt: string
 ): Promise<CallRecord | null> {
-  const record = callHistoryTable.find((entry) => entry.callId === callId);
-  if (!record) {
+  const { db } = await import("./drizzle.js");
+  const { calls } = await import("./schema/index.js");
+  const { eq } = await import("drizzle-orm");
+
+  const [call] = await db
+    .update(calls)
+    .set({
+      connectedAt: new Date(connectedAt),
+      startedAt: new Date(connectedAt),
+      status: "active",
+    })
+    .where(eq(calls.id, callId))
+    .returning({
+      callId: calls.id,
+      userId: calls.userId,
+      otomoId: calls.otomoId,
+      startedAt: calls.startedAt,
+      endedAt: calls.endedAt,
+      connectedAt: calls.connectedAt,
+      durationSeconds: calls.durationSeconds,
+      billedUnits: calls.billedUnits,
+      billedPoints: calls.billedPoints,
+      status: calls.status,
+      endReason: calls.endReason,
+    });
+
+  if (!call) {
     return null;
   }
 
-  record.connectedAt = connectedAt;
-  record.startedAt = connectedAt;
-  record.status = "active";
-  return record;
+  return {
+    callId: call.callId,
+    userId: call.userId,
+    otomoId: call.otomoId,
+    startedAt: call.startedAt.toISOString(),
+    endedAt: call.endedAt?.toISOString() ?? call.startedAt.toISOString(),
+    connectedAt: call.connectedAt?.toISOString() ?? null,
+    durationSeconds: call.durationSeconds,
+    billedUnits: call.billedUnits,
+    billedPoints: call.billedPoints,
+    status: call.status as CallStatus,
+    endReason: call.endReason as CallEndReason | null,
+  };
 }
 
 export async function updateCallStatusRecord(
   callId: string,
   status: CallStatus
 ): Promise<CallRecord | null> {
-  const record = callHistoryTable.find((entry) => entry.callId === callId);
-  if (!record) {
+  const { db } = await import("./drizzle.js");
+  const { calls } = await import("./schema/index.js");
+  const { eq } = await import("drizzle-orm");
+
+  const [call] = await db
+    .update(calls)
+    .set({ status })
+    .where(eq(calls.id, callId))
+    .returning({
+      callId: calls.id,
+      userId: calls.userId,
+      otomoId: calls.otomoId,
+      startedAt: calls.startedAt,
+      endedAt: calls.endedAt,
+      connectedAt: calls.connectedAt,
+      durationSeconds: calls.durationSeconds,
+      billedUnits: calls.billedUnits,
+      billedPoints: calls.billedPoints,
+      status: calls.status,
+      endReason: calls.endReason,
+    });
+
+  if (!call) {
     return null;
   }
 
-  record.status = status;
-  return record;
+  return {
+    callId: call.callId,
+    userId: call.userId,
+    otomoId: call.otomoId,
+    startedAt: call.startedAt.toISOString(),
+    endedAt: call.endedAt?.toISOString() ?? call.startedAt.toISOString(),
+    connectedAt: call.connectedAt?.toISOString() ?? null,
+    durationSeconds: call.durationSeconds,
+    billedUnits: call.billedUnits,
+    billedPoints: call.billedPoints,
+    status: call.status as CallStatus,
+    endReason: call.endReason as CallEndReason | null,
+  };
 }
 
 export async function saveUserNotificationsRecord(
   userId: string,
   notifications: NotificationSettingsRecord
 ) {
-  userSettingsTable[userId] = {
-    notifications: { ...notifications },
-  };
-  return userSettingsTable[userId].notifications;
+  const { db } = await import("./drizzle.js");
+  const { userNotificationSettings } = await import("./schema/index.js");
+
+  const [settings] = await db
+    .insert(userNotificationSettings)
+    .values({
+      userId,
+      incomingCall: notifications.incomingCall,
+      callSummary: notifications.callSummary,
+      walletAlert: notifications.walletAlert,
+      marketing: notifications.marketing,
+      updatedAt: new Date(),
+    })
+    .onConflictDoUpdate({
+      target: userNotificationSettings.userId,
+      set: {
+        incomingCall: notifications.incomingCall,
+        callSummary: notifications.callSummary,
+        walletAlert: notifications.walletAlert,
+        marketing: notifications.marketing,
+        updatedAt: new Date(),
+      },
+    })
+    .returning({
+      incomingCall: userNotificationSettings.incomingCall,
+      callSummary: userNotificationSettings.callSummary,
+      walletAlert: userNotificationSettings.walletAlert,
+      marketing: userNotificationSettings.marketing,
+    });
+
+  return settings;
 }
 
 export async function updateUserProfileRecord(
   id: string,
   payload: { name?: string; bio?: string | null }
 ): Promise<Pick<UserRecord, "id" | "name" | "bio"> | null> {
-  const record = usersTable[id];
-  if (!record) return null;
+  const { db } = await import("./drizzle.js");
+  const { users } = await import("./schema/index.js");
+  const { eq } = await import("drizzle-orm");
 
+  const updateData: Record<string, string | null> = {};
   if (payload.name !== undefined) {
-    record.name = payload.name;
+    updateData.name = payload.name;
   }
   if (payload.bio !== undefined) {
-    record.bio = payload.bio;
+    updateData.bio = payload.bio;
   }
 
-  return { id: record.id, name: record.name, bio: record.bio };
+  if (Object.keys(updateData).length === 0) {
+    const [user] = await db
+      .select({ id: users.id, name: users.name, bio: users.bio })
+      .from(users)
+      .where(eq(users.id, id))
+      .limit(1);
+    return user ?? null;
+  }
+
+  const [user] = await db
+    .update(users)
+    .set(updateData)
+    .where(eq(users.id, id))
+    .returning({ id: users.id, name: users.name, bio: users.bio });
+
+  return user ?? null;
 }
 
 export async function updateUserAvatarUrl(
   id: string,
   avatarUrl: string
 ): Promise<{ id: string; avatar_url: string } | null> {
-  const record = usersTable[id];
-  if (!record) return null;
-  record.avatar_url = avatarUrl;
-  return { id: record.id, avatar_url: record.avatar_url };
+  const { db } = await import("./drizzle.js");
+  const { users } = await import("./schema/index.js");
+  const { eq } = await import("drizzle-orm");
+
+  const [user] = await db
+    .update(users)
+    .set({ avatarUrl })
+    .where(eq(users.id, id))
+    .returning({ id: users.id, avatar_url: users.avatarUrl });
+
+  if (!user) {
+    return null;
+  }
+
+  return {
+    id: user.id,
+    avatar_url: user.avatar_url ?? "",
+  };
 }
 
 export async function fetchUserPasswordHash(
   id: string
 ): Promise<string | null> {
-  return usersTable[id]?.password_hash ?? null;
+  const { db } = await import("./drizzle.js");
+  const { users } = await import("./schema/index.js");
+  const { eq } = await import("drizzle-orm");
+
+  const [user] = await db
+    .select({ password_hash: users.passwordHash })
+    .from(users)
+    .where(eq(users.id, id))
+    .limit(1);
+
+  return user?.password_hash ?? null;
 }
 
 export async function updateUserPasswordHash(
   id: string,
   newHash: string
 ): Promise<boolean> {
-  const record = usersTable[id];
-  if (!record) return false;
-  record.password_hash = newHash;
-  return true;
+  const { db } = await import("./drizzle.js");
+  const { users } = await import("./schema/index.js");
+  const { eq } = await import("drizzle-orm");
+
+  const result = await db
+    .update(users)
+    .set({ passwordHash: newHash })
+    .where(eq(users.id, id));
+
+  return result.rowCount ? result.rowCount > 0 : false;
 }
 
 export async function softDeleteUserRecord(
   id: string
 ): Promise<"not_found" | "already_deleted" | "success"> {
-  const record = usersTable[id];
-  if (!record) return "not_found";
-  if (record.is_deleted) return "already_deleted";
+  const { db } = await import("./drizzle.js");
+  const { users } = await import("./schema/index.js");
+  const { eq } = await import("drizzle-orm");
 
-  record.is_deleted = true;
-  record.name = "退会ユーザー";
-  record.avatar_url = null;
-  record.bio = null;
-  record.gender = null;
-  record.birthday = null;
+  const [user] = await db
+    .select({ isDeleted: users.isDeleted })
+    .from(users)
+    .where(eq(users.id, id))
+    .limit(1);
+
+  if (!user) return "not_found";
+  if (user.isDeleted) return "already_deleted";
+
+  await db
+    .update(users)
+    .set({
+      isDeleted: true,
+      name: "退会ユーザー",
+      avatarUrl: null,
+      bio: null,
+      gender: null,
+      birthday: null,
+    })
+    .where(eq(users.id, id));
 
   return "success";
 }
 
 export async function deleteUserSettingsRecord(id: string): Promise<void> {
-  delete userSettingsTable[id];
+  const { db } = await import("./drizzle.js");
+  const { userNotificationSettings } = await import("./schema/index.js");
+  const { eq } = await import("drizzle-orm");
+
+  await db
+    .delete(userNotificationSettings)
+    .where(eq(userNotificationSettings.userId, id));
 }
 
 export type OtomoListFilters = {
@@ -967,51 +1392,156 @@ export type OtomoReviewFilters = {
 };
 
 export async function fetchOtomoList(filters: OtomoListFilters) {
-  let filtered = otomoTable;
+  const { db } = await import("./drizzle.js");
+  const { otomoProfiles } = await import("./schema/index.js");
+  const { eq, and, gte, lte, arrayContains, count } = await import(
+    "drizzle-orm"
+  );
+
+  // WHERE条件を構築
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const conditions: any[] = [];
 
   if (typeof filters.isOnline === "boolean") {
-    filtered = filtered.filter(
-      (record) => record.isOnline === filters.isOnline
-    );
+    conditions.push(eq(otomoProfiles.isOnline, filters.isOnline));
   }
 
   if (filters.genre) {
-    filtered = filtered.filter((record) =>
-      record.genres.includes(filters.genre as string)
-    );
+    conditions.push(arrayContains(otomoProfiles.genres, [filters.genre]));
   }
 
   if (typeof filters.minAge === "number") {
-    filtered = filtered.filter((record) => record.age >= filters.minAge!);
+    conditions.push(gte(otomoProfiles.age, filters.minAge));
   }
 
   if (typeof filters.maxAge === "number") {
-    filtered = filtered.filter((record) => record.age <= filters.maxAge!);
+    conditions.push(lte(otomoProfiles.age, filters.maxAge));
   }
 
-  const total = filtered.length;
-  const start = Math.max(filters.offset, 0);
-  const end = start + Math.max(filters.limit, 0);
-  const items = filtered.slice(start, end);
+  const whereClause =
+    conditions.length > 1
+      ? and(...conditions)
+      : conditions.length === 1
+      ? conditions[0]
+      : undefined;
 
-  return {
-    items,
-    total,
-  };
+  // 総数を取得
+  const [{ value: total }] = await db
+    .select({ value: count() })
+    .from(otomoProfiles)
+    .where(whereClause);
+
+  // データを取得
+  const start = Math.max(filters.offset, 0);
+  const limit = Math.max(filters.limit, 0);
+
+  const otomos = await db
+    .select()
+    .from(otomoProfiles)
+    .where(whereClause)
+    .limit(limit)
+    .offset(start);
+
+  const items = otomos.map((otomo) => ({
+    otomoId: otomo.id,
+    ownerUserId: otomo.ownerUserId,
+    displayName: otomo.displayName,
+    profileImageUrl: otomo.profileImageUrl ?? "",
+    age: otomo.age ?? 0,
+    gender: (otomo.gender as "female" | "male" | "other") ?? "other",
+    genres: otomo.genres ?? [],
+    introduction: otomo.introduction ?? "",
+    tags: otomo.tags ?? [],
+    isOnline: otomo.isOnline,
+    isAvailable: otomo.isAvailable,
+    statusMessage: otomo.statusMessage,
+    statusUpdatedAt: otomo.statusUpdatedAt.toISOString(),
+    pricePerMinute: otomo.pricePerMinute,
+    rating: Number(otomo.rating),
+    reviewCount: otomo.reviewCount,
+    reviews: [], // レビューは別途取得
+    schedule: (otomo.schedule as OtomoScheduleRecord[]) ?? [],
+  }));
+
+  return { items, total };
 }
 
 export async function fetchOtomoById(
   otomoId: string
 ): Promise<OtomoRecord | null> {
-  return otomoTable.find((record) => record.otomoId === otomoId) ?? null;
+  const { db } = await import("./drizzle.js");
+  const { otomoProfiles } = await import("./schema/index.js");
+  const { eq } = await import("drizzle-orm");
+
+  const [otomo] = await db
+    .select()
+    .from(otomoProfiles)
+    .where(eq(otomoProfiles.id, otomoId))
+    .limit(1);
+
+  if (!otomo) {
+    return null;
+  }
+
+  return {
+    otomoId: otomo.id,
+    ownerUserId: otomo.ownerUserId,
+    displayName: otomo.displayName,
+    profileImageUrl: otomo.profileImageUrl ?? "",
+    age: otomo.age ?? 0,
+    gender: (otomo.gender as "female" | "male" | "other") ?? "other",
+    genres: otomo.genres ?? [],
+    introduction: otomo.introduction ?? "",
+    tags: otomo.tags ?? [],
+    isOnline: otomo.isOnline,
+    isAvailable: otomo.isAvailable,
+    statusMessage: otomo.statusMessage,
+    statusUpdatedAt: otomo.statusUpdatedAt.toISOString(),
+    pricePerMinute: otomo.pricePerMinute,
+    rating: Number(otomo.rating),
+    reviewCount: otomo.reviewCount,
+    reviews: [], // レビューは別テーブルから取得する必要がある
+    schedule: (otomo.schedule as OtomoScheduleRecord[]) ?? [],
+  };
 }
 
 export async function fetchOtomoByOwnerUserId(
   ownerUserId: string
 ): Promise<OtomoRecord | null> {
-  return (
-    otomoTable.find((record) => record.ownerUserId === ownerUserId) ?? null
-  );
+  const { db } = await import("./drizzle.js");
+  const { otomoProfiles } = await import("./schema/index.js");
+  const { eq } = await import("drizzle-orm");
+
+  const [otomo] = await db
+    .select()
+    .from(otomoProfiles)
+    .where(eq(otomoProfiles.ownerUserId, ownerUserId))
+    .limit(1);
+
+  if (!otomo) {
+    return null;
+  }
+
+  return {
+    otomoId: otomo.id,
+    ownerUserId: otomo.ownerUserId,
+    displayName: otomo.displayName,
+    profileImageUrl: otomo.profileImageUrl ?? "",
+    age: otomo.age ?? 0,
+    gender: (otomo.gender as "female" | "male" | "other") ?? "other",
+    genres: otomo.genres ?? [],
+    introduction: otomo.introduction ?? "",
+    tags: otomo.tags ?? [],
+    isOnline: otomo.isOnline,
+    isAvailable: otomo.isAvailable,
+    statusMessage: otomo.statusMessage,
+    statusUpdatedAt: otomo.statusUpdatedAt.toISOString(),
+    pricePerMinute: otomo.pricePerMinute,
+    rating: Number(otomo.rating),
+    reviewCount: otomo.reviewCount,
+    reviews: [], // レビューは別テーブルから取得する必要がある
+    schedule: (otomo.schedule as OtomoScheduleRecord[]) ?? [],
+  };
 }
 
 export async function updateOtomoStatusRecord(
@@ -1029,22 +1559,37 @@ export async function updateOtomoStatusRecord(
   statusMessage: string | null;
   statusUpdatedAt: string;
 } | null> {
-  const record = otomoTable.find((entry) => entry.otomoId === otomoId);
-  if (!record) {
+  const { db } = await import("./drizzle.js");
+  const { otomoProfiles } = await import("./schema/index.js");
+  const { eq } = await import("drizzle-orm");
+
+  const [updated] = await db
+    .update(otomoProfiles)
+    .set({
+      isOnline: payload.isOnline,
+      isAvailable: payload.isAvailable,
+      statusMessage: payload.statusMessage,
+      statusUpdatedAt: new Date(payload.statusUpdatedAt),
+    })
+    .where(eq(otomoProfiles.id, otomoId))
+    .returning({
+      otomoId: otomoProfiles.id,
+      isOnline: otomoProfiles.isOnline,
+      isAvailable: otomoProfiles.isAvailable,
+      statusMessage: otomoProfiles.statusMessage,
+      statusUpdatedAt: otomoProfiles.statusUpdatedAt,
+    });
+
+  if (!updated) {
     return null;
   }
 
-  record.isOnline = payload.isOnline;
-  record.isAvailable = payload.isAvailable;
-  record.statusMessage = payload.statusMessage;
-  record.statusUpdatedAt = payload.statusUpdatedAt;
-
   return {
-    otomoId: record.otomoId,
-    isOnline: record.isOnline,
-    isAvailable: record.isAvailable,
-    statusMessage: record.statusMessage,
-    statusUpdatedAt: record.statusUpdatedAt,
+    otomoId: updated.otomoId,
+    isOnline: updated.isOnline,
+    isAvailable: updated.isAvailable,
+    statusMessage: updated.statusMessage,
+    statusUpdatedAt: updated.statusUpdatedAt.toISOString(),
   };
 }
 
@@ -1052,48 +1597,10 @@ export async function fetchOtomoReviews(
   otomoId: string,
   filters: OtomoReviewFilters
 ): Promise<{ items: OtomoReviewRecord[]; total: number } | null> {
-  const record = otomoTable.find((entry) => entry.otomoId === otomoId);
-  if (!record) {
-    return null;
-  }
-
-  let reviews = [...record.reviews];
-  reviews = sortReviews(reviews, filters.sort);
-
-  const total = reviews.length;
-  const start = Math.max(filters.offset, 0);
-  const end = start + Math.max(filters.limit, 0);
-  const items = reviews.slice(start, end);
-
-  return { items, total };
-}
-
-function sortReviews(
-  reviews: OtomoReviewRecord[],
-  sort: "newest" | "highest" | "lowest"
-) {
-  if (sort === "highest") {
-    return reviews.sort((a, b) => {
-      if (b.score === a.score) {
-        return (
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        );
-      }
-      return b.score - a.score;
-    });
-  }
-  if (sort === "lowest") {
-    return reviews.sort((a, b) => {
-      if (a.score === b.score) {
-        return (
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        );
-      }
-      return a.score - b.score;
-    });
-  }
-
-  return reviews.sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  );
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  void otomoId;
+  void filters;
+  // TODO: レビューテーブルのスキーマ実装後にDB取得処理を追加する
+  // 現在はレビュー機能が未実装のため空の結果を返す
+  return { items: [], total: 0 };
 }
