@@ -16,5 +16,28 @@ services:
       timeout: 5s
       retries: 5
 
+  mediasoup:
+    build:
+      context: ./mediasoup-server
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8888:8888"
+      - "40000-41000:40000-41000/udp"
+      - "40000-41000:40000-41000/tcp"
+    environment:
+      NODE_ENV: development
+    healthcheck:
+      test: ["CMD", "sh", "-c", "nc -zn 127.0.0.1 8888"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - otomohan-network
+
+networks:
+  otomohan-network:
+    driver: bridge
+
 volumes:
   postgres-data:
