@@ -5467,6 +5467,8 @@ export interface AcsTokenResponse {
   acsUserId: string
   token: string
   expiresOn: string
+  /** 通話相手のACSユーザーID（相手が既にトークン取得済みの場合） */
+  partnerAcsUserId?: string
 }
 
 /**
@@ -5502,11 +5504,13 @@ export async function fetchAcsToken(
     acsUserId: string
     token: string
     expiresOn: string
+    partnerAcsUserId?: string
   }
 
   return {
     acsUserId: data.acsUserId,
     token: data.token,
     expiresOn: data.expiresOn,
+    partnerAcsUserId: data.partnerAcsUserId,
   }
 }

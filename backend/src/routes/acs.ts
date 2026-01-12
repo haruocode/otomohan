@@ -1,5 +1,9 @@
 import type { FastifyPluginAsync } from "fastify";
 import { getCallToken } from "../services/acsTokenService.js";
+import {
+  registerAcsUser,
+  getPartnerAcsUserId,
+} from "../services/acsUserStore.js";
 
 /**
  * ACS トークン発行エンドポイント
@@ -23,6 +27,7 @@ const acsTokenResponseSchema = {
     acsUserId: { type: "string" },
     token: { type: "string" },
     expiresOn: { type: "string" },
+    partnerAcsUserId: { type: "string" },
   },
   required: ["status", "acsUserId", "token", "expiresOn"],
   additionalProperties: false,
@@ -66,9 +71,19 @@ export const acsRoutes: FastifyPluginAsync = async (app) => {
       },
     },
     async (request, reply) => {
+      // 認証チェック
+      if (!request.user) {
+        reply.code(401);
+        return {
+          status: "error",
+          error: "UNAUTHORIZED",
+          message: "認証が必要です",
+        };
+      }
+
       try {
-        // callIdは将来の検証用に保持（現在は未使用）
-        const { existingAcsUserId } = request.body;
+        const { callId, existingAcsUserId } = request.body;
+        const userId = request.user.id;
 
         // TODO: callIdの検証（通話が存在するか、ユーザーが参加者か）
         // const call = await getCallById(callId);
@@ -82,11 +97,18 @@ export const acsRoutes: FastifyPluginAsync = async (app) => {
 
         const tokenResponse = await getCallToken(existingAcsUserId);
 
+        // ACSユーザーIDをストアに登録（相手が参照できるように）
+        registerAcsUser(callId, userId, tokenResponse.acsUserId);
+
+        // 相手のACSユーザーIDを取得（既に登録済みの場合）
+        const partnerAcsUserId = getPartnerAcsUserId(callId, userId);
+
         return {
           status: "success",
           acsUserId: tokenResponse.acsUserId,
           token: tokenResponse.token,
           expiresOn: tokenResponse.expiresOn,
+          partnerAcsUserId,
         };
       } catch (error) {
         const message =

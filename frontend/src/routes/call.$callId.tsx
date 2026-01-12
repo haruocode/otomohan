@@ -52,6 +52,7 @@ function InCallScreen() {
   const [banner, setBanner] = useState<BannerState | null>(null)
   const [endReason, setEndReason] = useState<CallEndReason | null>(null)
   const [acsInitialized, setAcsInitialized] = useState(false)
+  const [partnerAcsUserId, setPartnerAcsUserId] = useState<string | null>(null)
 
   // ACS通話フック
   const acsCall = useAcsCall({
@@ -74,10 +75,10 @@ function InCallScreen() {
         })
         setAcsInitialized(true)
 
-        // 相手のACSユーザーIDがある場合は通話を開始
-        // 注: 実際の実装ではWebSocketでシグナリングされた相手のACSユーザーIDを使用
-        if (session.partner?.acsUserId) {
-          await acsCall.call(session.partner.acsUserId)
+        // 相手のACSユーザーIDが取得できた場合は通話を開始
+        if (tokenData.partnerAcsUserId) {
+          setPartnerAcsUserId(tokenData.partnerAcsUserId)
+          await acsCall.call(tokenData.partnerAcsUserId)
         }
       } catch (err) {
         console.error('ACS initialization failed:', err)
@@ -89,14 +90,30 @@ function InCallScreen() {
     }
 
     initAcs()
-  }, [callId, session, acsInitialized, acsCall])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [callId, session, acsInitialized])
+
+  // 相手のACSユーザーIDが後から取得できた場合に通話開始
+  useEffect(() => {
+    if (!acsInitialized || !partnerAcsUserId || acsCall.isInCall) return
+
+    acsCall.call(partnerAcsUserId).catch((err) => {
+      console.error('Failed to start call:', err)
+      setBanner({
+        message: '通話の開始に失敗しました',
+        tone: 'warning',
+      })
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [acsInitialized, partnerAcsUserId])
 
   // クリーンアップ
   useEffect(() => {
     return () => {
       acsCall.dispose()
     }
-  }, [acsCall])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   useEffect(() => {
     if (callQuery.data) {
@@ -174,7 +191,8 @@ function InCallScreen() {
           }
         : prev,
     )
-  }, [acsCall])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const derivedBalance = session?.balance ?? walletQuery.data?.balance
 
