@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import {
@@ -130,20 +130,22 @@ function AdminCallsScreen() {
   const [selectedCallId, setSelectedCallId] = useState<string | null>(null)
   const [exportMessage, setExportMessage] = useState('')
 
-  const callQuery = useQuery<Array<AdminCallSummary>>({
+  const callQuery = useQuery({
     queryKey: ['admin-calls', activeFilters],
-    queryFn: () => fetchAdminCallLogs(activeFilters),
-    keepPreviousData: true,
+    queryFn: (): Promise<AdminCallSummary[]> =>
+      fetchAdminCallLogs(activeFilters),
+    placeholderData: (previousData): AdminCallSummary[] | undefined =>
+      previousData,
   })
 
-  const activeCallsQuery = useQuery<Array<AdminActiveCall>>({
+  const activeCallsQuery = useQuery({
     queryKey: ['admin-active-calls'],
-    queryFn: () => fetchAdminActiveCalls(),
+    queryFn: (): Promise<AdminActiveCall[]> => fetchAdminActiveCalls(),
     refetchInterval: 15000,
     refetchIntervalInBackground: true,
   })
 
-  const calls = callQuery.data ?? []
+  const calls: AdminCallSummary[] = callQuery.data ?? []
   const stats = useMemo<CallHeadlineStats>(() => buildStats(calls), [calls])
 
   const handleInputChange =
@@ -1016,4 +1018,27 @@ function formatDuration(seconds: number) {
     return `${hours}時間${mins}分`
   }
   return remain ? `${minutes}分${remain}秒` : `${minutes}分`
+}
+
+function StatCard({
+  title,
+  value,
+  helper,
+  icon,
+}: {
+  title: string
+  value: string
+  helper: string
+  icon: React.ReactNode
+}) {
+  return (
+    <div className="rounded-3xl border border-white/10 bg-gradient-to-br from-white/5 to-white/0 p-5">
+      <div className="flex items-center justify-between text-white/60">
+        <span className="text-xs uppercase tracking-[0.3em]">{helper}</span>
+        <span className="text-white/70">{icon}</span>
+      </div>
+      <p className="mt-3 text-sm text-white/50">{title}</p>
+      <p className="text-3xl font-semibold">{value}</p>
+    </div>
+  )
 }

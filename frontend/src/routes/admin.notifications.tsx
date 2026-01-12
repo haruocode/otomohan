@@ -6,7 +6,6 @@ import {
   Bell,
   ClipboardList,
   Clock4,
-  FileText,
   Filter,
   Mail,
   PenLine,
@@ -14,7 +13,6 @@ import {
   Plus,
   RefreshCw,
   Send,
-  Target,
   Users,
 } from 'lucide-react'
 
@@ -165,9 +163,9 @@ function AdminNotificationsScreen() {
 
   const queryClient = useQueryClient()
 
-  const notificationsQuery = useQuery<Array<AdminNotificationSummary>>({
+  const notificationsQuery = useQuery({
     queryKey: ['admin-notifications', activeFilters],
-    queryFn: () =>
+    queryFn: (): Promise<AdminNotificationSummary[]> =>
       fetchAdminNotifications({
         title: activeFilters.title || undefined,
         category: activeFilters.category || undefined,
@@ -176,7 +174,8 @@ function AdminNotificationsScreen() {
         scheduledFrom: activeFilters.scheduledFrom || undefined,
         scheduledTo: activeFilters.scheduledTo || undefined,
       }),
-    keepPreviousData: true,
+    placeholderData: (previousData): AdminNotificationSummary[] | undefined =>
+      previousData,
   })
 
   const createMutation = useMutation<
@@ -212,7 +211,8 @@ function AdminNotificationsScreen() {
     },
   })
 
-  const notifications = notificationsQuery.data ?? []
+  const notifications: AdminNotificationSummary[] =
+    notificationsQuery.data ?? []
   const stats = useMemo<NotificationStats>(
     () => buildNotificationStats(notifications),
     [notifications],

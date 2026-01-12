@@ -24,7 +24,6 @@ import type {
   AdminAuditActionCategory,
   AdminAuditActionType,
   AdminAuditDetail,
-  AdminAuditFilters,
   AdminAuditResult,
   AdminAuditSummary,
   AdminAuditTargetType,
@@ -126,9 +125,9 @@ function AdminAuditLogsScreen() {
     useState<FilterForm>(initialFilterForm)
   const [selectedLogId, setSelectedLogId] = useState<string | null>(null)
 
-  const logsQuery = useQuery<Array<AdminAuditSummary>>({
+  const logsQuery = useQuery({
     queryKey: ['admin-audit', activeFilters],
-    queryFn: () =>
+    queryFn: (): Promise<AdminAuditSummary[]> =>
       fetchAdminAuditLogs({
         adminId: activeFilters.adminId || undefined,
         actionCategory: activeFilters.actionCategory || undefined,
@@ -141,10 +140,11 @@ function AdminAuditLogsScreen() {
         occurredFrom: activeFilters.occurredFrom || undefined,
         occurredTo: activeFilters.occurredTo || undefined,
       }),
-    keepPreviousData: true,
+    placeholderData: (previousData): AdminAuditSummary[] | undefined =>
+      previousData,
   })
 
-  const logs = logsQuery.data ?? []
+  const logs: AdminAuditSummary[] = logsQuery.data ?? []
   const stats = useMemo<AuditStats>(() => buildAuditStats(logs), [logs])
 
   const actionOptions = useMemo(() => {

@@ -95,10 +95,12 @@ function AdminTrafficScreen() {
     refetchIntervalInBackground: true,
   })
 
-  const trendQuery = useQuery<Array<AdminTrafficTrendPoint>>({
+  const trendQuery = useQuery({
     queryKey: ['admin-traffic-trend', range],
-    queryFn: () => fetchAdminTrafficTrend(range),
-    keepPreviousData: true,
+    queryFn: (): Promise<AdminTrafficTrendPoint[]> =>
+      fetchAdminTrafficTrend(range),
+    placeholderData: (previousData): AdminTrafficTrendPoint[] | undefined =>
+      previousData,
     refetchInterval: 10000,
     refetchIntervalInBackground: true,
   })
@@ -133,7 +135,7 @@ function AdminTrafficScreen() {
   })
 
   const summary = summaryQuery.data
-  const trendPoints = trendQuery.data ?? []
+  const trendPoints: AdminTrafficTrendPoint[] = trendQuery.data ?? []
 
   const handleRefresh = () => {
     summaryQuery.refetch()

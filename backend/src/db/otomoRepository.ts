@@ -1,18 +1,26 @@
+import type { ScheduleSlot } from "./schema/index.js";
+
+/**
+ * Otomoレコード型 - スキーマに合わせた正確な型定義
+ */
 export type OtomoRecord = {
   otomoId: string;
   ownerUserId: string;
-  name: string;
-  bio: string;
-  avatarUrl: string;
-  genre: string[];
-  ageMin: number;
-  ageMax: number;
-  status: "online" | "offline" | "busy";
-  averageRating: number;
+  displayName: string;
+  profileImageUrl: string | null;
+  age: number | null;
+  gender: string | null;
+  introduction: string | null;
+  tags: string[] | null;
+  genres: string[] | null;
+  statusMessage: string | null;
+  isOnline: boolean;
+  isAvailable: boolean;
+  pricePerMinute: number;
+  rating: string;
   reviewCount: number;
-  totalPoints: number;
-  createdAt: string;
-  updatedAt: string;
+  statusUpdatedAt: string;
+  schedule: ScheduleSlot[];
 };
 
 export type OtomoReviewRecord = {
@@ -23,6 +31,10 @@ export type OtomoReviewRecord = {
   rating: number;
   comment: string;
   createdAt: string;
+  // ユーザー結合時に取得
+  userDisplayName: string;
+  // rating を score としてもエイリアス
+  score: number;
 };
 
 export type OtomoScheduleRecord = {
@@ -36,8 +48,8 @@ export type OtomoScheduleRecord = {
 export type OtomoListFilters = {
   isOnline?: boolean;
   genres?: string[];
-  ageMin?: number;
-  ageMax?: number;
+  minAge?: number;
+  maxAge?: number;
   minRating?: number;
 };
 
@@ -45,6 +57,7 @@ export type OtomoReviewFilters = {
   otomoId: string;
   limit: number;
   offset: number;
+  sort?: "newest" | "highest" | "lowest";
 };
 
 export async function fetchOtomoList(options: {
@@ -54,7 +67,7 @@ export async function fetchOtomoList(options: {
 }): Promise<{ items: OtomoRecord[]; total: number }> {
   const { db } = await import("./drizzle.js");
   const { otomoProfiles } = await import("./schema/index.js");
-  const { eq, desc, count, and, sql } = await import("drizzle-orm");
+  const { eq, desc, count, and, sql, gte, lte } = await import("drizzle-orm");
 
   const safeLimit = Math.max(options.limit, 0);
   const safeOffset = Math.max(options.offset, 0);
@@ -62,30 +75,26 @@ export async function fetchOtomoList(options: {
   const whereConditions = [];
 
   if (options.filters?.isOnline) {
-    whereConditions.push(eq(otomoProfiles.status, "online"));
+    whereConditions.push(eq(otomoProfiles.isOnline, true));
   }
 
   if (options.filters?.genres && options.filters.genres.length > 0) {
     whereConditions.push(
-      sql`${otomoProfiles.genre} && ${options.filters.genres}::text[]`
+      sql`${otomoProfiles.genres} && ${options.filters.genres}::text[]`
     );
   }
 
-  if (options.filters?.ageMin !== undefined) {
-    whereConditions.push(
-      sql`${otomoProfiles.ageMax} >= ${options.filters.ageMin}`
-    );
+  if (options.filters?.minAge !== undefined) {
+    whereConditions.push(gte(otomoProfiles.age, options.filters.minAge));
   }
 
-  if (options.filters?.ageMax !== undefined) {
-    whereConditions.push(
-      sql`${otomoProfiles.ageMin} <= ${options.filters.ageMax}`
-    );
+  if (options.filters?.maxAge !== undefined) {
+    whereConditions.push(lte(otomoProfiles.age, options.filters.maxAge));
   }
 
   if (options.filters?.minRating !== undefined) {
     whereConditions.push(
-      sql`${otomoProfiles.averageRating} >= ${options.filters.minRating}`
+      gte(otomoProfiles.rating, String(options.filters.minRating))
     );
   }
 
@@ -103,40 +112,46 @@ export async function fetchOtomoList(options: {
     .select({
       otomoId: otomoProfiles.id,
       ownerUserId: otomoProfiles.ownerUserId,
-      name: otomoProfiles.name,
-      bio: otomoProfiles.bio,
-      avatarUrl: otomoProfiles.avatarUrl,
-      genre: otomoProfiles.genre,
-      ageMin: otomoProfiles.ageMin,
-      ageMax: otomoProfiles.ageMax,
-      status: otomoProfiles.status,
-      averageRating: otomoProfiles.averageRating,
+      displayName: otomoProfiles.displayName,
+      profileImageUrl: otomoProfiles.profileImageUrl,
+      age: otomoProfiles.age,
+      gender: otomoProfiles.gender,
+      introduction: otomoProfiles.introduction,
+      tags: otomoProfiles.tags,
+      genres: otomoProfiles.genres,
+      statusMessage: otomoProfiles.statusMessage,
+      isOnline: otomoProfiles.isOnline,
+      isAvailable: otomoProfiles.isAvailable,
+      pricePerMinute: otomoProfiles.pricePerMinute,
+      rating: otomoProfiles.rating,
       reviewCount: otomoProfiles.reviewCount,
-      totalPoints: otomoProfiles.totalPoints,
-      createdAt: otomoProfiles.createdAt,
-      updatedAt: otomoProfiles.updatedAt,
+      statusUpdatedAt: otomoProfiles.statusUpdatedAt,
+      schedule: otomoProfiles.schedule,
     })
     .from(otomoProfiles)
     .where(whereClause)
-    .orderBy(desc(otomoProfiles.createdAt))
+    .orderBy(desc(otomoProfiles.statusUpdatedAt))
     .limit(safeLimit)
     .offset(safeOffset);
 
-  const items = profiles.map((profile) => ({
+  const items: OtomoRecord[] = profiles.map((profile) => ({
     otomoId: profile.otomoId,
     ownerUserId: profile.ownerUserId,
-    name: profile.name,
-    bio: profile.bio,
-    avatarUrl: profile.avatarUrl ?? "",
-    genre: profile.genre ?? [],
-    ageMin: profile.ageMin,
-    ageMax: profile.ageMax,
-    status: profile.status as "online" | "offline" | "busy",
-    averageRating: profile.averageRating,
+    displayName: profile.displayName,
+    profileImageUrl: profile.profileImageUrl,
+    age: profile.age,
+    gender: profile.gender,
+    introduction: profile.introduction,
+    tags: profile.tags,
+    genres: profile.genres,
+    statusMessage: profile.statusMessage,
+    isOnline: profile.isOnline,
+    isAvailable: profile.isAvailable,
+    pricePerMinute: profile.pricePerMinute,
+    rating: profile.rating,
     reviewCount: profile.reviewCount,
-    totalPoints: profile.totalPoints,
-    createdAt: profile.createdAt.toISOString(),
-    updatedAt: profile.updatedAt.toISOString(),
+    statusUpdatedAt: profile.statusUpdatedAt.toISOString(),
+    schedule: profile.schedule,
   }));
 
   return { items, total };
@@ -153,18 +168,21 @@ export async function fetchOtomoById(
     .select({
       otomoId: otomoProfiles.id,
       ownerUserId: otomoProfiles.ownerUserId,
-      name: otomoProfiles.name,
-      bio: otomoProfiles.bio,
-      avatarUrl: otomoProfiles.avatarUrl,
-      genre: otomoProfiles.genre,
-      ageMin: otomoProfiles.ageMin,
-      ageMax: otomoProfiles.ageMax,
-      status: otomoProfiles.status,
-      averageRating: otomoProfiles.averageRating,
+      displayName: otomoProfiles.displayName,
+      profileImageUrl: otomoProfiles.profileImageUrl,
+      age: otomoProfiles.age,
+      gender: otomoProfiles.gender,
+      introduction: otomoProfiles.introduction,
+      tags: otomoProfiles.tags,
+      genres: otomoProfiles.genres,
+      statusMessage: otomoProfiles.statusMessage,
+      isOnline: otomoProfiles.isOnline,
+      isAvailable: otomoProfiles.isAvailable,
+      pricePerMinute: otomoProfiles.pricePerMinute,
+      rating: otomoProfiles.rating,
       reviewCount: otomoProfiles.reviewCount,
-      totalPoints: otomoProfiles.totalPoints,
-      createdAt: otomoProfiles.createdAt,
-      updatedAt: otomoProfiles.updatedAt,
+      statusUpdatedAt: otomoProfiles.statusUpdatedAt,
+      schedule: otomoProfiles.schedule,
     })
     .from(otomoProfiles)
     .where(eq(otomoProfiles.id, otomoId))
@@ -177,18 +195,21 @@ export async function fetchOtomoById(
   return {
     otomoId: profile.otomoId,
     ownerUserId: profile.ownerUserId,
-    name: profile.name,
-    bio: profile.bio,
-    avatarUrl: profile.avatarUrl ?? "",
-    genre: profile.genre ?? [],
-    ageMin: profile.ageMin,
-    ageMax: profile.ageMax,
-    status: profile.status as "online" | "offline" | "busy",
-    averageRating: profile.averageRating,
+    displayName: profile.displayName,
+    profileImageUrl: profile.profileImageUrl,
+    age: profile.age,
+    gender: profile.gender,
+    introduction: profile.introduction,
+    tags: profile.tags,
+    genres: profile.genres,
+    statusMessage: profile.statusMessage,
+    isOnline: profile.isOnline,
+    isAvailable: profile.isAvailable,
+    pricePerMinute: profile.pricePerMinute,
+    rating: profile.rating,
     reviewCount: profile.reviewCount,
-    totalPoints: profile.totalPoints,
-    createdAt: profile.createdAt.toISOString(),
-    updatedAt: profile.updatedAt.toISOString(),
+    statusUpdatedAt: profile.statusUpdatedAt.toISOString(),
+    schedule: profile.schedule,
   };
 }
 
@@ -203,18 +224,21 @@ export async function fetchOtomoByOwnerUserId(
     .select({
       otomoId: otomoProfiles.id,
       ownerUserId: otomoProfiles.ownerUserId,
-      name: otomoProfiles.name,
-      bio: otomoProfiles.bio,
-      avatarUrl: otomoProfiles.avatarUrl,
-      genre: otomoProfiles.genre,
-      ageMin: otomoProfiles.ageMin,
-      ageMax: otomoProfiles.ageMax,
-      status: otomoProfiles.status,
-      averageRating: otomoProfiles.averageRating,
+      displayName: otomoProfiles.displayName,
+      profileImageUrl: otomoProfiles.profileImageUrl,
+      age: otomoProfiles.age,
+      gender: otomoProfiles.gender,
+      introduction: otomoProfiles.introduction,
+      tags: otomoProfiles.tags,
+      genres: otomoProfiles.genres,
+      statusMessage: otomoProfiles.statusMessage,
+      isOnline: otomoProfiles.isOnline,
+      isAvailable: otomoProfiles.isAvailable,
+      pricePerMinute: otomoProfiles.pricePerMinute,
+      rating: otomoProfiles.rating,
       reviewCount: otomoProfiles.reviewCount,
-      totalPoints: otomoProfiles.totalPoints,
-      createdAt: otomoProfiles.createdAt,
-      updatedAt: otomoProfiles.updatedAt,
+      statusUpdatedAt: otomoProfiles.statusUpdatedAt,
+      schedule: otomoProfiles.schedule,
     })
     .from(otomoProfiles)
     .where(eq(otomoProfiles.ownerUserId, ownerUserId))
@@ -227,51 +251,86 @@ export async function fetchOtomoByOwnerUserId(
   return {
     otomoId: profile.otomoId,
     ownerUserId: profile.ownerUserId,
-    name: profile.name,
-    bio: profile.bio,
-    avatarUrl: profile.avatarUrl ?? "",
-    genre: profile.genre ?? [],
-    ageMin: profile.ageMin,
-    ageMax: profile.ageMax,
-    status: profile.status as "online" | "offline" | "busy",
-    averageRating: profile.averageRating,
+    displayName: profile.displayName,
+    profileImageUrl: profile.profileImageUrl,
+    age: profile.age,
+    gender: profile.gender,
+    introduction: profile.introduction,
+    tags: profile.tags,
+    genres: profile.genres,
+    statusMessage: profile.statusMessage,
+    isOnline: profile.isOnline,
+    isAvailable: profile.isAvailable,
+    pricePerMinute: profile.pricePerMinute,
+    rating: profile.rating,
     reviewCount: profile.reviewCount,
-    totalPoints: profile.totalPoints,
-    createdAt: profile.createdAt.toISOString(),
-    updatedAt: profile.updatedAt.toISOString(),
+    statusUpdatedAt: profile.statusUpdatedAt.toISOString(),
+    schedule: profile.schedule,
   };
 }
 
+export type OtomoStatusUpdate = {
+  isOnline: boolean;
+  isAvailable: boolean;
+  statusMessage?: string | null;
+  statusUpdatedAt?: string;
+};
+
 export async function updateOtomoStatusRecord(
   otomoId: string,
-  status: "online" | "offline" | "busy"
+  status: "online" | "offline" | "busy" | OtomoStatusUpdate
 ): Promise<OtomoRecord | null> {
   const { db } = await import("./drizzle.js");
   const { otomoProfiles } = await import("./schema/index.js");
   const { eq } = await import("drizzle-orm");
 
+  // status の形式に応じて isOnline / isAvailable を決定
+  let isOnline: boolean;
+  let isAvailable: boolean;
+  let statusMessage: string | null | undefined;
+
+  if (typeof status === "string") {
+    isOnline = status === "online" || status === "busy";
+    isAvailable = status === "online";
+    statusMessage = undefined;
+  } else {
+    isOnline = status.isOnline;
+    isAvailable = status.isAvailable;
+    statusMessage = status.statusMessage;
+  }
+
+  const updateData: Record<string, unknown> = {
+    isOnline,
+    isAvailable,
+    statusUpdatedAt: new Date(),
+  };
+
+  if (statusMessage !== undefined) {
+    updateData.statusMessage = statusMessage;
+  }
+
   const [profile] = await db
     .update(otomoProfiles)
-    .set({
-      status,
-      updatedAt: new Date(),
-    })
+    .set(updateData)
     .where(eq(otomoProfiles.id, otomoId))
     .returning({
       otomoId: otomoProfiles.id,
       ownerUserId: otomoProfiles.ownerUserId,
-      name: otomoProfiles.name,
-      bio: otomoProfiles.bio,
-      avatarUrl: otomoProfiles.avatarUrl,
-      genre: otomoProfiles.genre,
-      ageMin: otomoProfiles.ageMin,
-      ageMax: otomoProfiles.ageMax,
-      status: otomoProfiles.status,
-      averageRating: otomoProfiles.averageRating,
+      displayName: otomoProfiles.displayName,
+      profileImageUrl: otomoProfiles.profileImageUrl,
+      age: otomoProfiles.age,
+      gender: otomoProfiles.gender,
+      introduction: otomoProfiles.introduction,
+      tags: otomoProfiles.tags,
+      genres: otomoProfiles.genres,
+      statusMessage: otomoProfiles.statusMessage,
+      isOnline: otomoProfiles.isOnline,
+      isAvailable: otomoProfiles.isAvailable,
+      pricePerMinute: otomoProfiles.pricePerMinute,
+      rating: otomoProfiles.rating,
       reviewCount: otomoProfiles.reviewCount,
-      totalPoints: otomoProfiles.totalPoints,
-      createdAt: otomoProfiles.createdAt,
-      updatedAt: otomoProfiles.updatedAt,
+      statusUpdatedAt: otomoProfiles.statusUpdatedAt,
+      schedule: otomoProfiles.schedule,
     });
 
   if (!profile) {
@@ -281,18 +340,21 @@ export async function updateOtomoStatusRecord(
   return {
     otomoId: profile.otomoId,
     ownerUserId: profile.ownerUserId,
-    name: profile.name,
-    bio: profile.bio,
-    avatarUrl: profile.avatarUrl ?? "",
-    genre: profile.genre ?? [],
-    ageMin: profile.ageMin,
-    ageMax: profile.ageMax,
-    status: profile.status as "online" | "offline" | "busy",
-    averageRating: profile.averageRating,
+    displayName: profile.displayName,
+    profileImageUrl: profile.profileImageUrl,
+    age: profile.age,
+    gender: profile.gender,
+    introduction: profile.introduction,
+    tags: profile.tags,
+    genres: profile.genres,
+    statusMessage: profile.statusMessage,
+    isOnline: profile.isOnline,
+    isAvailable: profile.isAvailable,
+    pricePerMinute: profile.pricePerMinute,
+    rating: profile.rating,
     reviewCount: profile.reviewCount,
-    totalPoints: profile.totalPoints,
-    createdAt: profile.createdAt.toISOString(),
-    updatedAt: profile.updatedAt.toISOString(),
+    statusUpdatedAt: profile.statusUpdatedAt.toISOString(),
+    schedule: profile.schedule,
   };
 }
 

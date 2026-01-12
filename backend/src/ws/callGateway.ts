@@ -1,6 +1,5 @@
 import type { FastifyPluginAsync } from "fastify";
-import type { SocketStream } from "@fastify/websocket";
-import type { RawData } from "ws";
+import type { WebSocket, RawData } from "ws";
 import {
   initiateCallRequest,
   acceptCallRequest,
@@ -113,239 +112,235 @@ function parseMessage(raw: RawData): GatewayMessage | null {
 }
 
 export const callGatewayRoutes: FastifyPluginAsync = async (app) => {
-  app.get(
-    "/ws/call",
-    { websocket: true },
-    (connection: SocketStream, request) => {
-      const authUser = request.user;
-      if (!authUser) {
-        connection.socket.close(4401, "UNAUTHORIZED");
+  app.get("/ws/call", { websocket: true }, (socket: WebSocket, request) => {
+    const authUser = request.user;
+    if (!authUser) {
+      socket.close(4401, "UNAUTHORIZED");
+      return;
+    }
+
+    registerConnection(authUser.id, socket);
+
+    socket.on("message", async (raw) => {
+      const message = parseMessage(raw);
+      if (!message) {
+        sendWsError(socket, "INVALID_WS_MESSAGE", {
+          message: "Invalid WebSocket message payload.",
+        });
         return;
       }
 
-      registerConnection(authUser.id, connection.socket);
-
-      connection.socket.on("message", async (raw) => {
-        const message = parseMessage(raw);
-        if (!message) {
-          sendWsError(connection.socket, "INVALID_WS_MESSAGE", {
-            message: "Invalid WebSocket message payload.",
+      if (message.type === "call_request") {
+        if (authUser.role !== "user" && authUser.role !== "admin") {
+          sendWsError(socket, "FORBIDDEN", {
+            message: "Only user accounts can initiate calls.",
           });
           return;
         }
 
-        if (message.type === "call_request") {
-          if (authUser.role !== "user" && authUser.role !== "admin") {
-            sendWsError(connection.socket, "FORBIDDEN", {
-              message: "Only user accounts can initiate calls.",
-            });
-            return;
-          }
+        try {
+          const result = await initiateCallRequest({
+            callId: message.callId,
+            callerId: authUser.id,
+            targetUserId: message.toUserId,
+          });
 
-          try {
-            const result = await initiateCallRequest({
+          if (!result.success) {
+            if (result.reason === "OTOMO_OFFLINE") {
+              sendJson(socket, {
+                type: "call_rejected",
+                reason: "offline",
+              });
+              return;
+            }
+
+            if (result.reason === "OTOMO_BUSY") {
+              sendJson(socket, {
+                type: "call_rejected",
+                reason: "busy",
+              });
+              return;
+            }
+
+            const context = {
               callId: message.callId,
-              callerId: authUser.id,
               targetUserId: message.toUserId,
-            });
+            } as const;
 
-            if (!result.success) {
-              if (result.reason === "OTOMO_OFFLINE") {
-                sendJson(connection.socket, {
-                  type: "call_rejected",
-                  reason: "offline",
-                });
-                return;
-              }
-
-              if (result.reason === "OTOMO_BUSY") {
-                sendJson(connection.socket, {
-                  type: "call_rejected",
-                  reason: "busy",
-                });
-                return;
-              }
-
-              const context = {
-                callId: message.callId,
-                targetUserId: message.toUserId,
-              } as const;
-
-              sendWsError(connection.socket, result.reason, {
-                context,
-              });
-              return;
-            }
-
-            sendJson(connection.socket, {
-              type: "call_request_ack",
-              callId: result.callId,
-              status: "requesting",
-            });
-
-            broadcastToUser(result.target.ownerUserId, {
-              type: "incoming_call",
-              callId: result.callId,
-              fromUserId: result.caller.id,
-              fromUserName: result.caller.name,
-              fromUserAvatar: result.caller.avatar,
-              otomoId: result.target.otomoId,
-              otomoDisplayName: result.target.displayName,
-            });
-          } catch (error) {
-            request.log.error(error, "Failed to process call_request message");
-            sendWsError(connection.socket, "INTERNAL_ERROR", {
-              context: { callId: message.callId },
-            });
-          }
-          return;
-        }
-
-        if (message.type === "call_accept") {
-          if (authUser.role !== "otomo") {
-            sendWsError(connection.socket, "FORBIDDEN", {
-              message: "Only otomo accounts can accept calls.",
+            sendWsError(socket, result.reason, {
+              context,
             });
             return;
           }
 
-          try {
-            const result = await acceptCallRequest({
-              callId: message.callId,
-              responderUserId: authUser.id,
-            });
+          sendJson(socket, {
+            type: "call_request_ack",
+            callId: result.callId,
+            status: "requesting",
+          });
 
-            if (!result.success) {
-              const errorCode =
-                result.reason === "CALL_NOT_FOUND"
-                  ? "CALL_NOT_FOUND"
-                  : result.reason === "FORBIDDEN"
-                  ? "FORBIDDEN"
-                  : "INVALID_CALL_STATE";
+          broadcastToUser(result.target.ownerUserId, {
+            type: "incoming_call",
+            callId: result.callId,
+            fromUserId: result.caller.id,
+            fromUserName: result.caller.name,
+            fromUserAvatar: result.caller.avatar,
+            otomoId: result.target.otomoId,
+            otomoDisplayName: result.target.displayName,
+          });
+        } catch (error) {
+          request.log.error(error, "Failed to process call_request message");
+          sendWsError(socket, "INTERNAL_ERROR", {
+            context: { callId: message.callId },
+          });
+        }
+        return;
+      }
 
-              sendWsError(connection.socket, errorCode, {
-                context: { callId: message.callId },
-              });
-              return;
-            }
-
-            sendJson(connection.socket, {
-              type: "call_accept_ack",
-              callId: result.callId,
-              status: "connecting",
-            });
-
-            broadcastToUser(result.callerUserId, {
-              type: "call_accepted",
-              callId: result.callId,
-              timestamp: result.timestamp,
-            });
-          } catch (error) {
-            request.log.error(error, "Failed to process call_accept message");
-            sendWsError(connection.socket, "INTERNAL_ERROR", {
-              context: { callId: message.callId },
-            });
-          }
+      if (message.type === "call_accept") {
+        if (authUser.role !== "otomo") {
+          sendWsError(socket, "FORBIDDEN", {
+            message: "Only otomo accounts can accept calls.",
+          });
           return;
         }
 
-        if (message.type === "call_reject") {
-          if (authUser.role !== "otomo") {
-            sendWsError(connection.socket, "FORBIDDEN", {
-              message: "Only otomo accounts can reject calls.",
+        try {
+          const result = await acceptCallRequest({
+            callId: message.callId,
+            responderUserId: authUser.id,
+          });
+
+          if (!result.success) {
+            const errorCode =
+              result.reason === "CALL_NOT_FOUND"
+                ? "CALL_NOT_FOUND"
+                : result.reason === "FORBIDDEN"
+                ? "FORBIDDEN"
+                : "INVALID_CALL_STATE";
+
+            sendWsError(socket, errorCode, {
+              context: { callId: message.callId },
             });
             return;
           }
 
-          try {
-            const result = await rejectCallRequest({
-              callId: message.callId,
-              responderUserId: authUser.id,
-              reason: message.reason,
-            });
+          sendJson(socket, {
+            type: "call_accept_ack",
+            callId: result.callId,
+            status: "connecting",
+          });
 
-            if (!result.success) {
-              const errorCode =
-                result.reason === "CALL_NOT_FOUND"
-                  ? "CALL_NOT_FOUND"
-                  : result.reason === "FORBIDDEN"
-                  ? "FORBIDDEN"
-                  : "INVALID_CALL_STATE";
-              sendWsError(connection.socket, errorCode, {
-                context: { callId: message.callId },
-              });
-              return;
-            }
+          broadcastToUser(result.callerUserId, {
+            type: "call_accepted",
+            callId: result.callId,
+            timestamp: result.timestamp,
+          });
+        } catch (error) {
+          request.log.error(error, "Failed to process call_accept message");
+          sendWsError(socket, "INTERNAL_ERROR", {
+            context: { callId: message.callId },
+          });
+        }
+        return;
+      }
 
-            sendJson(connection.socket, {
-              type: "call_reject_ack",
-              callId: result.callId,
-              reason: result.reason,
-            });
-
-            broadcastToUser(result.callerUserId, {
-              type: "call_rejected",
-              callId: result.callId,
-              otomoId: result.otomoId,
-              reason: result.reason,
-              timestamp: result.timestamp,
-            });
-          } catch (error) {
-            request.log.error(error, "Failed to process call_reject message");
-            sendWsError(connection.socket, "INTERNAL_ERROR", {
-              context: { callId: message.callId },
-            });
-          }
+      if (message.type === "call_reject") {
+        if (authUser.role !== "otomo") {
+          sendWsError(socket, "FORBIDDEN", {
+            message: "Only otomo accounts can reject calls.",
+          });
           return;
         }
 
-        if (message.type === "call_end_request") {
-          if (authUser.role !== "user" && authUser.role !== "otomo") {
-            sendWsError(connection.socket, "FORBIDDEN", {
-              message: "Only call participants can end calls.",
+        try {
+          const result = await rejectCallRequest({
+            callId: message.callId,
+            responderUserId: authUser.id,
+            reason: message.reason,
+          });
+
+          if (!result.success) {
+            const errorCode =
+              result.reason === "CALL_NOT_FOUND"
+                ? "CALL_NOT_FOUND"
+                : result.reason === "FORBIDDEN"
+                ? "FORBIDDEN"
+                : "INVALID_CALL_STATE";
+            sendWsError(socket, errorCode, {
+              context: { callId: message.callId },
             });
             return;
           }
 
-          try {
-            const result = await handleCallEndRequestByParticipant({
-              callId: message.callId,
-              requesterUserId: authUser.id,
-            });
+          sendJson(socket, {
+            type: "call_reject_ack",
+            callId: result.callId,
+            reason: result.reason,
+          });
 
-            if (!result.success) {
-              const errorCode =
-                result.reason === "CALL_NOT_FOUND"
-                  ? "CALL_NOT_FOUND"
-                  : result.reason === "FORBIDDEN"
-                  ? "FORBIDDEN"
-                  : "INVALID_CALL_STATE";
-              sendWsError(connection.socket, errorCode, {
-                context: { callId: message.callId },
-              });
-              return;
-            }
+          broadcastToUser(result.callerUserId, {
+            type: "call_rejected",
+            callId: result.callId,
+            otomoId: result.otomoId,
+            reason: result.reason,
+            timestamp: result.timestamp,
+          });
+        } catch (error) {
+          request.log.error(error, "Failed to process call_reject message");
+          sendWsError(socket, "INTERNAL_ERROR", {
+            context: { callId: message.callId },
+          });
+        }
+        return;
+      }
 
-            sendJson(connection.socket, {
-              type: "call_end_request_ack",
-              callId: result.callId,
-            });
-          } catch (error) {
-            request.log.error(
-              error,
-              "Failed to process call_end_request message"
-            );
-            sendWsError(connection.socket, "INTERNAL_ERROR", {
-              context: { callId: message.callId },
-            });
-          }
+      if (message.type === "call_end_request") {
+        if (authUser.role !== "user" && authUser.role !== "otomo") {
+          sendWsError(socket, "FORBIDDEN", {
+            message: "Only call participants can end calls.",
+          });
           return;
         }
-      });
 
-      connection.socket.on("close", () => {
-        unregisterConnection(authUser.id, connection.socket);
-      });
-    }
-  );
+        try {
+          const result = await handleCallEndRequestByParticipant({
+            callId: message.callId,
+            requesterUserId: authUser.id,
+          });
+
+          if (!result.success) {
+            const errorCode =
+              result.reason === "CALL_NOT_FOUND"
+                ? "CALL_NOT_FOUND"
+                : result.reason === "FORBIDDEN"
+                ? "FORBIDDEN"
+                : "INVALID_CALL_STATE";
+            sendWsError(socket, errorCode, {
+              context: { callId: message.callId },
+            });
+            return;
+          }
+
+          sendJson(socket, {
+            type: "call_end_request_ack",
+            callId: result.callId,
+          });
+        } catch (error) {
+          request.log.error(
+            error,
+            "Failed to process call_end_request message"
+          );
+          sendWsError(socket, "INTERNAL_ERROR", {
+            context: { callId: message.callId },
+          });
+        }
+        return;
+      }
+    });
+
+    socket.on("close", () => {
+      unregisterConnection(authUser.id, socket);
+    });
+  });
 };

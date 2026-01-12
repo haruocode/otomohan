@@ -29,7 +29,6 @@ import { Route as MypagePasswordRouteImport } from './routes/mypage.password'
 import { Route as MypageEditRouteImport } from './routes/mypage.edit'
 import { Route as MypageBlockListRouteImport } from './routes/mypage.block-list'
 import { Route as HistoryCallIdRouteImport } from './routes/history.$callId'
-import { Route as DemoTanstackQueryRouteImport } from './routes/demo/tanstack-query'
 import { Route as CallCallIdRouteImport } from './routes/call.$callId'
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
 import { Route as AdminTrafficRouteImport } from './routes/admin.traffic'
@@ -42,15 +41,7 @@ import { Route as AdminLoginRouteImport } from './routes/admin.login'
 import { Route as AdminCallsRouteImport } from './routes/admin.calls'
 import { Route as AdminAuditRouteImport } from './routes/admin.audit'
 import { Route as MypageLegalDocRouteImport } from './routes/mypage.legal.$doc'
-import { Route as DemoStartServerFuncsRouteImport } from './routes/demo/start.server-funcs'
-import { Route as DemoStartApiRequestRouteImport } from './routes/demo/start.api-request'
-import { Route as DemoApiTqTodosRouteImport } from './routes/demo/api.tq-todos'
-import { Route as DemoApiNamesRouteImport } from './routes/demo/api.names'
 import { Route as CallCallIdSummaryRouteImport } from './routes/call.$callId.summary'
-import { Route as DemoStartSsrIndexRouteImport } from './routes/demo/start.ssr.index'
-import { Route as DemoStartSsrSpaModeRouteImport } from './routes/demo/start.ssr.spa-mode'
-import { Route as DemoStartSsrFullSsrRouteImport } from './routes/demo/start.ssr.full-ssr'
-import { Route as DemoStartSsrDataOnlyRouteImport } from './routes/demo/start.ssr.data-only'
 
 const WalletRoute = WalletRouteImport.update({
   id: '/wallet',
@@ -152,11 +143,6 @@ const HistoryCallIdRoute = HistoryCallIdRouteImport.update({
   path: '/$callId',
   getParentRoute: () => HistoryRoute,
 } as any)
-const DemoTanstackQueryRoute = DemoTanstackQueryRouteImport.update({
-  id: '/demo/tanstack-query',
-  path: '/demo/tanstack-query',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const CallCallIdRoute = CallCallIdRouteImport.update({
   id: '/call/$callId',
   path: '/call/$callId',
@@ -217,50 +203,10 @@ const MypageLegalDocRoute = MypageLegalDocRouteImport.update({
   path: '/legal/$doc',
   getParentRoute: () => MypageRoute,
 } as any)
-const DemoStartServerFuncsRoute = DemoStartServerFuncsRouteImport.update({
-  id: '/demo/start/server-funcs',
-  path: '/demo/start/server-funcs',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DemoStartApiRequestRoute = DemoStartApiRequestRouteImport.update({
-  id: '/demo/start/api-request',
-  path: '/demo/start/api-request',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DemoApiTqTodosRoute = DemoApiTqTodosRouteImport.update({
-  id: '/demo/api/tq-todos',
-  path: '/demo/api/tq-todos',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DemoApiNamesRoute = DemoApiNamesRouteImport.update({
-  id: '/demo/api/names',
-  path: '/demo/api/names',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const CallCallIdSummaryRoute = CallCallIdSummaryRouteImport.update({
   id: '/summary',
   path: '/summary',
   getParentRoute: () => CallCallIdRoute,
-} as any)
-const DemoStartSsrIndexRoute = DemoStartSsrIndexRouteImport.update({
-  id: '/demo/start/ssr/',
-  path: '/demo/start/ssr/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DemoStartSsrSpaModeRoute = DemoStartSsrSpaModeRouteImport.update({
-  id: '/demo/start/ssr/spa-mode',
-  path: '/demo/start/ssr/spa-mode',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DemoStartSsrFullSsrRoute = DemoStartSsrFullSsrRouteImport.update({
-  id: '/demo/start/ssr/full-ssr',
-  path: '/demo/start/ssr/full-ssr',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DemoStartSsrDataOnlyRoute = DemoStartSsrDataOnlyRouteImport.update({
-  id: '/demo/start/ssr/data-only',
-  path: '/demo/start/ssr/data-only',
-  getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -284,7 +230,6 @@ export interface FileRoutesByFullPath {
   '/admin/traffic': typeof AdminTrafficRoute
   '/admin/users': typeof AdminUsersRoute
   '/call/$callId': typeof CallCallIdRouteWithChildren
-  '/demo/tanstack-query': typeof DemoTanstackQueryRoute
   '/history/$callId': typeof HistoryCallIdRoute
   '/mypage/block-list': typeof MypageBlockListRoute
   '/mypage/edit': typeof MypageEditRoute
@@ -297,15 +242,7 @@ export interface FileRoutesByFullPath {
   '/otomo/$otomoId': typeof OtomoOtomoIdRoute
   '/wallet/charge': typeof WalletChargeRoute
   '/call/$callId/summary': typeof CallCallIdSummaryRoute
-  '/demo/api/names': typeof DemoApiNamesRoute
-  '/demo/api/tq-todos': typeof DemoApiTqTodosRoute
-  '/demo/start/api-request': typeof DemoStartApiRequestRoute
-  '/demo/start/server-funcs': typeof DemoStartServerFuncsRoute
   '/mypage/legal/$doc': typeof MypageLegalDocRoute
-  '/demo/start/ssr/data-only': typeof DemoStartSsrDataOnlyRoute
-  '/demo/start/ssr/full-ssr': typeof DemoStartSsrFullSsrRoute
-  '/demo/start/ssr/spa-mode': typeof DemoStartSsrSpaModeRoute
-  '/demo/start/ssr': typeof DemoStartSsrIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -328,7 +265,6 @@ export interface FileRoutesByTo {
   '/admin/traffic': typeof AdminTrafficRoute
   '/admin/users': typeof AdminUsersRoute
   '/call/$callId': typeof CallCallIdRouteWithChildren
-  '/demo/tanstack-query': typeof DemoTanstackQueryRoute
   '/history/$callId': typeof HistoryCallIdRoute
   '/mypage/block-list': typeof MypageBlockListRoute
   '/mypage/edit': typeof MypageEditRoute
@@ -341,15 +277,7 @@ export interface FileRoutesByTo {
   '/otomo/$otomoId': typeof OtomoOtomoIdRoute
   '/wallet/charge': typeof WalletChargeRoute
   '/call/$callId/summary': typeof CallCallIdSummaryRoute
-  '/demo/api/names': typeof DemoApiNamesRoute
-  '/demo/api/tq-todos': typeof DemoApiTqTodosRoute
-  '/demo/start/api-request': typeof DemoStartApiRequestRoute
-  '/demo/start/server-funcs': typeof DemoStartServerFuncsRoute
   '/mypage/legal/$doc': typeof MypageLegalDocRoute
-  '/demo/start/ssr/data-only': typeof DemoStartSsrDataOnlyRoute
-  '/demo/start/ssr/full-ssr': typeof DemoStartSsrFullSsrRoute
-  '/demo/start/ssr/spa-mode': typeof DemoStartSsrSpaModeRoute
-  '/demo/start/ssr': typeof DemoStartSsrIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -373,7 +301,6 @@ export interface FileRoutesById {
   '/admin/traffic': typeof AdminTrafficRoute
   '/admin/users': typeof AdminUsersRoute
   '/call/$callId': typeof CallCallIdRouteWithChildren
-  '/demo/tanstack-query': typeof DemoTanstackQueryRoute
   '/history/$callId': typeof HistoryCallIdRoute
   '/mypage/block-list': typeof MypageBlockListRoute
   '/mypage/edit': typeof MypageEditRoute
@@ -386,15 +313,7 @@ export interface FileRoutesById {
   '/otomo/$otomoId': typeof OtomoOtomoIdRoute
   '/wallet/charge': typeof WalletChargeRoute
   '/call/$callId/summary': typeof CallCallIdSummaryRoute
-  '/demo/api/names': typeof DemoApiNamesRoute
-  '/demo/api/tq-todos': typeof DemoApiTqTodosRoute
-  '/demo/start/api-request': typeof DemoStartApiRequestRoute
-  '/demo/start/server-funcs': typeof DemoStartServerFuncsRoute
   '/mypage/legal/$doc': typeof MypageLegalDocRoute
-  '/demo/start/ssr/data-only': typeof DemoStartSsrDataOnlyRoute
-  '/demo/start/ssr/full-ssr': typeof DemoStartSsrFullSsrRoute
-  '/demo/start/ssr/spa-mode': typeof DemoStartSsrSpaModeRoute
-  '/demo/start/ssr/': typeof DemoStartSsrIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -419,7 +338,6 @@ export interface FileRouteTypes {
     | '/admin/traffic'
     | '/admin/users'
     | '/call/$callId'
-    | '/demo/tanstack-query'
     | '/history/$callId'
     | '/mypage/block-list'
     | '/mypage/edit'
@@ -432,15 +350,7 @@ export interface FileRouteTypes {
     | '/otomo/$otomoId'
     | '/wallet/charge'
     | '/call/$callId/summary'
-    | '/demo/api/names'
-    | '/demo/api/tq-todos'
-    | '/demo/start/api-request'
-    | '/demo/start/server-funcs'
     | '/mypage/legal/$doc'
-    | '/demo/start/ssr/data-only'
-    | '/demo/start/ssr/full-ssr'
-    | '/demo/start/ssr/spa-mode'
-    | '/demo/start/ssr'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -463,7 +373,6 @@ export interface FileRouteTypes {
     | '/admin/traffic'
     | '/admin/users'
     | '/call/$callId'
-    | '/demo/tanstack-query'
     | '/history/$callId'
     | '/mypage/block-list'
     | '/mypage/edit'
@@ -476,15 +385,7 @@ export interface FileRouteTypes {
     | '/otomo/$otomoId'
     | '/wallet/charge'
     | '/call/$callId/summary'
-    | '/demo/api/names'
-    | '/demo/api/tq-todos'
-    | '/demo/start/api-request'
-    | '/demo/start/server-funcs'
     | '/mypage/legal/$doc'
-    | '/demo/start/ssr/data-only'
-    | '/demo/start/ssr/full-ssr'
-    | '/demo/start/ssr/spa-mode'
-    | '/demo/start/ssr'
   id:
     | '__root__'
     | '/'
@@ -507,7 +408,6 @@ export interface FileRouteTypes {
     | '/admin/traffic'
     | '/admin/users'
     | '/call/$callId'
-    | '/demo/tanstack-query'
     | '/history/$callId'
     | '/mypage/block-list'
     | '/mypage/edit'
@@ -520,15 +420,7 @@ export interface FileRouteTypes {
     | '/otomo/$otomoId'
     | '/wallet/charge'
     | '/call/$callId/summary'
-    | '/demo/api/names'
-    | '/demo/api/tq-todos'
-    | '/demo/start/api-request'
-    | '/demo/start/server-funcs'
     | '/mypage/legal/$doc'
-    | '/demo/start/ssr/data-only'
-    | '/demo/start/ssr/full-ssr'
-    | '/demo/start/ssr/spa-mode'
-    | '/demo/start/ssr/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -552,20 +444,11 @@ export interface RootRouteChildren {
   AdminTrafficRoute: typeof AdminTrafficRoute
   AdminUsersRoute: typeof AdminUsersRoute
   CallCallIdRoute: typeof CallCallIdRouteWithChildren
-  DemoTanstackQueryRoute: typeof DemoTanstackQueryRoute
   OtomoCallActiveRoute: typeof OtomoCallActiveRoute
   OtomoCallIncomingRoute: typeof OtomoCallIncomingRoute
   OtomoCallSummaryRoute: typeof OtomoCallSummaryRoute
   OtomoDashboardRevenueRoute: typeof OtomoDashboardRevenueRoute
   OtomoOtomoIdRoute: typeof OtomoOtomoIdRoute
-  DemoApiNamesRoute: typeof DemoApiNamesRoute
-  DemoApiTqTodosRoute: typeof DemoApiTqTodosRoute
-  DemoStartApiRequestRoute: typeof DemoStartApiRequestRoute
-  DemoStartServerFuncsRoute: typeof DemoStartServerFuncsRoute
-  DemoStartSsrDataOnlyRoute: typeof DemoStartSsrDataOnlyRoute
-  DemoStartSsrFullSsrRoute: typeof DemoStartSsrFullSsrRoute
-  DemoStartSsrSpaModeRoute: typeof DemoStartSsrSpaModeRoute
-  DemoStartSsrIndexRoute: typeof DemoStartSsrIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -710,13 +593,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof HistoryCallIdRouteImport
       parentRoute: typeof HistoryRoute
     }
-    '/demo/tanstack-query': {
-      id: '/demo/tanstack-query'
-      path: '/demo/tanstack-query'
-      fullPath: '/demo/tanstack-query'
-      preLoaderRoute: typeof DemoTanstackQueryRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/call/$callId': {
       id: '/call/$callId'
       path: '/call/$callId'
@@ -801,68 +677,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MypageLegalDocRouteImport
       parentRoute: typeof MypageRoute
     }
-    '/demo/start/server-funcs': {
-      id: '/demo/start/server-funcs'
-      path: '/demo/start/server-funcs'
-      fullPath: '/demo/start/server-funcs'
-      preLoaderRoute: typeof DemoStartServerFuncsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/demo/start/api-request': {
-      id: '/demo/start/api-request'
-      path: '/demo/start/api-request'
-      fullPath: '/demo/start/api-request'
-      preLoaderRoute: typeof DemoStartApiRequestRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/demo/api/tq-todos': {
-      id: '/demo/api/tq-todos'
-      path: '/demo/api/tq-todos'
-      fullPath: '/demo/api/tq-todos'
-      preLoaderRoute: typeof DemoApiTqTodosRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/demo/api/names': {
-      id: '/demo/api/names'
-      path: '/demo/api/names'
-      fullPath: '/demo/api/names'
-      preLoaderRoute: typeof DemoApiNamesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/call/$callId/summary': {
       id: '/call/$callId/summary'
       path: '/summary'
       fullPath: '/call/$callId/summary'
       preLoaderRoute: typeof CallCallIdSummaryRouteImport
       parentRoute: typeof CallCallIdRoute
-    }
-    '/demo/start/ssr/': {
-      id: '/demo/start/ssr/'
-      path: '/demo/start/ssr'
-      fullPath: '/demo/start/ssr'
-      preLoaderRoute: typeof DemoStartSsrIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/demo/start/ssr/spa-mode': {
-      id: '/demo/start/ssr/spa-mode'
-      path: '/demo/start/ssr/spa-mode'
-      fullPath: '/demo/start/ssr/spa-mode'
-      preLoaderRoute: typeof DemoStartSsrSpaModeRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/demo/start/ssr/full-ssr': {
-      id: '/demo/start/ssr/full-ssr'
-      path: '/demo/start/ssr/full-ssr'
-      fullPath: '/demo/start/ssr/full-ssr'
-      preLoaderRoute: typeof DemoStartSsrFullSsrRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/demo/start/ssr/data-only': {
-      id: '/demo/start/ssr/data-only'
-      path: '/demo/start/ssr/data-only'
-      fullPath: '/demo/start/ssr/data-only'
-      preLoaderRoute: typeof DemoStartSsrDataOnlyRouteImport
-      parentRoute: typeof rootRouteImport
     }
   }
 }
@@ -941,30 +761,12 @@ const rootRouteChildren: RootRouteChildren = {
   AdminTrafficRoute: AdminTrafficRoute,
   AdminUsersRoute: AdminUsersRoute,
   CallCallIdRoute: CallCallIdRouteWithChildren,
-  DemoTanstackQueryRoute: DemoTanstackQueryRoute,
   OtomoCallActiveRoute: OtomoCallActiveRoute,
   OtomoCallIncomingRoute: OtomoCallIncomingRoute,
   OtomoCallSummaryRoute: OtomoCallSummaryRoute,
   OtomoDashboardRevenueRoute: OtomoDashboardRevenueRoute,
   OtomoOtomoIdRoute: OtomoOtomoIdRoute,
-  DemoApiNamesRoute: DemoApiNamesRoute,
-  DemoApiTqTodosRoute: DemoApiTqTodosRoute,
-  DemoStartApiRequestRoute: DemoStartApiRequestRoute,
-  DemoStartServerFuncsRoute: DemoStartServerFuncsRoute,
-  DemoStartSsrDataOnlyRoute: DemoStartSsrDataOnlyRoute,
-  DemoStartSsrFullSsrRoute: DemoStartSsrFullSsrRoute,
-  DemoStartSsrSpaModeRoute: DemoStartSsrSpaModeRoute,
-  DemoStartSsrIndexRoute: DemoStartSsrIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}

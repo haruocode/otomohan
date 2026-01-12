@@ -73,4 +73,5 @@ export type {
   OtomoScheduleRecord,
   OtomoListFilters,
   OtomoReviewFilters,
+  OtomoStatusUpdate,
 } from "./otomoRepository.js";

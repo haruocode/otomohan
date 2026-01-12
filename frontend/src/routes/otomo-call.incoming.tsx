@@ -1,14 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { createFileRoute, useRouter } from '@tanstack/react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import {
-  AlertCircle,
-  Clock,
-  PhoneIncoming,
-  PhoneOff,
-  ShieldAlert,
-  Star,
-} from 'lucide-react'
+import { Clock, PhoneIncoming, PhoneOff, ShieldAlert, Star } from 'lucide-react'
 
 import type { IncomingCall } from '@/lib/api'
 import {
@@ -195,7 +188,7 @@ function IncomingCallCard({
         {call.badges && call.badges.length > 0 && (
           <div className="mt-2 flex flex-wrap items-center justify-center gap-2">
             {call.badges.map((badge) => (
-              <Badge key={badge} variant="secondary" className="bg-white/15">
+              <Badge key={badge} variant="default" className="bg-white/15">
                 <Star className="mr-1 h-3 w-3" />
                 {badge}
               </Badge>

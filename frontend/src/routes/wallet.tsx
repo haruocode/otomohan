@@ -1,7 +1,6 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import {
-  AlertCircle,
   ArrowLeft,
   CreditCard,
   History,
@@ -193,7 +192,7 @@ function ActionsSection() {
           asChild
           className="rounded-2xl bg-white text-slate-950 hover:bg-white/90"
         >
-          <Link to="/wallet/charge">
+          <Link to="/wallet/charge" search={{ required: undefined }}>
             <CreditCard className="mr-2 h-4 w-4" />
             チャージする
           </Link>

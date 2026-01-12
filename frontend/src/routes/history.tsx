@@ -57,13 +57,13 @@ function CallHistoryScreen() {
   const [filter, setFilter] = useState<HistoryFilter>('all')
   const historyQuery = useQuery({
     queryKey: ['call-history'],
-    queryFn: fetchCallHistory,
+    queryFn: () => fetchCallHistory(),
     staleTime: 30_000,
   })
   const isLoading = historyQuery.status === 'pending'
   const isError = historyQuery.status === 'error'
 
-  const entries = historyQuery.data ?? []
+  const entries: CallHistoryEntry[] = historyQuery.data ?? []
   const sortedEntries = useMemo(() => {
     return [...entries].sort((a, b) => {
       const targetA = a.endedAt ?? a.startedAt
@@ -240,7 +240,7 @@ function HistoryCard({ entry }: { entry: CallHistoryEntry }) {
                 {entry.otomo.name} さん
               </p>
               {isCancelled && (
-                <Badge variant="destructive" className="text-xs">
+                <Badge variant="danger" className="text-xs">
                   キャンセル
                 </Badge>
               )}

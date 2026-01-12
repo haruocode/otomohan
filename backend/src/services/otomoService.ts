@@ -18,9 +18,9 @@ export type OtomoListQuery = {
 export type OtomoListItem = {
   otomoId: string;
   displayName: string;
-  profileImageUrl: string;
-  age: number;
-  gender: "female" | "male" | "other";
+  profileImageUrl: string | null;
+  age: number | null;
+  gender: string | null;
   genres: string[];
   isOnline: boolean;
   isAvailable: boolean;
@@ -64,7 +64,7 @@ export type OtomoScheduleSlot = {
 };
 
 export type OtomoDetail = OtomoListItem & {
-  introduction: string;
+  introduction: string | null;
   tags: string[];
   reviews: OtomoReview[];
   schedule: OtomoScheduleSlot[];
@@ -105,12 +105,14 @@ export async function getOtomoList(
   const offset = normalizeOffset(query.offset);
 
   const { items, total } = await listOtomo({
-    isOnline: query.isOnline,
-    genre: query.genre,
-    minAge: query.minAge,
-    maxAge: query.maxAge,
     limit,
     offset,
+    filters: {
+      isOnline: query.isOnline,
+      genres: query.genre ? [query.genre] : undefined,
+      minAge: query.minAge,
+      maxAge: query.maxAge,
+    },
   });
 
   return {
@@ -120,11 +122,11 @@ export async function getOtomoList(
       profileImageUrl: item.profileImageUrl,
       age: item.age,
       gender: item.gender,
-      genres: item.genres,
+      genres: item.genres ?? [],
       isOnline: item.isOnline,
       isAvailable: item.isAvailable,
       pricePerMinute: item.pricePerMinute,
-      rating: item.rating,
+      rating: parseFloat(item.rating) || 0,
       reviewCount: item.reviewCount,
     })),
     total,
@@ -141,23 +143,32 @@ export async function getOtomoDetail(
     return null;
   }
 
+  // reviewsは別途取得
+  const reviewsResult = await listOtomoReviews({
+    otomoId,
+    limit: MAX_REVIEWS_RETURNED,
+    offset: 0,
+    sort: "newest",
+  });
+  const reviews = reviewsResult?.items ?? [];
+
   return {
     otomoId: record.otomoId,
     displayName: record.displayName,
     profileImageUrl: record.profileImageUrl,
     age: record.age,
     gender: record.gender,
-    genres: record.genres,
+    genres: record.genres ?? [],
     introduction: record.introduction,
-    tags: record.tags,
+    tags: record.tags ?? [],
     isOnline: record.isOnline,
     isAvailable: record.isAvailable,
     statusMessage: record.statusMessage,
     statusUpdatedAt: record.statusUpdatedAt,
     pricePerMinute: record.pricePerMinute,
-    rating: record.rating,
+    rating: parseFloat(record.rating) || 0,
     reviewCount: record.reviewCount,
-    reviews: record.reviews.slice(0, MAX_REVIEWS_RETURNED).map((review) => ({
+    reviews: reviews.map((review) => ({
       reviewId: review.reviewId,
       userDisplayName: review.userDisplayName,
       score: review.score,
@@ -180,7 +191,7 @@ export async function getOtomoReviews(
   const offset = normalizeOffset(query.offset);
   const sort = normalizeReviewSort(query.sort);
 
-  const result = await listOtomoReviews(otomoId, { limit, offset, sort });
+  const result = await listOtomoReviews({ otomoId, limit, offset, sort });
   if (!result) {
     return null;
   }
@@ -234,13 +245,17 @@ export async function updateOtomoStatusEntry(
     return { success: false, reason: "FORBIDDEN" };
   }
 
-  const statusUpdatedAt = new Date().toISOString();
-  const updated = await updateOtomoStatus(payload.otomoId, {
-    isOnline: payload.isOnline,
-    isAvailable: payload.isAvailable,
-    statusMessage: payload.statusMessage ?? null,
-    statusUpdatedAt,
-  });
+  // isOnline/isAvailable の組み合わせから status を決定
+  let status: "online" | "offline" | "busy";
+  if (!payload.isOnline) {
+    status = "offline";
+  } else if (!payload.isAvailable) {
+    status = "busy";
+  } else {
+    status = "online";
+  }
+
+  const updated = await updateOtomoStatus(payload.otomoId, status);
 
   if (!updated) {
     return { success: false, reason: "UPDATE_FAILED" };

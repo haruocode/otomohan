@@ -176,7 +176,7 @@ function WalletChargeScreen() {
     }
     chargeMutation.mutate(payload)
   }
-  const isSubmitting = chargeMutation.isLoading
+  const isSubmitting = chargeMutation.isPending
 
   return (
     <div className="relative isolate min-h-screen overflow-hidden bg-slate-950 text-white">

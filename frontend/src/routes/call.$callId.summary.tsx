@@ -84,10 +84,7 @@ function CallSummaryScreen() {
             <SummaryHero summary={summary} reasonMeta={reasonMeta} />
             <SummaryStats summary={summary} />
             {summary.billingUnits && summary.billingUnits.length > 0 && (
-              <BillingBreakdown
-                units={summary.billingUnits}
-                pricePerMinute={summary.pricePerMinute}
-              />
+              <BillingBreakdown units={summary.billingUnits} />
             )}
             <ActionButtons callId={summary.id} />
           </>
@@ -189,10 +186,8 @@ function SummaryStats({ summary }: { summary: CallSession }) {
 
 function BillingBreakdown({
   units,
-  pricePerMinute,
 }: {
   units: NonNullable<CallSession['billingUnits']>
-  pricePerMinute: number
 }) {
   return (
     <Card className="border-white/10 bg-white/5">

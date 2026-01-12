@@ -169,7 +169,10 @@ function InCallScreen() {
         navigate({
           to: '/call/$callId/summary',
           params: { callId },
-          search: (prev) => ({ ...prev, reason: derivedReason }),
+          search: (prev: Record<string, unknown>) => ({
+            ...prev,
+            reason: derivedReason,
+          }),
         })
       }, 1200)
       return () => window.clearTimeout(timeout)

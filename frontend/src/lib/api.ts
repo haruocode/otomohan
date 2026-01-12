@@ -4461,10 +4461,12 @@ const applyReviewFilters = (
     list = list.filter((item) => item.rating === filters.rating)
   }
   if (filters.ratingMin !== undefined) {
-    list = list.filter((item) => item.rating >= filters.ratingMin)
+    const min = filters.ratingMin
+    list = list.filter((item) => item.rating >= min)
   }
   if (filters.ratingMax !== undefined) {
-    list = list.filter((item) => item.rating <= filters.ratingMax)
+    const max = filters.ratingMax
+    list = list.filter((item) => item.rating <= max)
   }
   if (filters.commentState === 'with') {
     list = list.filter((item) => item.hasComment)

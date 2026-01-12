@@ -147,9 +147,9 @@ function AdminReportsScreen() {
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null)
   const [exportMessage, setExportMessage] = useState('')
 
-  const reportsQuery = useQuery<Array<AdminReportSummary>>({
+  const reportsQuery = useQuery({
     queryKey: ['admin-reports', activeFilters],
-    queryFn: () =>
+    queryFn: (): Promise<AdminReportSummary[]> =>
       fetchAdminReports({
         reportId: activeFilters.reportId || undefined,
         callId: activeFilters.callId || undefined,
@@ -160,10 +160,11 @@ function AdminReportsScreen() {
         reportedFrom: activeFilters.reportedFrom || undefined,
         reportedTo: activeFilters.reportedTo || undefined,
       }),
-    keepPreviousData: true,
+    placeholderData: (previousData): AdminReportSummary[] | undefined =>
+      previousData,
   })
 
-  const reports = reportsQuery.data ?? []
+  const reports: AdminReportSummary[] = reportsQuery.data ?? []
   const stats = useMemo<ReportStats>(() => buildReportStats(reports), [reports])
 
   const handleFilterChange = (field: keyof FilterForm, value: string) => {

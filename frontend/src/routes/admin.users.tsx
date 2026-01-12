@@ -112,13 +112,14 @@ function AdminUsersScreen() {
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
   const [exportNotice, setExportNotice] = useState<string>('')
 
-  const usersQuery = useQuery<Array<AdminUserSummary>>({
+  const usersQuery = useQuery({
     queryKey: ['admin-users', activeFilters],
-    queryFn: () => fetchAdminUsers(activeFilters),
-    keepPreviousData: true,
+    queryFn: (): Promise<AdminUserSummary[]> => fetchAdminUsers(activeFilters),
+    placeholderData: (previousData): AdminUserSummary[] | undefined =>
+      previousData,
   })
 
-  const users = usersQuery.data ?? []
+  const users: AdminUserSummary[] = usersQuery.data ?? []
   const stats = useMemo(() => buildUserStats(users), [users])
   const isLoadingList = usersQuery.status === 'pending'
   const isErrorList = usersQuery.status === 'error'

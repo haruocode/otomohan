@@ -835,9 +835,7 @@ function AdminLogTable({
               <td className="px-4 py-3">{formatDate(entry.occurredAt)}</td>
               <td className="px-4 py-3">
                 <Badge
-                  variant={
-                    entry.operation === 'add' ? 'success' : 'destructive'
-                  }
+                  variant={entry.operation === 'add' ? 'success' : 'danger'}
                 >
                   {entry.operation === 'add' ? '手動付与' : '減算'}
                 </Badge>

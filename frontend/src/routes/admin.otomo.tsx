@@ -158,13 +158,15 @@ function AdminOtomoScreen() {
   const [selectedOtomoId, setSelectedOtomoId] = useState<string | null>(null)
   const [exportMessage, setExportMessage] = useState('')
 
-  const otomoQuery = useQuery<Array<AdminOtomoSummary>>({
+  const otomoQuery = useQuery({
     queryKey: ['admin-otomo', activeFilters],
-    queryFn: () => fetchAdminOtomoList(activeFilters),
-    keepPreviousData: true,
+    queryFn: (): Promise<AdminOtomoSummary[]> =>
+      fetchAdminOtomoList(activeFilters),
+    placeholderData: (previousData): AdminOtomoSummary[] | undefined =>
+      previousData,
   })
 
-  const otomos = otomoQuery.data ?? []
+  const otomos: AdminOtomoSummary[] = otomoQuery.data ?? []
   const stats = useMemo(() => buildStats(otomos), [otomos])
 
   const handleInputChange =

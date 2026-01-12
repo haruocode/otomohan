@@ -28,7 +28,6 @@ import type { FormEvent, ReactNode } from 'react'
 
 import type {
   AdminReviewDetail,
-  AdminReviewFilters,
   AdminReviewFlag,
   AdminReviewSummary,
 } from '@/lib/api'
@@ -118,9 +117,9 @@ function AdminReviewsScreen() {
     useState<FilterForm>(initialFilterForm)
   const [selectedReviewId, setSelectedReviewId] = useState<string | null>(null)
 
-  const reviewsQuery = useQuery<Array<AdminReviewSummary>>({
+  const reviewsQuery = useQuery({
     queryKey: ['admin-reviews', activeFilters],
-    queryFn: () =>
+    queryFn: (): Promise<AdminReviewSummary[]> =>
       fetchAdminReviews({
         otomoId: activeFilters.otomoId || undefined,
         userId: activeFilters.userId || undefined,
@@ -136,10 +135,11 @@ function AdminReviewsScreen() {
         createdFrom: activeFilters.createdFrom || undefined,
         createdTo: activeFilters.createdTo || undefined,
       }),
-    keepPreviousData: true,
+    placeholderData: (previousData): AdminReviewSummary[] | undefined =>
+      previousData,
   })
 
-  const reviews = reviewsQuery.data ?? []
+  const reviews: AdminReviewSummary[] = reviewsQuery.data ?? []
   const stats = useMemo<ReviewStats>(() => buildReviewStats(reviews), [reviews])
 
   const handleFilterChange = (field: keyof FilterForm, value: string) => {

@@ -501,7 +501,8 @@ function BottomNav() {
     <nav className="fixed bottom-6 left-1/2 z-20 flex w-[90%] max-w-md -translate-x-1/2 items-center justify-between rounded-3xl border border-white/10 bg-white/10 p-3 text-sm text-white shadow-2xl shadow-black/40 backdrop-blur-2xl">
       {NAV_ITEMS.map((item) => {
         const hasDestination = typeof item.to === 'string'
-        const isActive = hasDestination ? pathname.startsWith(item.to) : false
+        const isActive =
+          hasDestination && item.to ? pathname.startsWith(item.to) : false
         const classes = cn(
           'flex flex-1 flex-col items-center gap-1 rounded-2xl px-3 py-2 text-xs transition-colors',
           isActive

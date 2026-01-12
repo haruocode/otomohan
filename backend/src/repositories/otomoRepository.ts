@@ -6,10 +6,15 @@ import {
   type OtomoReviewFilters,
   updateOtomoStatusRecord,
   fetchOtomoByOwnerUserId,
+  type OtomoStatusUpdate,
 } from "../db/index.js";
 
-export async function listOtomo(filters: OtomoListFilters) {
-  return fetchOtomoList(filters);
+export async function listOtomo(options: {
+  limit: number;
+  offset: number;
+  filters?: OtomoListFilters;
+}) {
+  return fetchOtomoList(options);
 }
 
 export async function findOtomoById(otomoId: string) {
@@ -20,21 +25,13 @@ export async function findOtomoByOwnerUserId(ownerUserId: string) {
   return fetchOtomoByOwnerUserId(ownerUserId);
 }
 
-export async function listOtomoReviews(
-  otomoId: string,
-  filters: OtomoReviewFilters
-) {
-  return fetchOtomoReviews(otomoId, filters);
+export async function listOtomoReviews(options: OtomoReviewFilters) {
+  return fetchOtomoReviews(options);
 }
 
 export async function updateOtomoStatus(
   otomoId: string,
-  payload: {
-    isOnline: boolean;
-    isAvailable: boolean;
-    statusMessage: string | null;
-    statusUpdatedAt: string;
-  }
+  status: "online" | "offline" | "busy" | OtomoStatusUpdate
 ) {
-  return updateOtomoStatusRecord(otomoId, payload);
+  return updateOtomoStatusRecord(otomoId, status);
 }
