@@ -179,7 +179,7 @@ function InCallScreen() {
   const derivedBalance = session?.balance ?? walletQuery.data?.balance
 
   return (
-    <div className="relative isolate min-h-screen overflow-hidden bg-gradient-to-b from-slate-950 via-slate-950 to-slate-900 text-white">
+    <div className="relative isolate min-h-screen overflow-hidden bg-linear-to-b from-slate-950 via-slate-950 to-slate-900 text-white">
       <div className="pointer-events-none absolute inset-0 opacity-50">
         <div className="absolute left-16 top-0 h-64 w-64 rounded-full bg-rose-500/20 blur-[100px]" />
         <div className="absolute bottom-10 right-10 h-72 w-72 rounded-full bg-blue-500/20 blur-[120px]" />
@@ -397,7 +397,7 @@ function ToggleButton({
       type="button"
       onClick={onClick}
       className={cn(
-        'flex min-w-[140px] flex-col items-center gap-2 rounded-2xl border px-6 py-4 text-sm transition',
+        'flex min-w-35 flex-col items-center gap-2 rounded-2xl border px-6 py-4 text-sm transition',
         active
           ? 'border-white/50 bg-white/10 text-white'
           : 'border-white/10 bg-white/5 text-white/70 hover:border-white/30 hover:text-white',

@@ -177,8 +177,8 @@ function OtomoActiveCallScreen() {
   return (
     <div className="relative min-h-screen bg-slate-950 text-white">
       <div className="pointer-events-none absolute inset-0 opacity-80">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(244,63,94,0.35),_transparent_55%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom,_rgba(59,130,246,0.35),_transparent_65%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(244,63,94,0.35),transparent_55%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom,rgba(59,130,246,0.35),transparent_65%)]" />
       </div>
       <main className="relative z-10 mx-auto flex min-h-screen w-full max-w-md flex-col px-4 pb-10 pt-6">
         <header className="mb-6 flex items-center justify-between">
@@ -318,7 +318,7 @@ function ActiveCallCard({
         <Button
           size="lg"
           variant="destructive"
-          className="w-full rounded-2xl bg-gradient-to-r from-rose-500 to-orange-500 text-base font-semibold shadow-lg shadow-rose-900/40"
+          className="w-full rounded-2xl bg-linear-to-r from-rose-500 to-orange-500 text-base font-semibold shadow-lg shadow-rose-900/40"
           onClick={onRequestEnd}
           disabled={isEnding}
         >
