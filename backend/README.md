@@ -48,11 +48,17 @@ npm run db:seed     # insert baseline data
 
 Copy `.env.example` to `.env` and edit as needed.
 
-| Variable       | Description                             |
-| -------------- | --------------------------------------- |
-| `PORT`         | Port Fastify should bind to             |
-| `DATABASE_URL` | Postgres connection string for Drizzle  |
-| `JWT_SECRET`   | Secret used by auth plugin (mocked now) |
+| Variable                | Description                                           |
+| ----------------------- | ----------------------------------------------------- |
+| `PORT`                  | Port Fastify should bind to                           |
+| `DATABASE_URL`          | Postgres connection string for Drizzle                |
+| `JWT_SECRET`            | Secret used by auth plugin (mocked now)               |
+| `ACS_CONNECTION_STRING` | Azure Communication Services 接続文字列（通話機能用） |
+
+### Azure Communication Services
+
+音声通話機能には Azure Communication Services を使用しています。
+セットアップ手順は [docs/specification/ACS_SETUP.md](../docs/specification/ACS_SETUP.md) を参照してください。
 
 ## Database & Drizzle ORM
 
