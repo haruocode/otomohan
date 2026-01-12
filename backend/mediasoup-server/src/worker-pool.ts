@@ -1,4 +1,5 @@
 import * as mediasoup from "mediasoup";
+import type { types } from "mediasoup";
 
 export interface WorkerPoolOptions {
   numWorkers?: number;
@@ -6,7 +7,7 @@ export interface WorkerPoolOptions {
 }
 
 export class WorkerPool {
-  private workers: mediasoup.Worker[] = [];
+  private workers: types.Worker[] = [];
   private currentWorkerIndex = 0;
   private readonly numWorkers: number;
   private readonly logLevel: "debug" | "warn" | "error";
@@ -61,7 +62,7 @@ export class WorkerPool {
     );
   }
 
-  getWorker(): mediasoup.Worker {
+  getWorker(): types.Worker {
     if (this.workers.length === 0) {
       throw new Error("No workers available in the pool");
     }

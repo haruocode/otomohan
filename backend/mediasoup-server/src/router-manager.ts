@@ -1,42 +1,49 @@
-import * as mediasoup from "mediasoup";
+import type { types } from "mediasoup";
 import { WorkerPool } from "./worker-pool.js";
 
 export interface RouterManagerOptions {
   workerPool: WorkerPool;
-  mediaCodecs?: mediasoup.RtpCodecCapability[];
+  mediaCodecs?: types.RouterRtpCodecCapability[];
 }
 
 export interface TransportDescription {
   id: string;
-  iceParameters: mediasoup.IceParameters;
-  iceCandidates: mediasoup.IceCandidate[];
-  dtlsParameters: mediasoup.DtlsParameters;
+  iceParameters: types.IceParameters;
+  iceCandidates: types.IceCandidate[];
+  dtlsParameters: types.DtlsParameters;
 }
 
 export interface ProducerDescription {
   id: string;
-  kind: mediasoup.MediaKind;
-  rtpParameters: mediasoup.RtpParameters;
+  kind: types.MediaKind;
+  rtpParameters: types.RtpParameters;
 }
 
 export interface ConsumerDescription {
   id: string;
   producerId: string;
-  kind: mediasoup.MediaKind;
-  rtpParameters: mediasoup.RtpParameters;
+  kind: types.MediaKind;
+  rtpParameters: types.RtpParameters;
+}
+
+interface RouterResources {
+  router: types.Router;
+  transports: Map<string, types.WebRtcTransport>;
+  producers: Map<string, types.Producer>;
+  consumers: Map<string, types.Consumer>;
 }
 
 export class RouterManager {
-  private routers: Map<string, mediasoup.Router> = new Map();
+  private routerResources: Map<string, RouterResources> = new Map();
   private workerPool: WorkerPool;
-  private mediaCodecs: mediasoup.RtpCodecCapability[];
+  private mediaCodecs: types.RouterRtpCodecCapability[];
 
   constructor(options: RouterManagerOptions) {
     this.workerPool = options.workerPool;
     this.mediaCodecs = options.mediaCodecs ?? this.getDefaultMediaCodecs();
   }
 
-  private getDefaultMediaCodecs(): mediasoup.RtpCodecCapability[] {
+  private getDefaultMediaCodecs(): types.RouterRtpCodecCapability[] {
     return [
       {
         kind: "audio",
@@ -52,7 +59,7 @@ export class RouterManager {
   }
 
   async createRouter(routerId: string): Promise<string> {
-    if (this.routers.has(routerId)) {
+    if (this.routerResources.has(routerId)) {
       console.warn(`Router ${routerId} already exists`);
       return routerId;
     }
@@ -63,12 +70,18 @@ export class RouterManager {
         mediaCodecs: this.mediaCodecs,
       });
 
-      router.on("close", () => {
-        console.log(`Router ${routerId} closed`);
-        this.routers.delete(routerId);
+      router.on("workerclose", () => {
+        console.log(`Router ${routerId} closed due to worker close`);
+        this.routerResources.delete(routerId);
       });
 
-      this.routers.set(routerId, router);
+      this.routerResources.set(routerId, {
+        router,
+        transports: new Map(),
+        producers: new Map(),
+        consumers: new Map(),
+      });
+
       console.log(`✅ Router ${routerId} created`);
       return routerId;
     } catch (err) {
@@ -77,24 +90,28 @@ export class RouterManager {
     }
   }
 
-  getRouter(routerId: string): mediasoup.Router {
-    const router = this.routers.get(routerId);
-    if (!router) {
+  private getResources(routerId: string): RouterResources {
+    const resources = this.routerResources.get(routerId);
+    if (!resources) {
       throw new Error(`Router ${routerId} not found`);
     }
-    return router;
+    return resources;
+  }
+
+  getRouter(routerId: string): types.Router {
+    return this.getResources(routerId).router;
   }
 
   async closeRouter(routerId: string): Promise<void> {
-    const router = this.routers.get(routerId);
-    if (!router) {
+    const resources = this.routerResources.get(routerId);
+    if (!resources) {
       console.warn(`Router ${routerId} not found`);
       return;
     }
 
     try {
-      await router.close();
-      this.routers.delete(routerId);
+      resources.router.close();
+      this.routerResources.delete(routerId);
       console.log(`✅ Router ${routerId} closed`);
     } catch (err) {
       console.error(`❌ Failed to close router ${routerId}:`, err);
@@ -106,21 +123,23 @@ export class RouterManager {
     routerId: string,
     transportId: string
   ): Promise<TransportDescription> {
-    const router = this.getRouter(routerId);
+    const resources = this.getResources(routerId);
 
     try {
-      const transport = await router.createWebRtcTransport({
+      const transport = await resources.router.createWebRtcTransport({
         listenIps: [{ ip: "127.0.0.1", announcedIp: undefined }],
         enableUdp: true,
         enableTcp: true,
         preferUdp: true,
       });
 
-      transport.on("close", () => {
-        console.log(`Transport ${transportId} closed`);
+      transport.on("routerclose", () => {
+        console.log(`Transport ${transport.id} closed due to router close`);
+        resources.transports.delete(transport.id);
       });
 
-      console.log(`✅ Transport ${transportId} created in router ${routerId}`);
+      resources.transports.set(transport.id, transport);
+      console.log(`✅ Transport ${transport.id} created in router ${routerId}`);
 
       return {
         id: transport.id,
@@ -137,20 +156,16 @@ export class RouterManager {
   async connectTransport(
     routerId: string,
     transportId: string,
-    dtlsParameters: mediasoup.DtlsParameters
+    dtlsParameters: types.DtlsParameters
   ): Promise<void> {
-    const router = this.getRouter(routerId);
+    const resources = this.getResources(routerId);
+    const transport = resources.transports.get(transportId);
+
+    if (!transport) {
+      throw new Error(`WebRTC transport ${transportId} not found`);
+    }
 
     try {
-      const transports = router.transports;
-      const transport = Array.from(transports).find(
-        (t) => t.id === transportId
-      );
-
-      if (!transport || !(transport instanceof mediasoup.WebRtcTransport)) {
-        throw new Error(`WebRTC transport ${transportId} not found`);
-      }
-
       await transport.connect({ dtlsParameters });
       console.log(`✅ Transport ${transportId} connected`);
     } catch (err) {
@@ -162,29 +177,27 @@ export class RouterManager {
   async createProducer(
     routerId: string,
     transportId: string,
-    rtpParameters: mediasoup.RtpParameters
+    rtpParameters: types.RtpParameters
   ): Promise<ProducerDescription> {
-    const router = this.getRouter(routerId);
+    const resources = this.getResources(routerId);
+    const transport = resources.transports.get(transportId);
+
+    if (!transport) {
+      throw new Error(`WebRTC transport ${transportId} not found`);
+    }
 
     try {
-      const transports = router.transports;
-      const transport = Array.from(transports).find(
-        (t) => t.id === transportId
-      );
-
-      if (!transport || !(transport instanceof mediasoup.WebRtcTransport)) {
-        throw new Error(`WebRTC transport ${transportId} not found`);
-      }
-
       const producer = await transport.produce({
-        kind: rtpParameters.mid ? "audio" : "audio",
+        kind: "audio",
         rtpParameters,
       });
 
-      producer.on("close", () => {
-        console.log(`Producer ${producer.id} closed`);
+      producer.on("transportclose", () => {
+        console.log(`Producer ${producer.id} closed due to transport close`);
+        resources.producers.delete(producer.id);
       });
 
+      resources.producers.set(producer.id, producer);
       console.log(`✅ Producer ${producer.id} created`);
 
       return {
@@ -203,35 +216,36 @@ export class RouterManager {
     transportId: string,
     producerId: string
   ): Promise<ConsumerDescription> {
-    const router = this.getRouter(routerId);
+    const resources = this.getResources(routerId);
+    const transport = resources.transports.get(transportId);
+
+    if (!transport) {
+      throw new Error(`WebRTC transport ${transportId} not found`);
+    }
+
+    const producer = resources.producers.get(producerId);
+    if (!producer) {
+      throw new Error(`Producer ${producerId} not found`);
+    }
 
     try {
-      const transports = router.transports;
-      const transport = Array.from(transports).find(
-        (t) => t.id === transportId
-      );
-
-      if (!transport || !(transport instanceof mediasoup.WebRtcTransport)) {
-        throw new Error(`WebRTC transport ${transportId} not found`);
-      }
-
-      const producers = router.producers;
-      const producer = Array.from(producers).find((p) => p.id === producerId);
-
-      if (!producer) {
-        throw new Error(`Producer ${producerId} not found`);
-      }
-
       const consumer = await transport.consume({
         producerId,
-        rtpCapabilities: router.rtpCapabilities,
+        rtpCapabilities: resources.router.rtpCapabilities,
         paused: true,
       });
 
-      consumer.on("close", () => {
-        console.log(`Consumer ${consumer.id} closed`);
+      consumer.on("transportclose", () => {
+        console.log(`Consumer ${consumer.id} closed due to transport close`);
+        resources.consumers.delete(consumer.id);
       });
 
+      consumer.on("producerclose", () => {
+        console.log(`Consumer ${consumer.id} closed due to producer close`);
+        resources.consumers.delete(consumer.id);
+      });
+
+      resources.consumers.set(consumer.id, consumer);
       console.log(
         `✅ Consumer ${consumer.id} created from producer ${producerId}`
       );
@@ -249,16 +263,14 @@ export class RouterManager {
   }
 
   async resumeConsumer(routerId: string, consumerId: string): Promise<void> {
-    const router = this.getRouter(routerId);
+    const resources = this.getResources(routerId);
+    const consumer = resources.consumers.get(consumerId);
+
+    if (!consumer) {
+      throw new Error(`Consumer ${consumerId} not found`);
+    }
 
     try {
-      const consumers = router.consumers;
-      const consumer = Array.from(consumers).find((c) => c.id === consumerId);
-
-      if (!consumer) {
-        throw new Error(`Consumer ${consumerId} not found`);
-      }
-
       await consumer.resume();
       console.log(`✅ Consumer ${consumerId} resumed`);
     } catch (err) {
@@ -268,18 +280,17 @@ export class RouterManager {
   }
 
   async closeProducer(routerId: string, producerId: string): Promise<void> {
-    const router = this.getRouter(routerId);
+    const resources = this.getResources(routerId);
+    const producer = resources.producers.get(producerId);
+
+    if (!producer) {
+      console.warn(`Producer ${producerId} not found`);
+      return;
+    }
 
     try {
-      const producers = router.producers;
-      const producer = Array.from(producers).find((p) => p.id === producerId);
-
-      if (!producer) {
-        console.warn(`Producer ${producerId} not found`);
-        return;
-      }
-
-      await producer.close();
+      producer.close();
+      resources.producers.delete(producerId);
       console.log(`✅ Producer ${producerId} closed`);
     } catch (err) {
       console.error(`❌ Failed to close producer ${producerId}:`, err);
@@ -288,18 +299,17 @@ export class RouterManager {
   }
 
   async closeConsumer(routerId: string, consumerId: string): Promise<void> {
-    const router = this.getRouter(routerId);
+    const resources = this.getResources(routerId);
+    const consumer = resources.consumers.get(consumerId);
+
+    if (!consumer) {
+      console.warn(`Consumer ${consumerId} not found`);
+      return;
+    }
 
     try {
-      const consumers = router.consumers;
-      const consumer = Array.from(consumers).find((c) => c.id === consumerId);
-
-      if (!consumer) {
-        console.warn(`Consumer ${consumerId} not found`);
-        return;
-      }
-
-      await consumer.close();
+      consumer.close();
+      resources.consumers.delete(consumerId);
       console.log(`✅ Consumer ${consumerId} closed`);
     } catch (err) {
       console.error(`❌ Failed to close consumer ${consumerId}:`, err);
@@ -308,20 +318,17 @@ export class RouterManager {
   }
 
   async closeTransport(routerId: string, transportId: string): Promise<void> {
-    const router = this.getRouter(routerId);
+    const resources = this.getResources(routerId);
+    const transport = resources.transports.get(transportId);
+
+    if (!transport) {
+      console.warn(`Transport ${transportId} not found`);
+      return;
+    }
 
     try {
-      const transports = router.transports;
-      const transport = Array.from(transports).find(
-        (t) => t.id === transportId
-      );
-
-      if (!transport) {
-        console.warn(`Transport ${transportId} not found`);
-        return;
-      }
-
-      await transport.close();
+      transport.close();
+      resources.transports.delete(transportId);
       console.log(`✅ Transport ${transportId} closed`);
     } catch (err) {
       console.error(`❌ Failed to close transport ${transportId}:`, err);
@@ -330,16 +337,13 @@ export class RouterManager {
   }
 
   getRouterStats(routerId: string) {
-    const router = this.getRouter(routerId);
-    const producers = Array.from(router.producers);
-    const consumers = Array.from(router.consumers);
-    const transports = Array.from(router.transports);
+    const resources = this.getResources(routerId);
 
     return {
       routerId,
-      producersCount: producers.length,
-      consumersCount: consumers.length,
-      transportsCount: transports.length,
+      producersCount: resources.producers.size,
+      consumersCount: resources.consumers.size,
+      transportsCount: resources.transports.size,
     };
   }
 }

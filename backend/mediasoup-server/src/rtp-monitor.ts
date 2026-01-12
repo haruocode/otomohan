@@ -1,4 +1,4 @@
-import * as mediasoup from "mediasoup";
+import type { types } from "mediasoup";
 
 export interface RtpMonitorOptions {
   heartbeatIntervalMs?: number;
@@ -22,7 +22,7 @@ export class RtpMonitor {
   private producerLastRtp: Map<string, number> = new Map();
   private heartbeatIntervalMs: number;
   private silenceThresholdMs: number;
-  private monitorInterval: NodeJS.Timer | null = null;
+  private monitorInterval: ReturnType<typeof setInterval> | null = null;
   private callbacks: {
     onProducerRtpStart?: (producerId: string) => void;
     onProducerRtpStop?: (producerId: string, silenceDurationMs: number) => void;
@@ -37,7 +37,7 @@ export class RtpMonitor {
     this.callbacks = callbacks;
   }
 
-  startMonitoring(producers: Map<string, mediasoup.Producer>): void {
+  startMonitoring(producers: Map<string, types.Producer>): void {
     if (this.monitorInterval) {
       console.warn("RTP monitoring already started");
       return;
@@ -97,7 +97,7 @@ export class RtpMonitor {
 
   getProducerStatus(
     producerId: string,
-    allProducers: Map<string, mediasoup.Producer>
+    allProducers: Map<string, types.Producer>
   ): ProducerRtpStatus | null {
     if (!allProducers.has(producerId)) {
       return null;

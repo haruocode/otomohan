@@ -1,8 +1,8 @@
 import WebSocket from "ws";
-import * as mediasoup from "mediasoup";
+import type { types } from "mediasoup";
+import { randomUUID } from "crypto";
 import { RouterManager, TransportDescription } from "./router-manager.js";
 import { RtpMonitor } from "./rtp-monitor.js";
-import { v4 as uuidv4 } from "crypto";
 
 export interface RpcRequest {
   id: string;
@@ -156,7 +156,7 @@ export class RpcServer {
   private async createRouter(
     params: Record<string, unknown> | undefined
   ): Promise<{ routerId: string }> {
-    const routerId = (params?.routerId as string) || uuidv4();
+    const routerId = (params?.routerId as string) || randomUUID();
     await this.routerManager.createRouter(routerId);
     return { routerId };
   }
@@ -174,7 +174,7 @@ export class RpcServer {
     }
 
     // Call contextの初期化
-    const callId = uuidv4();
+    const callId = randomUUID();
     this.callContexts.set(callId, {
       userId,
       otomoId,
@@ -189,7 +189,7 @@ export class RpcServer {
   ): Promise<{ success: boolean }> {
     const routerId = params?.routerId as string;
     const transportId = params?.transportId as string;
-    const dtlsParameters = params?.dtlsParameters as mediasoup.DtlsParameters;
+    const dtlsParameters = params?.dtlsParameters as types.DtlsParameters;
 
     if (!routerId || !transportId || !dtlsParameters) {
       throw new Error("routerId, transportId, dtlsParameters are required");
@@ -208,7 +208,7 @@ export class RpcServer {
   ): Promise<{ producerId: string }> {
     const routerId = params?.routerId as string;
     const transportId = params?.transportId as string;
-    const rtpParameters = params?.rtpParameters as mediasoup.RtpParameters;
+    const rtpParameters = params?.rtpParameters as types.RtpParameters;
 
     if (!routerId || !transportId || !rtpParameters) {
       throw new Error("routerId, transportId, rtpParameters are required");
