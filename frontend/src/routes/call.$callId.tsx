@@ -11,8 +11,9 @@ import {
 } from 'lucide-react'
 
 import type { CallEndReason, CallSession } from '@/lib/api'
-import { fetchCallSession, fetchWalletBalance } from '@/lib/api'
+import { fetchCallSession, fetchWalletBalance, fetchAcsToken } from '@/lib/api'
 import { getCallEndReasonMeta } from '@/lib/call-status'
+import { useAcsCall } from '@/lib/useAcsCall'
 import { cn } from '@/lib/utils'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
@@ -47,10 +48,55 @@ function InCallScreen() {
   })
 
   const [session, setSession] = useState<CallSession | null>(null)
-  const [isMuted, setIsMuted] = useState(false)
   const [isSpeaker, setIsSpeaker] = useState(true)
   const [banner, setBanner] = useState<BannerState | null>(null)
   const [endReason, setEndReason] = useState<CallEndReason | null>(null)
+  const [acsInitialized, setAcsInitialized] = useState(false)
+
+  // ACS通話フック
+  const acsCall = useAcsCall({
+    displayName: 'ユーザー',
+    onCallEnded: () => {
+      setEndReason((prev) => prev ?? 'otomo_end')
+    },
+  })
+
+  // ACS初期化
+  useEffect(() => {
+    if (acsInitialized || !session) return
+
+    const initAcs = async () => {
+      try {
+        const tokenData = await fetchAcsToken(callId)
+        await acsCall.initialize({
+          acsUserId: tokenData.acsUserId,
+          token: tokenData.token,
+        })
+        setAcsInitialized(true)
+
+        // 相手のACSユーザーIDがある場合は通話を開始
+        // 注: 実際の実装ではWebSocketでシグナリングされた相手のACSユーザーIDを使用
+        if (session.partner?.acsUserId) {
+          await acsCall.call(session.partner.acsUserId)
+        }
+      } catch (err) {
+        console.error('ACS initialization failed:', err)
+        setBanner({
+          message: '音声接続の初期化に失敗しました',
+          tone: 'warning',
+        })
+      }
+    }
+
+    initAcs()
+  }, [callId, session, acsInitialized, acsCall])
+
+  // クリーンアップ
+  useEffect(() => {
+    return () => {
+      acsCall.dispose()
+    }
+  }, [acsCall])
 
   useEffect(() => {
     if (callQuery.data) {
@@ -114,8 +160,10 @@ function InCallScreen() {
     return undefined
   }, [session?.status, session?.reason, endReason, navigate, callId])
 
-  const handleEndCall = useCallback(() => {
+  const handleEndCall = useCallback(async () => {
     setEndReason('user_end')
+    // ACS通話を終了
+    await acsCall.hangUp()
     setSession((prev) =>
       prev
         ? {
@@ -126,7 +174,7 @@ function InCallScreen() {
           }
         : prev,
     )
-  }, [])
+  }, [acsCall])
 
   const derivedBalance = session?.balance ?? walletQuery.data?.balance
 
@@ -169,9 +217,9 @@ function InCallScreen() {
               countdownSeconds={countdownSeconds}
             />
             <ControlPanel
-              isMuted={isMuted}
+              isMuted={acsCall.muted}
               isSpeaker={isSpeaker}
-              onToggleMute={() => setIsMuted((prev) => !prev)}
+              onToggleMute={() => acsCall.toggleMute()}
               onToggleSpeaker={() => setIsSpeaker((prev) => !prev)}
               onEndCall={handleEndCall}
               disableEnd={session.status === 'finishing'}

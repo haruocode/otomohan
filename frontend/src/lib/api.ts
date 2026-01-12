@@ -5458,3 +5458,55 @@ export async function fetchAdminActiveCalls(): Promise<Array<AdminActiveCall>> {
   await waitForMock(ADMIN_CALLS_DELAY_MS)
   return adminActiveCalls.map((call) => ({ ...call }))
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Azure Communication Services (ACS) Token API
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface AcsTokenResponse {
+  acsUserId: string
+  token: string
+  expiresOn: string
+}
+
+/**
+ * ACSアクセストークンを取得
+ * 通話開始時にこのトークンでACS Calling SDKを初期化する
+ * @param callId 通話ID
+ * @param existingAcsUserId 既存のACSユーザーID（トークン更新時）
+ */
+export async function fetchAcsToken(
+  callId: string,
+  existingAcsUserId?: string,
+): Promise<AcsTokenResponse> {
+  const response = await fetch(`${API_BASE_URL}/acs/token`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    credentials: 'include',
+    body: JSON.stringify({
+      callId,
+      existingAcsUserId,
+    }),
+  })
+
+  if (!response.ok) {
+    const errorBody = await response.text().catch(() => null)
+    const friendlyError = extractFriendlyError(errorBody)
+    throw new Error(friendlyError ?? 'ACSトークンの取得に失敗しました')
+  }
+
+  const data = (await response.json()) as {
+    status: string
+    acsUserId: string
+    token: string
+    expiresOn: string
+  }
+
+  return {
+    acsUserId: data.acsUserId,
+    token: data.token,
+    expiresOn: data.expiresOn,
+  }
+}

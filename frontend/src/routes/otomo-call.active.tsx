@@ -17,7 +17,12 @@ import {
 import type { LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import type { OtomoActiveCall, OtomoConnectionQuality } from '@/lib/api'
-import { endOtomoActiveCall, fetchOtomoActiveCall } from '@/lib/api'
+import {
+  endOtomoActiveCall,
+  fetchOtomoActiveCall,
+  fetchAcsToken,
+} from '@/lib/api'
+import { useAcsCall } from '@/lib/useAcsCall'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -65,7 +70,17 @@ function OtomoActiveCallScreen() {
   const queryClient = useQueryClient()
   const [isConfirmOpen, setIsConfirmOpen] = useState(false)
   const [actionError, setActionError] = useState<string | null>(null)
-  const [controls, setControls] = useState({ micMuted: false, speakerOn: true })
+  const [controls, setControls] = useState({ speakerOn: true })
+  const [acsInitialized, setAcsInitialized] = useState(false)
+
+  // ACS通話フック
+  const acsCall = useAcsCall({
+    displayName: 'おともはん',
+    onCallEnded: () => {
+      // 相手が通話を終了した場合
+      router.navigate({ to: '/otomo-call/summary' })
+    },
+  })
 
   const callQuery = useQuery({
     queryKey: ['otomo-active-call'],
@@ -74,6 +89,40 @@ function OtomoActiveCallScreen() {
   })
 
   const activeCall = callQuery.data?.call ?? null
+
+  // ACS初期化
+  useEffect(() => {
+    if (acsInitialized || !activeCall) return
+
+    const initAcs = async () => {
+      try {
+        const tokenData = await fetchAcsToken(activeCall.callId)
+        await acsCall.initialize({
+          acsUserId: tokenData.acsUserId,
+          token: tokenData.token,
+        })
+        setAcsInitialized(true)
+
+        // 相手のACSユーザーIDがある場合は通話を開始
+        // 注: 実際の実装ではWebSocketでシグナリングされた相手のACSユーザーIDを使用
+        if (activeCall.user?.acsUserId) {
+          await acsCall.call(activeCall.user.acsUserId)
+        }
+      } catch (err) {
+        console.error('ACS initialization failed:', err)
+        setActionError('音声接続の初期化に失敗しました')
+      }
+    }
+
+    initAcs()
+  }, [activeCall, acsInitialized, acsCall])
+
+  // クリーンアップ
+  useEffect(() => {
+    return () => {
+      acsCall.dispose()
+    }
+  }, [acsCall])
 
   const [elapsedSec, setElapsedSec] = useState(() =>
     getElapsedSeconds(activeCall?.startedAt),
@@ -101,7 +150,11 @@ function OtomoActiveCallScreen() {
   }, [activeCall, callQuery.isSuccess, router])
 
   const mutation = useMutation({
-    mutationFn: () => endOtomoActiveCall('otomo_end'),
+    mutationFn: async () => {
+      // ACS通話を終了
+      await acsCall.hangUp()
+      return endOtomoActiveCall('otomo_end')
+    },
     onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: ['otomo-active-call'] })
       queryClient.invalidateQueries({ queryKey: ['otomo-self'] })
@@ -151,11 +204,9 @@ function OtomoActiveCallScreen() {
           <ActiveCallCard
             call={activeCall}
             elapsedSec={elapsedSec}
-            micMuted={controls.micMuted}
+            micMuted={acsCall.muted}
             speakerOn={controls.speakerOn}
-            onToggleMic={() =>
-              setControls((prev) => ({ ...prev, micMuted: !prev.micMuted }))
-            }
+            onToggleMic={() => acsCall.toggleMute()}
             onToggleSpeaker={() =>
               setControls((prev) => ({ ...prev, speakerOn: !prev.speakerOn }))
             }

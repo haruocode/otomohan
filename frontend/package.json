@@ -14,6 +14,8 @@
     "mock:start": "cross-env NODE_ENV=production node mock/server.js"
   },
   "dependencies": {
+    "@azure/communication-calling": "^1.41.1",
+    "@azure/communication-common": "^2.4.0",
     "@radix-ui/react-avatar": "^1.1.11",
     "@radix-ui/react-dialog": "^1.1.2",
     "@radix-ui/react-slot": "^1.2.4",
@@ -32,8 +34,8 @@
     "cors": "^2.8.5",
     "express": "^4.19.2",
     "lucide-react": "^0.544.0",
-    "multer": "^1.4.5-lts.1",
     "morgan": "^1.10.0",
+    "multer": "^1.4.5-lts.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "tailwind-merge": "^3.0.2",
